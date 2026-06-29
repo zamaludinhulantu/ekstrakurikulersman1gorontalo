@@ -31,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $sharedHostingPublicPath = base_path('../public_html');
+
+        if (is_dir($sharedHostingPublicPath)) {
+            $this->app->usePublicPath($sharedHostingPublicPath);
+        }
+
         Paginator::useBootstrapFive();
 
         Gate::policy(Extracurricular::class, ExtracurricularPolicy::class);
