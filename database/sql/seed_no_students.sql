@@ -10,22 +10,37 @@
 
 SET FOREIGN_KEY_CHECKS=0;
 
-TRUNCATE TABLE attendances;
-TRUNCATE TABLE assessments;
-TRUNCATE TABLE registrations;
-TRUNCATE TABLE reports;
-TRUNCATE TABLE announcements;
-TRUNCATE TABLE extracurricular_coach;
-TRUNCATE TABLE schedules;
-TRUNCATE TABLE extracurriculars;
-TRUNCATE TABLE students;
-TRUNCATE TABLE coaches;
-TRUNCATE TABLE sessions;
-TRUNCATE TABLE cache;
-TRUNCATE TABLE jobs;
-TRUNCATE TABLE job_batches;
-TRUNCATE TABLE failed_jobs;
-TRUNCATE TABLE users;
+DELETE FROM attendances;
+DELETE FROM assessments;
+DELETE FROM registrations;
+DELETE FROM reports;
+DELETE FROM announcements;
+DELETE FROM extracurricular_coach;
+DELETE FROM schedules;
+DELETE FROM extracurriculars;
+DELETE FROM students;
+DELETE FROM coaches;
+DELETE FROM sessions;
+DELETE FROM cache;
+DELETE FROM jobs;
+DELETE FROM job_batches;
+DELETE FROM failed_jobs;
+DELETE FROM users;
+
+ALTER TABLE attendances AUTO_INCREMENT = 1;
+ALTER TABLE assessments AUTO_INCREMENT = 1;
+ALTER TABLE registrations AUTO_INCREMENT = 1;
+ALTER TABLE reports AUTO_INCREMENT = 1;
+ALTER TABLE announcements AUTO_INCREMENT = 1;
+ALTER TABLE extracurricular_coach AUTO_INCREMENT = 1;
+ALTER TABLE schedules AUTO_INCREMENT = 1;
+ALTER TABLE extracurriculars AUTO_INCREMENT = 1;
+ALTER TABLE students AUTO_INCREMENT = 1;
+ALTER TABLE coaches AUTO_INCREMENT = 1;
+ALTER TABLE jobs AUTO_INCREMENT = 1;
+ALTER TABLE job_batches AUTO_INCREMENT = 1;
+ALTER TABLE failed_jobs AUTO_INCREMENT = 1;
+ALTER TABLE users AUTO_INCREMENT = 1;
 
 SET FOREIGN_KEY_CHECKS=1;
 
