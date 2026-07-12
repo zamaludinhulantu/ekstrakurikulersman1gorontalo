@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
