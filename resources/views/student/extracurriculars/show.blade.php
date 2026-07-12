@@ -26,19 +26,19 @@
                         </div>
                         <div class="col-12">
                             <div class="data-point h-100">
-                                <div class="data-point-label">Prestasi atau penilaian terkait</div>
+                                <div class="data-point-label">Prestasi kegiatan ekstrakurikuler</div>
                                 <div class="info-list mt-3">
                                     @forelse($extracurricular->assessments as $item)
                                         <div class="info-item">
                                             <div class="title">{{ $item->title }}</div>
-                                            @if($item->score !== null)
-                                                <div class="small text-muted mt-1">Nilai: {{ $item->score }}</div>
+                                            @if($item->description)
+                                                <div class="small text-muted mt-1">{{ $item->description }}</div>
                                             @endif
                                         </div>
                                     @empty
                                         <div class="empty-state py-3">
                                             <div class="icon"><i class="bi bi-award"></i></div>
-                                            <p class="mb-0">Belum ada data prestasi atau penilaian.</p>
+                                            <p class="mb-0">Belum ada data prestasi kegiatan.</p>
                                         </div>
                                     @endforelse
                                 </div>

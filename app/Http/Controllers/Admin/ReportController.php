@@ -188,9 +188,9 @@ class ReportController extends Controller
                 $this->assessmentsQuery($filters)
                     ->each(function ($row) use ($handle, $delimiter): void {
                         fputcsv($handle, [
-                            $row->student->user->name ?? '-',
+                            $row->student->user->name ?? ($row->assessment_type === 'achievement' ? 'Prestasi kegiatan' : '-'),
                             $row->extracurricular->name ?? '-',
-                            $row->assessment_type,
+                            $row->assessment_type === 'achievement' ? 'Prestasi Kegiatan' : 'Penilaian Siswa',
                             $row->title,
                             $row->score ?? '-',
                             optional($row->assessment_date)->format('Y-m-d'),

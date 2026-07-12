@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('page_title', 'Edit Prestasi/Penilaian')
-@section('page_subtitle', 'Perbarui data prestasi atau penilaian peserta dari panel admin')
+@section('page_title', 'Edit Prestasi dan Penilaian')
+@section('page_subtitle', 'Perbarui prestasi kegiatan atau penilaian siswa dari panel admin')
 
 @section('content')
     <div class="card">

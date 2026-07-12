@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('page_title', 'Edit Prestasi/Penilaian')
-@section('page_subtitle', 'Perbarui data prestasi atau penilaian peserta')
+@section('page_title', 'Edit Prestasi dan Penilaian')
+@section('page_subtitle', 'Perbarui prestasi kegiatan atau penilaian siswa')
 
 @section('content')
     <div class="card">
@@ -19,19 +19,21 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Siswa</label>
-                    <select name="student_id" class="form-select" required>
+                    <select name="student_id" id="coach_student_id" class="form-select">
+                        <option value="">Pilih Siswa</option>
                         @foreach($students as $student)
                             <option value="{{ $student->id }}" @selected((string)old('student_id', $assessment->student_id) === (string)$student->id)>
                                 {{ $student->user->name }} ({{ $student->nis }})
                             </option>
                         @endforeach
                     </select>
+                    <div class="helper-text" id="coach_student_help">Kosongkan untuk prestasi kegiatan. Pilih siswa untuk penilaian siswa.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Jenis</label>
-                    <select name="assessment_type" class="form-select" required>
-                        <option value="achievement" @selected(old('assessment_type', $assessment->assessment_type)==='achievement')>Prestasi</option>
-                        <option value="assessment" @selected(old('assessment_type', $assessment->assessment_type)==='assessment')>Penilaian</option>
+                    <select name="assessment_type" id="coach_assessment_type" class="form-select" required>
+                        <option value="achievement" @selected(old('assessment_type', $assessment->assessment_type)==='achievement')>Prestasi Kegiatan</option>
+                        <option value="assessment" @selected(old('assessment_type', $assessment->assessment_type)==='assessment')>Penilaian Siswa</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -40,7 +42,8 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Nilai</label>
-                    <input type="number" step="0.01" min="0" max="100" name="score" value="{{ old('score', $assessment->score) }}" class="form-control">
+                    <input type="number" step="0.01" min="0" max="100" id="coach_score" name="score" value="{{ old('score', $assessment->score) }}" class="form-control">
+                    <div class="helper-text" id="coach_score_help">Nilai hanya dipakai untuk penilaian siswa.</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Tanggal</label>
@@ -57,4 +60,40 @@
             </form>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            (function () {
+                const assessmentType = document.getElementById('coach_assessment_type');
+                const studentSelect = document.getElementById('coach_student_id');
+                const scoreInput = document.getElementById('coach_score');
+                const studentHelp = document.getElementById('coach_student_help');
+                const scoreHelp = document.getElementById('coach_score_help');
+
+                if (!assessmentType || !studentSelect || !scoreInput) {
+                    return;
+                }
+
+                const syncTypeState = function () {
+                    const isStudentAssessment = assessmentType.value === 'assessment';
+                    studentSelect.required = isStudentAssessment;
+                    scoreInput.disabled = !isStudentAssessment;
+
+                    if (!isStudentAssessment) {
+                        studentSelect.value = '';
+                        scoreInput.value = '';
+                        studentHelp.textContent = 'Untuk prestasi kegiatan, siswa tidak perlu dipilih.';
+                        scoreHelp.textContent = 'Nilai tidak dipakai untuk prestasi kegiatan.';
+                        return;
+                    }
+
+                    studentHelp.textContent = 'Pilih siswa karena data ini merupakan penilaian siswa.';
+                    scoreHelp.textContent = 'Isi nilai jika penilaian menggunakan skor.';
+                };
+
+                assessmentType.addEventListener('change', syncTypeState);
+                syncTypeState();
+            })();
+        </script>
+    @endpush
 @endsection

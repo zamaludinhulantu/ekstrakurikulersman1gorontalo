@@ -270,7 +270,7 @@
                     <span class="section-kicker"><i class="bi bi-award"></i>Prestasi</span>
                     <h3>Daftar prestasi ekstrakurikuler</h3>
                     @if($achievements->isNotEmpty())
-                        <p class="mb-0">Prestasi di bawah ini diambil dari data prestasi yang diinput admin atau pembina.</p>
+                        <p class="mb-0">Prestasi di bawah ini merupakan capaian kegiatan ekstrakurikuler yang diinput admin atau pembina.</p>
                     @elseif($overviewAchievements->isNotEmpty())
                         <p class="mb-0">Belum ada data prestasi terpisah. Sistem menampilkan ringkasan prestasi/kegiatan yang diisi admin.</p>
                     @else
@@ -287,11 +287,8 @@
                                     @endif
                                     <div class="achievement-meta">
                                         <span><i class="bi bi-calendar-event"></i>{{ optional($achievement->assessment_date)->format('d-m-Y') ?: '-' }}</span>
-                                        @if($achievement->student?->user?->name)
-                                            <span><i class="bi bi-person"></i>{{ $achievement->student->user->name }}</span>
-                                        @endif
-                                        @if($achievement->score !== null)
-                                            <span><i class="bi bi-star"></i>Nilai: {{ rtrim(rtrim((string) $achievement->score, '0'), '.') }}</span>
+                                        @if($achievement->coach?->user?->name)
+                                            <span><i class="bi bi-person-workspace"></i>{{ $achievement->coach->user->name }}</span>
                                         @endif
                                     </div>
                                 </div>

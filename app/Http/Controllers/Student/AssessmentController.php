@@ -23,6 +23,7 @@ class AssessmentController extends Controller
 
         $assessments = Assessment::with(['extracurricular', 'coach.user'])
             ->where('student_id', $student->id)
+            ->where('assessment_type', 'assessment')
             ->when($extracurricularId, fn ($query, $idValue) => $query->where('extracurricular_id', $idValue))
             ->latest()
             ->paginate(10)

@@ -55,7 +55,7 @@ class AssessmentController extends Controller
     {
         Assessment::create($this->validatePayload($request));
 
-        return redirect()->route('admin.assessments.index')->with('success', 'Data prestasi/penilaian berhasil ditambahkan.');
+        return redirect()->route('admin.assessments.index')->with('success', 'Data prestasi kegiatan / penilaian siswa berhasil ditambahkan.');
     }
 
     public function edit(Assessment $assessment): View
@@ -71,14 +71,14 @@ class AssessmentController extends Controller
     {
         $assessment->update($this->validatePayload($request));
 
-        return redirect()->route('admin.assessments.index')->with('success', 'Data prestasi/penilaian berhasil diperbarui.');
+        return redirect()->route('admin.assessments.index')->with('success', 'Data prestasi kegiatan / penilaian siswa berhasil diperbarui.');
     }
 
     public function destroy(Assessment $assessment): RedirectResponse
     {
         $assessment->delete();
 
-        return redirect()->route('admin.assessments.index')->with('success', 'Data prestasi/penilaian berhasil dihapus.');
+        return redirect()->route('admin.assessments.index')->with('success', 'Data prestasi kegiatan / penilaian siswa berhasil dihapus.');
     }
 
     private function buildViewData(array $overrides = []): array
@@ -111,7 +111,7 @@ class AssessmentController extends Controller
     {
         $validated = $request->validate([
             'extracurricular_id' => ['required', 'exists:extracurriculars,id'],
-            'student_id' => ['required', 'exists:students,id'],
+            'student_id' => ['nullable', 'exists:students,id'],
             'coach_id' => ['nullable', 'exists:coaches,id'],
             'assessment_type' => ['required', Rule::in(['achievement', 'assessment'])],
             'title' => ['required', 'string', 'max:255'],
@@ -120,15 +120,28 @@ class AssessmentController extends Controller
             'assessment_date' => ['required', 'date'],
         ]);
 
-        $isParticipant = Registration::where('student_id', $validated['student_id'])
-            ->where('extracurricular_id', $validated['extracurricular_id'])
-            ->where('status', Registration::STATUS_APPROVED)
-            ->exists();
-
-        if (! $isParticipant) {
+        if (($validated['assessment_type'] ?? null) === 'assessment' && empty($validated['student_id'])) {
             throw ValidationException::withMessages([
-                'student_id' => 'Siswa belum terdaftar sebagai peserta aktif ekstrakurikuler tersebut.',
+                'student_id' => 'Siswa wajib dipilih untuk data penilaian.',
             ]);
+        }
+
+        if (! empty($validated['student_id'])) {
+            $isParticipant = Registration::where('student_id', $validated['student_id'])
+                ->where('extracurricular_id', $validated['extracurricular_id'])
+                ->where('status', Registration::STATUS_APPROVED)
+                ->exists();
+
+            if (! $isParticipant) {
+                throw ValidationException::withMessages([
+                    'student_id' => 'Siswa belum terdaftar sebagai peserta aktif ekstrakurikuler tersebut.',
+                ]);
+            }
+        }
+
+        if (($validated['assessment_type'] ?? null) === 'achievement') {
+            $validated['student_id'] = null;
+            $validated['score'] = null;
         }
 
         if (! empty($validated['coach_id'])) {

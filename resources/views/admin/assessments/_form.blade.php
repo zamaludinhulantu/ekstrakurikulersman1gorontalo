@@ -2,6 +2,7 @@
     $selectedExtracurricularId = (string) old('extracurricular_id', $assessment->extracurricular_id ?? '');
     $selectedStudentId = (string) old('student_id', $assessment->student_id ?? '');
     $selectedCoachId = (string) old('coach_id', $assessment->coach_id ?? '');
+    $selectedAssessmentType = old('assessment_type', $assessment->assessment_type ?? 'achievement');
 @endphp
 
 <div class="col-md-4">
@@ -16,7 +17,7 @@
 
 <div class="col-md-4">
     <label class="form-label" for="assessment_student_id">Siswa</label>
-    <select id="assessment_student_id" name="student_id" class="form-select" required>
+    <select id="assessment_student_id" name="student_id" class="form-select">
         <option value="">Pilih Siswa</option>
         @foreach($approvedRegistrations as $registration)
             <option
@@ -31,6 +32,7 @@
             </option>
         @endforeach
     </select>
+    <div class="helper-text" id="assessment_student_help">Kosongkan untuk prestasi kegiatan. Pilih siswa hanya jika data ini merupakan penilaian siswa.</div>
 </div>
 
 <div class="col-md-4">
@@ -53,8 +55,8 @@
 <div class="col-md-4">
     <label class="form-label" for="assessment_type">Jenis</label>
     <select id="assessment_type" name="assessment_type" class="form-select" required>
-        <option value="achievement" @selected(old('assessment_type', $assessment->assessment_type ?? 'achievement') === 'achievement')>Prestasi</option>
-        <option value="assessment" @selected(old('assessment_type', $assessment->assessment_type ?? '') === 'assessment')>Penilaian</option>
+        <option value="achievement" @selected($selectedAssessmentType === 'achievement')>Prestasi Kegiatan</option>
+        <option value="assessment" @selected($selectedAssessmentType === 'assessment')>Penilaian Siswa</option>
     </select>
 </div>
 
@@ -66,6 +68,7 @@
 <div class="col-md-2">
     <label class="form-label" for="assessment_score">Nilai</label>
     <input id="assessment_score" type="number" step="0.01" min="0" max="100" name="score" value="{{ old('score', $assessment->score ?? '') }}" class="form-control" placeholder="Opsional">
+    <div class="helper-text" id="assessment_score_help">Nilai hanya digunakan untuk penilaian siswa.</div>
 </div>
 
 <div class="col-md-2">
@@ -84,8 +87,12 @@
             const extracurricularSelect = document.getElementById('assessment_extracurricular_id');
             const studentSelect = document.getElementById('assessment_student_id');
             const coachSelect = document.getElementById('assessment_coach_id');
+            const assessmentTypeSelect = document.getElementById('assessment_type');
+            const scoreInput = document.getElementById('assessment_score');
+            const studentHelp = document.getElementById('assessment_student_help');
+            const scoreHelp = document.getElementById('assessment_score_help');
 
-            if (!extracurricularSelect || !studentSelect || !coachSelect) {
+            if (!extracurricularSelect || !studentSelect || !coachSelect || !assessmentTypeSelect || !scoreInput) {
                 return;
             }
 
@@ -130,13 +137,32 @@
                 }
             };
 
+            const syncTypeState = function () {
+                const isStudentAssessment = assessmentTypeSelect.value === 'assessment';
+                studentSelect.required = isStudentAssessment;
+                scoreInput.disabled = !isStudentAssessment;
+
+                if (!isStudentAssessment) {
+                    studentSelect.value = '';
+                    scoreInput.value = '';
+                    studentHelp.textContent = 'Untuk prestasi kegiatan, siswa tidak perlu dipilih.';
+                    scoreHelp.textContent = 'Nilai tidak dipakai untuk prestasi kegiatan.';
+                    return;
+                }
+
+                studentHelp.textContent = 'Pilih siswa karena data ini merupakan penilaian siswa.';
+                scoreHelp.textContent = 'Isi nilai jika penilaian menggunakan skor.';
+            };
+
             extracurricularSelect.addEventListener('change', function () {
                 filterStudentOptions();
                 filterCoachOptions();
             });
+            assessmentTypeSelect.addEventListener('change', syncTypeState);
 
             filterStudentOptions();
             filterCoachOptions();
+            syncTypeState();
         })();
     </script>
 @endpush

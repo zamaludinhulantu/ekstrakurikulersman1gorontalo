@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('page_title', 'Kelola Prestasi/Penilaian')
-@section('page_subtitle', 'Catat prestasi dan penilaian peserta ekstrakurikuler')
+@section('page_title', 'Kelola Prestasi dan Penilaian')
+@section('page_subtitle', 'Catat prestasi kegiatan ekstrakurikuler dan penilaian siswa')
 
 @section('content')
     <div class="card mb-3">
-        <div class="card-header">Tambah Data Prestasi/Penilaian</div>
+        <div class="card-header">Tambah Prestasi Kegiatan / Penilaian Siswa</div>
         <div class="card-body">
             <form method="post" action="{{ route('coach.assessments.store') }}" class="row g-3">
                 @csrf
@@ -20,18 +20,19 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Siswa</label>
-                    <select name="student_id" class="form-select" required>
+                    <select name="student_id" id="coach_student_id" class="form-select">
                         <option value="">Pilih Siswa</option>
                         @foreach($students as $student)
                             <option value="{{ $student->id }}">{{ $student->user->name }} ({{ $student->nis }})</option>
                         @endforeach
                     </select>
+                    <div class="helper-text" id="coach_student_help">Kosongkan untuk prestasi kegiatan. Pilih siswa untuk penilaian siswa.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Jenis</label>
-                    <select name="assessment_type" class="form-select" required>
-                        <option value="achievement">Prestasi</option>
-                        <option value="assessment">Penilaian</option>
+                    <select name="assessment_type" id="coach_assessment_type" class="form-select" required>
+                        <option value="achievement">Prestasi Kegiatan</option>
+                        <option value="assessment">Penilaian Siswa</option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -40,7 +41,8 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Nilai</label>
-                    <input type="number" step="0.01" min="0" max="100" name="score" class="form-control" placeholder="Opsional">
+                    <input type="number" step="0.01" min="0" max="100" id="coach_score" name="score" class="form-control" placeholder="Opsional">
+                    <div class="helper-text" id="coach_score_help">Nilai hanya dipakai untuk penilaian siswa.</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Tanggal</label>
@@ -92,9 +94,9 @@
                 <tbody>
                 @forelse($assessments as $row)
                     <tr>
-                        <td>{{ $row->student->user->name ?? '-' }}</td>
+                        <td>{{ $row->student->user->name ?? ($row->assessment_type === 'achievement' ? 'Prestasi kegiatan' : '-') }}</td>
                         <td>{{ $row->extracurricular->name ?? '-' }}</td>
-                        <td class="text-capitalize">{{ $row->assessment_type }}</td>
+                        <td>{{ $row->assessment_type === 'achievement' ? 'Prestasi Kegiatan' : 'Penilaian Siswa' }}</td>
                         <td>{{ $row->title }}</td>
                         <td>{{ $row->score ?? '-' }}</td>
                         <td>{{ optional($row->assessment_date)->format('d-m-Y') }}</td>
@@ -111,7 +113,7 @@
                         <td colspan="7">
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-award"></i></div>
-                                <p class="mb-0">Belum ada data prestasi atau penilaian.</p>
+                                <p class="mb-0">Belum ada data prestasi kegiatan atau penilaian siswa.</p>
                             </div>
                         </td>
                     </tr>
@@ -121,4 +123,40 @@
         </div>
         <div class="card-body">{{ $assessments->links() }}</div>
     </div>
+
+    @push('scripts')
+        <script>
+            (function () {
+                const assessmentType = document.getElementById('coach_assessment_type');
+                const studentSelect = document.getElementById('coach_student_id');
+                const scoreInput = document.getElementById('coach_score');
+                const studentHelp = document.getElementById('coach_student_help');
+                const scoreHelp = document.getElementById('coach_score_help');
+
+                if (!assessmentType || !studentSelect || !scoreInput) {
+                    return;
+                }
+
+                const syncTypeState = function () {
+                    const isStudentAssessment = assessmentType.value === 'assessment';
+                    studentSelect.required = isStudentAssessment;
+                    scoreInput.disabled = !isStudentAssessment;
+
+                    if (!isStudentAssessment) {
+                        studentSelect.value = '';
+                        scoreInput.value = '';
+                        studentHelp.textContent = 'Untuk prestasi kegiatan, siswa tidak perlu dipilih.';
+                        scoreHelp.textContent = 'Nilai tidak dipakai untuk prestasi kegiatan.';
+                        return;
+                    }
+
+                    studentHelp.textContent = 'Pilih siswa karena data ini merupakan penilaian siswa.';
+                    scoreHelp.textContent = 'Isi nilai jika penilaian menggunakan skor.';
+                };
+
+                assessmentType.addEventListener('change', syncTypeState);
+                syncTypeState();
+            })();
+        </script>
+    @endpush
 @endsection

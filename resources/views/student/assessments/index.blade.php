@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('page_title', 'Prestasi/Penilaian Pribadi')
-@section('page_subtitle', 'Lihat catatan prestasi dan penilaian dari pembina')
+@section('page_title', 'Penilaian Siswa')
+@section('page_subtitle', 'Lihat catatan penilaian yang diberikan pembina untuk akun Anda')
 
 @section('content')
     <div class="card mb-3">
@@ -28,7 +28,6 @@
                 <thead>
                 <tr>
                     <th>Ekstrakurikuler</th>
-                    <th>Jenis</th>
                     <th>Judul</th>
                     <th>Nilai</th>
                     <th>Tanggal</th>
@@ -38,17 +37,16 @@
                 @forelse($assessments as $row)
                     <tr>
                         <td>{{ $row->extracurricular->name ?? '-' }}</td>
-                        <td class="text-capitalize">{{ $row->assessment_type }}</td>
                         <td>{{ $row->title }}</td>
                         <td>{{ $row->score ?? '-' }}</td>
                         <td>{{ optional($row->assessment_date)->format('d-m-Y') }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5">
+                        <td colspan="4">
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-award"></i></div>
-                                <p class="mb-0">Belum ada data prestasi/penilaian.</p>
+                                <p class="mb-0">Belum ada data penilaian siswa.</p>
                             </div>
                         </td>
                     </tr>

@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('page_title', 'Laporan Prestasi/Penilaian')
-@section('page_subtitle', 'Lihat catatan prestasi dan penilaian siswa berdasarkan filter yang dipilih')
+@section('page_title', 'Laporan Prestasi dan Penilaian')
+@section('page_subtitle', 'Lihat prestasi kegiatan ekstrakurikuler dan penilaian siswa berdasarkan filter yang dipilih')
 
 @section('content')
     <div class="card mb-3">
         <div class="card-body toolbar-card">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                    <h2 class="h5 mb-1">Filter Prestasi/Penilaian</h2>
-                    <p class="toolbar-hint mb-0">Saring data berdasarkan ekskul, pembina, jenis, dan periode penilaian.</p>
+                    <h2 class="h5 mb-1">Filter Prestasi dan Penilaian</h2>
+                    <p class="toolbar-hint mb-0">Saring data berdasarkan ekskul, pembina, jenis, dan periode.</p>
                 </div>
                 <div class="quick-actions">
                     <a href="{{ route('admin.reports.export', array_merge(request()->query(), ['type' => 'assessments', 'format' => 'csv'])) }}" class="btn btn-outline-success"><i class="bi bi-download"></i>Unduh CSV</a>
@@ -39,8 +39,8 @@
                     <label class="form-label" for="assessment_type">Jenis</label>
                     <select id="assessment_type" name="assessment_type" class="form-select">
                         <option value="">Semua jenis</option>
-                        <option value="achievement" @selected($assessmentType === 'achievement')>Prestasi</option>
-                        <option value="assessment" @selected($assessmentType === 'assessment')>Penilaian</option>
+                        <option value="achievement" @selected($assessmentType === 'achievement')>Prestasi Kegiatan</option>
+                        <option value="assessment" @selected($assessmentType === 'assessment')>Penilaian Siswa</option>
                     </select>
                 </div>
                 <div class="toolbar-col-2">
@@ -59,7 +59,7 @@
     </div>
 
     <div class="card">
-        <div class="card-header">Daftar Prestasi/Penilaian</div>
+        <div class="card-header">Daftar Prestasi Kegiatan / Penilaian Siswa</div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
@@ -77,9 +77,9 @@
                     <tbody>
                     @forelse($assessments as $assessment)
                         <tr>
-                            <td>{{ $assessment->student->user->name ?? '-' }}</td>
+                            <td>{{ $assessment->student->user->name ?? ($assessment->assessment_type === 'achievement' ? 'Prestasi kegiatan' : '-') }}</td>
                             <td>{{ $assessment->extracurricular->name ?? '-' }}</td>
-                            <td>{{ $assessment->assessment_type }}</td>
+                            <td>{{ $assessment->assessment_type === 'achievement' ? 'Prestasi Kegiatan' : 'Penilaian Siswa' }}</td>
                             <td>{{ $assessment->title }}</td>
                             <td>{{ $assessment->score ?? '-' }}</td>
                             <td>{{ optional($assessment->assessment_date)->format('d-m-Y') }}</td>
@@ -87,7 +87,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7"><div class="empty-state"><div class="icon"><i class="bi bi-award"></i></div><p class="mb-0">Belum ada data prestasi atau penilaian.</p></div></td>
+                            <td colspan="7"><div class="empty-state"><div class="icon"><i class="bi bi-award"></i></div><p class="mb-0">Belum ada data prestasi kegiatan atau penilaian siswa.</p></div></td>
                         </tr>
                     @endforelse
                     </tbody>

@@ -56,7 +56,7 @@ class ExtracurricularController extends Controller
             'coach.user',
             'coaches.user',
             'schedules' => fn ($query) => $query->orderByDesc('activity_date')->limit(8),
-            'assessments' => fn ($query) => $query->latest()->limit(5),
+            'assessments' => fn ($query) => $query->where('assessment_type', 'achievement')->latest('assessment_date')->limit(5),
         ]);
 
         return view('student.extracurriculars.show', [

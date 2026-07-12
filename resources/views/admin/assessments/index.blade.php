@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('page_title', 'Kelola Prestasi/Penilaian')
-@section('page_subtitle', 'Admin dapat menambah, memperbarui, dan menghapus data prestasi atau penilaian peserta')
+@section('page_title', 'Kelola Prestasi dan Penilaian')
+@section('page_subtitle', 'Prestasi kegiatan ekstrakurikuler dan penilaian siswa dikelola dari panel admin')
 
 @section('content')
     <div class="card mb-3">
-        <div class="card-header">Tambah Data Prestasi/Penilaian</div>
+        <div class="card-header">Tambah Prestasi Kegiatan / Penilaian Siswa</div>
         <div class="card-body">
             <form method="post" action="{{ route('admin.assessments.store') }}" class="row g-3">
                 @csrf
@@ -21,7 +21,7 @@
         <div class="card-body toolbar-card">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                    <h2 class="h5 mb-1">Filter Daftar Prestasi/Penilaian</h2>
+                    <h2 class="h5 mb-1">Filter Daftar Prestasi dan Penilaian</h2>
                     <p class="toolbar-hint mb-0">Saring data berdasarkan ekskul, pembina, jenis, dan periode.</p>
                 </div>
                 <div class="quick-actions">
@@ -54,8 +54,8 @@
                     <label class="form-label" for="filter_assessment_type">Jenis</label>
                     <select id="filter_assessment_type" name="assessment_type" class="form-select">
                         <option value="">Semua jenis</option>
-                        <option value="achievement" @selected($assessmentType === 'achievement')>Prestasi</option>
-                        <option value="assessment" @selected($assessmentType === 'assessment')>Penilaian</option>
+                        <option value="achievement" @selected($assessmentType === 'achievement')>Prestasi Kegiatan</option>
+                        <option value="assessment" @selected($assessmentType === 'assessment')>Penilaian Siswa</option>
                     </select>
                 </div>
                 <div class="toolbar-col-2">
@@ -92,9 +92,9 @@
                 <tbody>
                 @forelse($assessments as $row)
                     <tr>
-                        <td>{{ $row->student->user->name ?? '-' }}</td>
+                        <td>{{ $row->student->user->name ?? ($row->assessment_type === 'achievement' ? 'Prestasi kegiatan' : '-') }}</td>
                         <td>{{ $row->extracurricular->name ?? '-' }}</td>
-                        <td>{{ $row->assessment_type === 'achievement' ? 'Prestasi' : 'Penilaian' }}</td>
+                        <td>{{ $row->assessment_type === 'achievement' ? 'Prestasi Kegiatan' : 'Penilaian Siswa' }}</td>
                         <td>{{ $row->title }}</td>
                         <td>{{ $row->score ?? '-' }}</td>
                         <td>{{ optional($row->assessment_date)->format('d-m-Y') }}</td>
@@ -113,7 +113,7 @@
                         <td colspan="8">
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-award"></i></div>
-                                <p class="mb-0">Belum ada data prestasi atau penilaian.</p>
+                                <p class="mb-0">Belum ada data prestasi kegiatan atau penilaian siswa.</p>
                             </div>
                         </td>
                     </tr>
