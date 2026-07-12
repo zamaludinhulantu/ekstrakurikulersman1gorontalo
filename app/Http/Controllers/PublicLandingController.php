@@ -49,12 +49,7 @@ class PublicLandingController extends Controller
             'coach.user',
             'coaches.user',
             'schedules' => fn ($query) => $query->orderBy('activity_date')->orderBy('start_time'),
-            'assessments' => fn ($query) => $query
-                ->with(['student.user', 'coach.user'])
-                ->where('assessment_type', 'achievement')
-                ->orderByDesc('assessment_date')
-                ->orderByDesc('created_at')
-                ->limit(6),
+            'achievements' => fn ($query) => $query->limit(6),
         ]);
 
         $extracurricular = $this->decorateExtracurricular($extracurricular);

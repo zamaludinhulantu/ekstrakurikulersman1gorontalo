@@ -28,9 +28,12 @@
                             <div class="data-point h-100">
                                 <div class="data-point-label">Prestasi kegiatan ekstrakurikuler</div>
                                 <div class="info-list mt-3">
-                                    @forelse($extracurricular->assessments as $item)
+                                    @forelse($extracurricular->achievements as $item)
                                         <div class="info-item">
                                             <div class="title">{{ $item->title }}</div>
+                                            @if($item->achievement_date)
+                                                <div class="small text-muted mt-1">{{ optional($item->achievement_date)->format('d-m-Y') }}</div>
+                                            @endif
                                             @if($item->description)
                                                 <div class="small text-muted mt-1">{{ $item->description }}</div>
                                             @endif

@@ -45,6 +45,59 @@
         </div>
         <div class="col-12 col-xl-6">
             <div class="card h-100">
+                <div class="card-header">Prestasi Ekstrakurikuler</div>
+                <div class="card-body">
+                    <form method="post" action="{{ route('admin.extracurricular-achievements.store', $extracurricular) }}" class="row g-3 mb-3">
+                        @csrf
+                        <div class="col-12">
+                            <label class="form-label" for="achievement_title">Judul Prestasi</label>
+                            <input id="achievement_title" type="text" name="title" value="{{ old('title') }}" class="form-control" placeholder="Contoh: Juara 1 Lomba PBB Tingkat Kota" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="achievement_date">Tanggal</label>
+                            <input id="achievement_date" type="date" name="achievement_date" value="{{ old('achievement_date') }}" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="achievement_description">Deskripsi</label>
+                            <textarea id="achievement_description" name="description" class="form-control" rows="3" placeholder="Keterangan tambahan">{{ old('description') }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-plus-circle"></i>Tambah Prestasi</button>
+                        </div>
+                    </form>
+
+                    <div class="info-list">
+                        @forelse($extracurricular->achievements as $achievement)
+                            <div class="info-item">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="title">{{ $achievement->title }}</div>
+                                        @if($achievement->achievement_date)
+                                            <div class="small text-muted mt-1">{{ optional($achievement->achievement_date)->format('d-m-Y') }}</div>
+                                        @endif
+                                        @if($achievement->description)
+                                            <div class="small text-muted mt-2">{{ $achievement->description }}</div>
+                                        @endif
+                                    </div>
+                                    <form method="post" action="{{ route('admin.extracurricular-achievements.destroy', [$extracurricular, $achievement]) }}" onsubmit="return confirm('Hapus prestasi ini?')">
+                                        @csrf
+                                        @method('delete')
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i>Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="empty-state py-3">
+                                <div class="icon"><i class="bi bi-award"></i></div>
+                                <p class="mb-0">Belum ada prestasi ekstrakurikuler.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card h-100">
                 <div class="card-header">Data Pendaftaran</div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">

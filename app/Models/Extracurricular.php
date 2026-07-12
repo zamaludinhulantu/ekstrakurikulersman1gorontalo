@@ -61,6 +61,11 @@ class Extracurricular extends Model
         return $this->hasMany(Assessment::class);
     }
 
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(ExtracurricularAchievement::class)->orderByDesc('achievement_date')->orderByDesc('id');
+    }
+
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class);

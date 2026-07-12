@@ -55,7 +55,7 @@ class ExtracurricularController extends Controller
             'coaches.user',
             'schedules' => fn ($query) => $query->orderByDesc('activity_date'),
             'registrations.student.user',
-            'assessments.student.user',
+            'achievements',
         ]);
 
         return view('admin.extracurriculars.show', compact('extracurricular'));

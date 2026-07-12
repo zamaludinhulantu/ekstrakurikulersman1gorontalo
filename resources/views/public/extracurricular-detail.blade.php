@@ -176,7 +176,7 @@
             $user = auth()->user();
             $isStudent = $user?->hasRole(\App\Models\User::ROLE_STUDENT) ?? false;
             $firstSchedule = $extracurricular->schedules->first();
-            $achievements = $extracurricular->assessments;
+            $achievements = $extracurricular->achievements;
             $overviewAchievements = collect(preg_split('/(?:\r\n|\r|\n|;|•)+/u', (string) $extracurricular->achievements_overview))
                 ->map(fn ($item) => trim($item))
                 ->filter()
@@ -286,10 +286,7 @@
                                         <p class="mb-0">{{ $achievement->description }}</p>
                                     @endif
                                     <div class="achievement-meta">
-                                        <span><i class="bi bi-calendar-event"></i>{{ optional($achievement->assessment_date)->format('d-m-Y') ?: '-' }}</span>
-                                        @if($achievement->coach?->user?->name)
-                                            <span><i class="bi bi-person-workspace"></i>{{ $achievement->coach->user->name }}</span>
-                                        @endif
+                                        <span><i class="bi bi-calendar-event"></i>{{ optional($achievement->achievement_date)->format('d-m-Y') ?: '-' }}</span>
                                     </div>
                                 </div>
                             @endforeach

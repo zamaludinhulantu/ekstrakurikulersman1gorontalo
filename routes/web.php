@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\CoachController as AdminCoachController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AssessmentController as AdminAssessmentController;
 use App\Http\Controllers\Admin\ExtracurricularController as AdminExtracurricularController;
+use App\Http\Controllers\Admin\ExtracurricularAchievementController as AdminExtracurricularAchievementController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
@@ -55,6 +56,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('students', AdminStudentController::class);
     Route::resource('coaches', AdminCoachController::class);
     Route::resource('extracurriculars', AdminExtracurricularController::class);
+    Route::post('/extracurriculars/{extracurricular}/achievements', [AdminExtracurricularAchievementController::class, 'store'])->name('extracurricular-achievements.store');
+    Route::put('/extracurriculars/{extracurricular}/achievements/{achievement}', [AdminExtracurricularAchievementController::class, 'update'])->name('extracurricular-achievements.update');
+    Route::delete('/extracurriculars/{extracurricular}/achievements/{achievement}', [AdminExtracurricularAchievementController::class, 'destroy'])->name('extracurricular-achievements.destroy');
     Route::get('/assessments', [AdminAssessmentController::class, 'index'])->name('assessments.index');
     Route::post('/assessments', [AdminAssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}/edit', [AdminAssessmentController::class, 'edit'])->name('assessments.edit');
