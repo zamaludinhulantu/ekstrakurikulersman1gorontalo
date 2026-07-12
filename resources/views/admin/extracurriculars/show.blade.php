@@ -12,7 +12,7 @@
             </div>
             @if($extracurricular->image_path)
                 <div class="mb-3">
-                    <img src="{{ asset($extracurricular->image_path) }}" alt="{{ $extracurricular->name }}" style="width: 220px; max-width: 100%; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe5f0;">
+                    <img src="{{ asset($extracurricular->image_path) }}" alt="{{ $extracurricular->name }}" width="220" height="140" loading="lazy" decoding="async" style="width: 220px; max-width: 100%; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe5f0;">
                 </div>
             @endif
             <div class="row g-3">

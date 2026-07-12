@@ -357,7 +357,7 @@
                         <div class="catalog-card">
                             <div class="catalog-card-media">
                                 @if(!empty($extracurricular->image_path))
-                                    <img src="{{ $extracurricular->preview_image }}" alt="{{ $extracurricular->name }}">
+                                    <img src="{{ $extracurricular->preview_image }}" alt="{{ $extracurricular->name }}" width="640" height="360" loading="lazy" decoding="async">
                                 @else
                                     <div class="catalog-card-default-visual" aria-hidden="true">
                                         <div class="catalog-card-visual-inner">

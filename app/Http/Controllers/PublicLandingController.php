@@ -20,8 +20,14 @@ class PublicLandingController extends Controller
         $extracurriculars = Extracurricular::with([
             'coach.user',
             'coaches.user',
-            'achievements',
-            'schedules' => fn ($query) => $query->orderBy('activity_date')->orderBy('start_time'),
+            'achievements' => fn ($query) => $query->select('id', 'extracurricular_id', 'title', 'achievement_date')
+                ->orderByDesc('achievement_date')
+                ->orderByDesc('id')
+                ->limit(1),
+            'schedules' => fn ($query) => $query->select('id', 'extracurricular_id', 'title', 'activity_date', 'start_time', 'location')
+                ->orderBy('activity_date')
+                ->orderBy('start_time')
+                ->limit(1),
         ])
             ->where('is_active', true)
             ->orderBy('name')

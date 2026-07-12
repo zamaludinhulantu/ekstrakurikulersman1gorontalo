@@ -39,7 +39,7 @@ class FullRegressionTest extends TestCase
             ->assertSee('Alur Penggunaan Sistem')
             ->assertSee('Manfaat Sistem');
 
-        $this->get(route('public.extracurriculars.show', $extracurricular))
+        $this->get(route('public.extracurriculars.show', $extracurricular->getKey()))
             ->assertOk();
 
         $this->get(route('register'))
@@ -47,7 +47,7 @@ class FullRegressionTest extends TestCase
             ->assertDontSee('name="nis"', false)
             ->assertDontSee('name="class_name"', false);
 
-        $this->get(route('public.extracurriculars.register', $extracurricular))
+        $this->get(route('public.extracurriculars.register', $extracurricular->getKey()))
             ->assertRedirect(route('login'));
 
         $this->assertSame(
@@ -66,7 +66,7 @@ class FullRegressionTest extends TestCase
             'address' => 'Alamat registrasi mandiri',
             'parent_name' => 'Ibu Mandiri',
             'parent_phone' => '081299999002',
-        ])->assertRedirect(route('student.extracurriculars.show', $extracurricular));
+        ])->assertRedirect(route('student.extracurriculars.show', $extracurricular->getKey()));
 
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
@@ -149,8 +149,6 @@ class FullRegressionTest extends TestCase
             route('admin.schedules.index'),
             route('admin.attendances.index'),
             route('admin.assessments.index'),
-            route('admin.reports.index'),
-            route('admin.reports.summary'),
             route('admin.announcements.index'),
         ];
 
@@ -240,7 +238,6 @@ class FullRegressionTest extends TestCase
                 'password_confirmation' => '11111111',
                 'is_active' => '1',
                 'nip' => '198801012026010099',
-                'expertise' => 'Regression Testing',
                 'bio' => 'Pembina dibuat oleh automated regression test.',
             ])
             ->assertRedirect(route('admin.coaches.index'));
@@ -257,22 +254,19 @@ class FullRegressionTest extends TestCase
                 'password_confirmation' => '',
                 'is_active' => '1',
                 'nip' => '198801012026010099',
-                'expertise' => 'Regression Testing Advanced',
                 'bio' => 'Pembina diupdate oleh automated regression test.',
             ])
             ->assertRedirect(route('admin.coaches.index'));
 
         $createdCoach->refresh();
-        $this->assertSame('Regression Testing Advanced', $createdCoach->expertise);
+        $this->assertSame('Pembina diupdate oleh automated regression test.', $createdCoach->bio);
 
         $this->actingAs($admin)
             ->post(route('admin.extracurriculars.store'), [
                 'name' => 'Ekstrakurikuler Regression',
-                'coach_id' => $createdCoach->id,
                 'description' => 'Deskripsi regression test.',
                 'requirements' => 'Syarat regression',
                 'schedule_overview' => 'Jadwal regression',
-                'achievements_overview' => 'Prestasi regression',
                 'is_active' => '1',
             ])
             ->assertRedirect(route('admin.extracurriculars.index'));
@@ -282,11 +276,9 @@ class FullRegressionTest extends TestCase
         $this->actingAs($admin)
             ->put(route('admin.extracurriculars.update', $createdExtracurricular), [
                 'name' => 'Ekstrakurikuler Regression Update',
-                'coach_id' => $createdCoach->id,
                 'description' => 'Deskripsi regression test update.',
                 'requirements' => 'Syarat regression update',
                 'schedule_overview' => 'Jadwal regression update',
-                'achievements_overview' => 'Prestasi regression update',
                 'is_active' => '1',
             ])
             ->assertRedirect(route('admin.extracurriculars.index'));
@@ -305,8 +297,6 @@ class FullRegressionTest extends TestCase
         $this->assertSame(Registration::STATUS_APPROVED, $pendingRegistration->status);
         $this->assertSame($admin->id, $pendingRegistration->verified_by);
 
-        $extracurricular = Extracurricular::query()->where('is_active', true)->firstOrFail();
-
         $this->actingAs($admin)
             ->post(route('admin.announcements.store'), [
                 'title' => 'Pengumuman Regression Admin',
@@ -319,33 +309,8 @@ class FullRegressionTest extends TestCase
         $announcement = Announcement::query()->where('title', 'Pengumuman Regression Admin')->firstOrFail();
 
         $this->actingAs($admin)
-            ->post(route('admin.reports.store'), [
-                'title' => 'Laporan Regression Admin',
-                'report_type' => 'summary',
-                'extracurricular_id' => $extracurricular->id,
-                'period_start' => now()->startOfMonth()->toDateString(),
-                'period_end' => now()->endOfMonth()->toDateString(),
-                'content' => 'Laporan dibuat oleh automated regression test.',
-            ])
-            ->assertRedirect(route('admin.reports.index'));
-
-        $report = Report::query()->where('title', 'Laporan Regression Admin')->firstOrFail();
-
-        $this->actingAs($admin)
-            ->get(route('admin.reports.export', ['type' => 'reports']))
-            ->assertOk();
-
-        $this->actingAs($admin)
-            ->get(route('admin.reports.summary.export'))
-            ->assertOk();
-
-        $this->actingAs($admin)
             ->delete(route('admin.announcements.destroy', $announcement))
             ->assertRedirect(route('admin.announcements.index'));
-
-        $this->actingAs($admin)
-            ->delete(route('admin.reports.destroy', $report))
-            ->assertRedirect(route('admin.reports.index'));
 
         $this->actingAs($admin)
             ->delete(route('admin.extracurriculars.destroy', $createdExtracurricular))
@@ -363,7 +328,6 @@ class FullRegressionTest extends TestCase
             ->delete(route('admin.users.destroy', $createdUser))
             ->assertRedirect(route('admin.users.index'));
 
-        $this->assertDatabaseMissing('reports', ['id' => $report->id]);
         $this->assertDatabaseMissing('announcements', ['id' => $announcement->id]);
         $this->assertDatabaseMissing('extracurriculars', ['id' => $createdExtracurricular->id]);
         $this->assertDatabaseMissing('coaches', ['id' => $createdCoach->id]);
@@ -427,14 +391,14 @@ class FullRegressionTest extends TestCase
     {
         $coachUser = $this->userByEmail('pembina1@gmail.com');
         $coach = $coachUser->coach;
-        $extracurricular = Extracurricular::query()->where('coach_id', $coach->id)->firstOrFail();
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
         $approvedRegistration = Registration::query()
             ->where('extracurricular_id', $extracurricular->id)
             ->where('status', Registration::STATUS_APPROVED)
             ->firstOrFail();
         $schedule = Schedule::query()
             ->where('extracurricular_id', $extracurricular->id)
-            ->where('coach_id', $coach->id)
+            ->whereHas('extracurricular.coaches', fn ($query) => $query->whereKey($coach->id))
             ->firstOrFail();
 
         $pages = [
@@ -446,7 +410,6 @@ class FullRegressionTest extends TestCase
             route('coach.attendances.index'),
             route('coach.attendances.index', ['schedule_id' => $schedule->id]),
             route('coach.assessments.index'),
-            route('coach.reports.index'),
             route('coach.announcements.index'),
         ];
 
@@ -547,29 +510,8 @@ class FullRegressionTest extends TestCase
         $coachAnnouncement = Announcement::query()->where('title', 'Pengumuman Regression Coach')->firstOrFail();
 
         $this->actingAs($coachUser)
-            ->post(route('coach.reports.store'), [
-                'title' => 'Laporan Regression Coach',
-                'report_type' => 'activity',
-                'extracurricular_id' => $extracurricular->id,
-                'period_start' => now()->startOfMonth()->toDateString(),
-                'period_end' => now()->endOfMonth()->toDateString(),
-                'content' => 'Laporan pembina oleh automated regression test.',
-            ])
-            ->assertRedirect(route('coach.reports.index'));
-
-        $coachReport = Report::query()->where('title', 'Laporan Regression Coach')->firstOrFail();
-
-        $this->actingAs($coachUser)
-            ->get(route('coach.reports.export', ['type' => 'attendance']))
-            ->assertOk();
-
-        $this->actingAs($coachUser)
             ->delete(route('coach.announcements.destroy', $coachAnnouncement))
             ->assertRedirect(route('coach.announcements.index'));
-
-        $this->actingAs($coachUser)
-            ->delete(route('coach.reports.destroy', $coachReport))
-            ->assertRedirect(route('coach.reports.index'));
 
         $this->actingAs($coachUser)
             ->delete(route('coach.assessments.destroy', $assessment))
@@ -579,7 +521,6 @@ class FullRegressionTest extends TestCase
             ->delete(route('coach.schedules.destroy', $newSchedule))
             ->assertRedirect(route('coach.schedules.index'));
 
-        $this->assertDatabaseMissing('reports', ['id' => $coachReport->id]);
         $this->assertDatabaseMissing('announcements', ['id' => $coachAnnouncement->id]);
         $this->assertDatabaseMissing('assessments', ['id' => $assessment->id]);
         $this->assertDatabaseMissing('schedules', ['id' => $newSchedule->id]);
@@ -594,11 +535,11 @@ class FullRegressionTest extends TestCase
             ->assertOk();
 
         $this->actingAs($principal)
-            ->get(route('principal.reports.index'))
+            ->get(route('principal.attendances.index'))
             ->assertOk();
 
         $this->actingAs($principal)
-            ->get(route('principal.reports.export'))
+            ->get(route('principal.attendances.export'))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }

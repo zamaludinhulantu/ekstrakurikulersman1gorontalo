@@ -11,9 +11,9 @@ use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -63,25 +63,26 @@ class DashboardController extends Controller
         abort_unless($coach, 404, 'Data pembina tidak ditemukan.');
 
         $extracurricularIds = $coach->extracurriculars()->pluck('extracurriculars.id');
+        $extracurricularIdList = $extracurricularIds->all();
 
         return view('dashboard.coach', [
             'coach' => $coach,
-            'totalExtracurriculars' => $coach->extracurriculars()->count(),
-            'totalParticipants' => Registration::whereIn('extracurricular_id', $extracurricularIds)
+            'totalExtracurriculars' => count($extracurricularIdList),
+            'totalParticipants' => Registration::whereIn('extracurricular_id', $extracurricularIdList)
                 ->where('status', Registration::STATUS_APPROVED)
                 ->count(),
-            'todaySchedules' => Schedule::whereIn('extracurricular_id', $extracurricularIds)
+            'todaySchedules' => Schedule::whereIn('extracurricular_id', $extracurricularIdList)
                 ->whereDate('activity_date', Carbon::today())
                 ->count(),
-            'assessmentCount' => Assessment::whereIn('extracurricular_id', $extracurricularIds)->count(),
+            'assessmentCount' => Assessment::whereIn('extracurricular_id', $extracurricularIdList)->count(),
             'recentAttendances' => Attendance::with(['student.user', 'schedule.extracurricular'])
-                ->whereIn('extracurricular_id', $extracurricularIds)
+                ->whereIn('extracurricular_id', $extracurricularIdList)
                 ->latest('recorded_at')
                 ->latest('id')
                 ->limit(5)
                 ->get(),
             'recentAssessments' => Assessment::with(['student.user', 'extracurricular'])
-                ->whereIn('extracurricular_id', $extracurricularIds)
+                ->whereIn('extracurricular_id', $extracurricularIdList)
                 ->latest('assessment_date')
                 ->latest('id')
                 ->limit(5)
@@ -100,89 +101,114 @@ class DashboardController extends Controller
 
         abort_unless($student, 404, 'Data siswa tidak ditemukan.');
 
-        $registrations = $student->registrations()
+        $registrationQuery = $student->registrations();
+        $totalRegistrations = (clone $registrationQuery)->count();
+        $approvedRegistrationCount = (clone $registrationQuery)
+            ->where('status', Registration::STATUS_APPROVED)
+            ->count();
+        $pendingRegistrationCount = (clone $registrationQuery)
+            ->where('status', Registration::STATUS_PENDING)
+            ->count();
+        $latestRegistration = (clone $registrationQuery)
             ->with('extracurricular')
             ->latest('registration_date')
             ->latest('id')
-            ->get();
+            ->first();
 
-        $approvedRegistrations = $registrations->where('status', Registration::STATUS_APPROVED);
-        $approvedRegistrationCount = $approvedRegistrations->count();
-        $pendingRegistrationCount = $registrations->where('status', Registration::STATUS_PENDING)->count();
-        $latestRegistration = $registrations->first();
-        $approvedExtracurricularIds = $approvedRegistrations
+        $approvedExtracurricularIds = (clone $registrationQuery)
             ->where('status', Registration::STATUS_APPROVED)
             ->pluck('extracurricular_id');
+        $approvedExtracurricularIdList = $approvedExtracurricularIds->all();
 
-        $attendanceRecords = $student->attendances()
+        $attendanceBaseQuery = $student->attendances();
+        $assessmentBaseQuery = $student->assessments()->where('assessment_type', 'assessment');
+
+        $recentAttendances = (clone $attendanceBaseQuery)
             ->with(['extracurricular', 'schedule'])
             ->latest('recorded_at')
             ->latest('id')
+            ->limit(5)
             ->get();
 
-        $assessmentRecords = $student->assessments()
+        $recentAssessments = (clone $assessmentBaseQuery)
             ->with('extracurricular')
             ->latest('assessment_date')
             ->latest('id')
+            ->limit(5)
             ->get();
 
         $nextSchedule = Schedule::with('extracurricular')
-            ->whereIn('extracurricular_id', $approvedExtracurricularIds)
+            ->whereIn('extracurricular_id', $approvedExtracurricularIdList)
             ->whereDate('activity_date', '>=', Carbon::today())
             ->orderBy('activity_date')
             ->orderBy('start_time')
             ->first();
 
-        $attendanceRate = $this->calculateAttendanceRate($attendanceRecords);
-        $averageAssessmentScore = round((float) ($assessmentRecords->avg('score') ?? 0), 2);
+        $attendanceBreakdown = (clone $attendanceBaseQuery)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $totalAttendanceCount = (int) $attendanceBreakdown->sum();
+        $effectivePresentCount = (int) (($attendanceBreakdown['present'] ?? 0) + ($attendanceBreakdown['permission'] ?? 0));
+        $attendanceRate = $totalAttendanceCount > 0
+            ? round(($effectivePresentCount / $totalAttendanceCount) * 100, 1)
+            : 0.0;
+        $averageAssessmentScore = round((float) ((clone $assessmentBaseQuery)->avg('score') ?? 0), 2);
         $attendanceBreakdown = [
-            'present' => $attendanceRecords->where('status', 'present')->count(),
-            'permission' => $attendanceRecords->where('status', 'permission')->count(),
-            'sick' => $attendanceRecords->where('status', 'sick')->count(),
-            'absent' => $attendanceRecords->where('status', 'absent')->count(),
+            'present' => (int) ($attendanceBreakdown['present'] ?? 0),
+            'permission' => (int) ($attendanceBreakdown['permission'] ?? 0),
+            'sick' => (int) ($attendanceBreakdown['sick'] ?? 0),
+            'absent' => (int) ($attendanceBreakdown['absent'] ?? 0),
         ];
 
+        $monthlyAttendanceSummary = $this->buildMonthlyAttendanceSummary($attendanceBaseQuery);
+
         $monthlyAttendance = collect(range(5, 0, -1))
-            ->map(function (int $monthsAgo) use ($attendanceRecords): array {
+            ->map(function (int $monthsAgo) use ($monthlyAttendanceSummary): array {
                 $month = Carbon::now()->subMonths($monthsAgo);
-                $monthAttendances = $attendanceRecords->filter(
-                    fn ($attendance) => optional($attendance->recorded_at)->format('Y-m') === $month->format('Y-m')
-                );
+                $monthKey = $month->format('Y-m');
 
                 return [
                     'label' => $month->translatedFormat('M Y'),
-                    'total' => $monthAttendances->count(),
-                    'present' => $monthAttendances->where('status', 'present')->count(),
+                    'total' => (int) ($monthlyAttendanceSummary[$monthKey]['total'] ?? 0),
+                    'present' => (int) ($monthlyAttendanceSummary[$monthKey]['present'] ?? 0),
                 ];
             })
             ->push([
                 'label' => Carbon::now()->translatedFormat('M Y'),
-                'total' => $attendanceRecords->filter(
-                    fn ($attendance) => optional($attendance->recorded_at)->format('Y-m') === Carbon::now()->format('Y-m')
-                )->count(),
-                'present' => $attendanceRecords->filter(
-                    fn ($attendance) => optional($attendance->recorded_at)->format('Y-m') === Carbon::now()->format('Y-m')
-                )->where('status', 'present')->count(),
+                'total' => (int) ($monthlyAttendanceSummary[Carbon::now()->format('Y-m')]['total'] ?? 0),
+                'present' => (int) ($monthlyAttendanceSummary[Carbon::now()->format('Y-m')]['present'] ?? 0),
             ]);
 
-        $performanceByExtracurricular = Registration::with('extracurricular')
+        $attendanceByExtracurricular = (clone $attendanceBaseQuery)
+            ->selectRaw('extracurricular_id, COUNT(*) as total, SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present')
+            ->groupBy('extracurricular_id')
+            ->get()
+            ->keyBy('extracurricular_id');
+        $assessmentByExtracurricular = (clone $assessmentBaseQuery)
+            ->selectRaw('extracurricular_id, COUNT(*) as total, AVG(score) as average_score')
+            ->groupBy('extracurricular_id')
+            ->get()
+            ->keyBy('extracurricular_id');
+
+        $performanceByExtracurricular = Registration::with('extracurricular:id,name')
             ->where('student_id', $student->id)
             ->where('status', Registration::STATUS_APPROVED)
             ->get()
-            ->map(function (Registration $registration) use ($attendanceRecords, $assessmentRecords): array {
+            ->map(function (Registration $registration) use ($attendanceByExtracurricular, $assessmentByExtracurricular): array {
                 $extracurricularId = $registration->extracurricular_id;
-                $extracurricularAttendances = $attendanceRecords->where('extracurricular_id', $extracurricularId);
-                $extracurricularAssessments = $assessmentRecords->where('extracurricular_id', $extracurricularId);
-                $totalAttendances = $extracurricularAttendances->count();
-                $presentAttendances = $extracurricularAttendances->where('status', 'present')->count();
+                $attendanceSummary = $attendanceByExtracurricular->get($extracurricularId);
+                $assessmentSummary = $assessmentByExtracurricular->get($extracurricularId);
+                $totalAttendances = (int) ($attendanceSummary->total ?? 0);
+                $presentAttendances = (int) ($attendanceSummary->present ?? 0);
 
                 return [
                     'name' => $registration->extracurricular->name ?? '-',
                     'attendance_rate' => $totalAttendances > 0 ? round(($presentAttendances / $totalAttendances) * 100, 1) : null,
-                    'average_score' => $extracurricularAssessments->count() > 0
-                        ? round((float) $extracurricularAssessments->avg('score'), 2)
+                    'average_score' => isset($assessmentSummary->average_score)
+                        ? round((float) $assessmentSummary->average_score, 2)
                         : null,
-                    'assessment_total' => $extracurricularAssessments->count(),
+                    'assessment_total' => (int) ($assessmentSummary->total ?? 0),
                 ];
             });
 
@@ -198,17 +224,17 @@ class DashboardController extends Controller
         return view('dashboard.student', [
             'student' => $student,
             'availableExtracurriculars' => Extracurricular::where('is_active', true)->count(),
-            'totalRegistrations' => $registrations->count(),
+            'totalRegistrations' => $totalRegistrations,
             'approvedRegistrations' => $approvedRegistrationCount,
-            'upcomingSchedules' => Schedule::whereIn('extracurricular_id', $approvedExtracurricularIds)
+            'upcomingSchedules' => Schedule::whereIn('extracurricular_id', $approvedExtracurricularIdList)
                 ->whereDate('activity_date', '>=', Carbon::today())
                 ->count(),
-            'attendanceCount' => $student->attendances()->count(),
-            'assessmentCount' => $student->assessments()->count(),
+            'attendanceCount' => $totalAttendanceCount,
+            'assessmentCount' => (clone $assessmentBaseQuery)->count(),
             'latestRegistration' => $latestRegistration,
             'nextSchedule' => $nextSchedule,
-            'recentAttendances' => $attendanceRecords->take(5),
-            'recentAssessments' => $assessmentRecords->take(5),
+            'recentAttendances' => $recentAttendances,
+            'recentAssessments' => $recentAssessments,
             'attendanceRate' => $attendanceRate,
             'averageAssessmentScore' => $averageAssessmentScore,
             'attendanceBreakdown' => $attendanceBreakdown,
@@ -223,16 +249,17 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function calculateAttendanceRate(Collection $attendanceRecords): float
+    private function buildMonthlyAttendanceSummary(HasMany $attendanceBaseQuery): array
     {
-        $total = $attendanceRecords->count();
-        if ($total === 0) {
-            return 0.0;
-        }
-
-        $effectivePresent = $attendanceRecords->whereIn('status', ['present', 'permission'])->count();
-
-        return round(($effectivePresent / $total) * 100, 1);
+        return (clone $attendanceBaseQuery)
+            ->where('recorded_at', '>=', Carbon::now()->startOfMonth()->subMonths(5))
+            ->get(['recorded_at', 'status'])
+            ->groupBy(fn (Attendance $attendance): string => Carbon::parse($attendance->recorded_at)->format('Y-m'))
+            ->map(fn ($records): array => [
+                'total' => $records->count(),
+                'present' => $records->where('status', 'present')->count(),
+            ])
+            ->all();
     }
 
     private function buildStudentNotifications(

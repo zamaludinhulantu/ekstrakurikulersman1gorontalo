@@ -1,18 +1,9 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import 'bootstrap-icons/font/bootstrap-icons.css';
-@import 'tailwindcss';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
-@theme {
-    --font-sans: 'Trebuchet MS', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-}
 
 :root {
+    --font-sans: 'Trebuchet MS', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     --ui-bg: #f3f7fb;
     --ui-surface: rgba(255, 255, 255, 0.88);
     --ui-surface-strong: #ffffff;

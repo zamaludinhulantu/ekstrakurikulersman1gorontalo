@@ -161,6 +161,11 @@ class DemoDataSeeder extends Seeder
             'schedule_overview' => 'Setiap Kamis.',
             'is_active' => true,
         ]);
+
+        $pramuka->coaches()->syncWithoutDetaching([$coach1->id]);
+        $paskibra->coaches()->syncWithoutDetaching([$coach2->id]);
+        $pmr->coaches()->syncWithoutDetaching([$coach1->id]);
+
         $this->call(ExtracurricularCatalogSeeder::class);
 
         Registration::create([

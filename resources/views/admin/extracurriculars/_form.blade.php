@@ -37,7 +37,7 @@
 
         @if(!empty($extracurricular?->image_path))
             <div class="mt-3">
-                <img src="{{ asset($extracurricular->image_path) }}" alt="{{ $extracurricular->name }}" style="width: 180px; height: 120px; object-fit: cover; border-radius: 14px; border: 1px solid #dbe5f0;">
+                <img src="{{ asset($extracurricular->image_path) }}" alt="{{ $extracurricular->name }}" width="180" height="120" loading="lazy" decoding="async" style="width: 180px; height: 120px; object-fit: cover; border-radius: 14px; border: 1px solid #dbe5f0;">
             </div>
             <div class="form-check mt-2">
                 <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="remove_image_excul">
