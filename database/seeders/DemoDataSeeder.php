@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\Attendance;
 use App\Models\Coach;
 use App\Models\Extracurricular;
+use App\Models\ExtracurricularAchievement;
 use App\Models\Registration;
 use App\Models\Report;
 use App\Models\Schedule;
@@ -140,7 +141,6 @@ class DemoDataSeeder extends Seeder
             'description' => 'Kegiatan pembinaan karakter dan kepemimpinan melalui kepramukaan.',
             'requirements' => 'Disiplin, bersedia mengikuti latihan rutin.',
             'schedule_overview' => 'Setiap Jumat sore.',
-            'achievements_overview' => 'Juara 2 Lomba Pramuka Tingkat Kota 2025.',
             'is_active' => true,
         ]);
 
@@ -150,7 +150,6 @@ class DemoDataSeeder extends Seeder
             'description' => 'Pelatihan baris-berbaris dan pengibaran bendera.',
             'requirements' => 'Sehat jasmani, disiplin tinggi.',
             'schedule_overview' => 'Setiap Rabu dan Sabtu.',
-            'achievements_overview' => 'Anggota terpilih paskibraka kota.',
             'is_active' => true,
         ]);
 
@@ -160,7 +159,6 @@ class DemoDataSeeder extends Seeder
             'description' => 'Kegiatan pertolongan pertama dan kesehatan remaja.',
             'requirements' => 'Memiliki minat di bidang kesehatan.',
             'schedule_overview' => 'Setiap Kamis.',
-            'achievements_overview' => 'Partisipasi aktif donor darah pelajar.',
             'is_active' => true,
         ]);
         $this->call(ExtracurricularCatalogSeeder::class);
@@ -274,6 +272,27 @@ class DemoDataSeeder extends Seeder
             'score' => 92.00,
             'description' => 'Meraih penghargaan pada lomba internal.',
             'assessment_date' => now()->subDay()->toDateString(),
+        ]);
+
+        ExtracurricularAchievement::create([
+            'extracurricular_id' => $pramuka->id,
+            'title' => 'Juara 2 Lomba Pramuka Tingkat Kota 2025',
+            'description' => 'Diraih pada kompetisi kepramukaan tingkat kota.',
+            'achievement_date' => now()->subMonths(2)->toDateString(),
+        ]);
+
+        ExtracurricularAchievement::create([
+            'extracurricular_id' => $paskibra->id,
+            'title' => 'Anggota terpilih Paskibraka Kota',
+            'description' => 'Peserta binaan lolos seleksi paskibraka tingkat kota.',
+            'achievement_date' => now()->subMonths(1)->toDateString(),
+        ]);
+
+        ExtracurricularAchievement::create([
+            'extracurricular_id' => $pmr->id,
+            'title' => 'Partisipasi aktif donor darah pelajar',
+            'description' => 'Tim PMR aktif dalam kegiatan sosial donor darah.',
+            'achievement_date' => now()->subWeeks(3)->toDateString(),
         ]);
 
         Report::create([

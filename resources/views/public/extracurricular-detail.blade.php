@@ -177,10 +177,6 @@
             $isStudent = $user?->hasRole(\App\Models\User::ROLE_STUDENT) ?? false;
             $firstSchedule = $extracurricular->schedules->first();
             $achievements = $extracurricular->achievements;
-            $overviewAchievements = collect(preg_split('/(?:\r\n|\r|\n|;|•)+/u', (string) $extracurricular->achievements_overview))
-                ->map(fn ($item) => trim($item))
-                ->filter()
-                ->values();
             $normalizedName = \Illuminate\Support\Str::lower(trim($extracurricular->name));
             $visualMap = [
                 'pramuka' => ['icon' => 'bi-tree', 'label' => 'Kegiatan lapangan'],
@@ -269,13 +265,7 @@
                 <div class="detail-panel">
                     <span class="section-kicker"><i class="bi bi-award"></i>Prestasi</span>
                     <h3>Daftar prestasi ekstrakurikuler</h3>
-                    @if($achievements->isNotEmpty())
-                        <p class="mb-0">Prestasi di bawah ini merupakan capaian kegiatan ekstrakurikuler yang diinput admin atau pembina.</p>
-                    @elseif($overviewAchievements->isNotEmpty())
-                        <p class="mb-0">Belum ada data prestasi terpisah. Sistem menampilkan ringkasan prestasi/kegiatan yang diisi admin.</p>
-                    @else
-                        <p class="mb-0">Prestasi yang diinput admin atau pembina akan tampil pada daftar di bawah ini.</p>
-                    @endif
+                    <p class="mb-0">Prestasi di bawah ini merupakan capaian kegiatan ekstrakurikuler yang diinput admin.</p>
 
                     @if($achievements->isNotEmpty())
                         <div class="achievement-list">
@@ -291,18 +281,10 @@
                                 </div>
                             @endforeach
                         </div>
-                    @elseif($overviewAchievements->isNotEmpty())
-                        <div class="achievement-list">
-                            @foreach($overviewAchievements as $overviewAchievement)
-                                <div class="achievement-item fallback">
-                                    <p class="mb-0">{{ $overviewAchievement }}</p>
-                                </div>
-                            @endforeach
-                        </div>
                     @else
                         <div class="empty-state py-3">
                             <div class="icon"><i class="bi bi-award"></i></div>
-                            <p class="mb-0">Belum ada data prestasi yang ditampilkan untuk ekstrakurikuler ini.</p>
+                            <p class="mb-0">Belum ada prestasi ekstrakurikuler yang ditampilkan.</p>
                         </div>
                     @endif
                 </div>

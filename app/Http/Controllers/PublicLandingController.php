@@ -20,6 +20,7 @@ class PublicLandingController extends Controller
         $extracurriculars = Extracurricular::with([
             'coach.user',
             'coaches.user',
+            'achievements',
             'schedules' => fn ($query) => $query->orderBy('activity_date')->orderBy('start_time'),
         ])
             ->where('is_active', true)
@@ -103,39 +104,45 @@ class PublicLandingController extends Controller
                 'description' => 'Latihan teknik dasar, strategi tim, dan pembinaan fisik untuk kompetisi antarsekolah.',
                 'requirements' => 'Memiliki semangat latihan rutin dan menjaga sportivitas.',
                 'schedule_overview' => 'Setiap Selasa dan Kamis, pukul 15.30 - 17.30.',
-                'achievements_overview' => 'Finalis turnamen basket pelajar tingkat kota.',
                 'coach_name' => 'Pembina Basket',
                 'schedule_title' => 'Latihan Passing dan Shooting',
                 'schedule_date' => now()->addDays(2)->toDateString(),
                 'schedule_start' => '15:30:00',
                 'schedule_end' => '17:30:00',
                 'schedule_location' => 'Lapangan Basket Sekolah',
+                'achievements' => [
+                    ['title' => 'Finalis turnamen basket pelajar tingkat kota.', 'date' => now()->subMonths(2)->toDateString()],
+                ],
             ],
             [
                 'name' => 'Futsal',
                 'description' => 'Pembinaan teknik bermain futsal, kerja sama tim, dan persiapan turnamen sekolah.',
                 'requirements' => 'Sehat jasmani dan siap mengikuti seleksi dasar.',
                 'schedule_overview' => 'Setiap Senin dan Jumat, pukul 16.00 - 17.30.',
-                'achievements_overview' => 'Juara 3 Liga Futsal Pelajar wilayah kota.',
                 'coach_name' => 'Pembina Futsal',
                 'schedule_title' => 'Latihan Formasi dan Finishing',
                 'schedule_date' => now()->addDays(3)->toDateString(),
                 'schedule_start' => '16:00:00',
                 'schedule_end' => '17:30:00',
                 'schedule_location' => 'Lapangan Serbaguna',
+                'achievements' => [
+                    ['title' => 'Juara 3 Liga Futsal Pelajar wilayah kota.', 'date' => now()->subMonths(1)->toDateString()],
+                ],
             ],
             [
                 'name' => 'Rohis',
                 'description' => 'Kegiatan pembinaan karakter, kajian rutin, dan pengembangan kepemimpinan siswa.',
                 'requirements' => 'Aktif mengikuti pembinaan dan kegiatan keagamaan sekolah.',
                 'schedule_overview' => 'Setiap Rabu, pukul 15.30 - 17.00.',
-                'achievements_overview' => 'Program kajian rutin dan bakti sosial siswa.',
                 'coach_name' => 'Pembina Rohis',
                 'schedule_title' => 'Kajian dan Diskusi Pekanan',
                 'schedule_date' => now()->addDays(5)->toDateString(),
                 'schedule_start' => '15:30:00',
                 'schedule_end' => '17:00:00',
                 'schedule_location' => 'Mushola Sekolah',
+                'achievements' => [
+                    ['title' => 'Program kajian rutin dan bakti sosial siswa.', 'date' => now()->subWeeks(3)->toDateString()],
+                ],
             ],
         ])->map(function (array $item): Extracurricular {
             $coach = new Coach;
@@ -156,13 +163,18 @@ class PublicLandingController extends Controller
                 'description' => $item['description'],
                 'requirements' => $item['requirements'],
                 'schedule_overview' => $item['schedule_overview'],
-                'achievements_overview' => $item['achievements_overview'],
                 'is_active' => true,
             ]);
 
             $extracurricular->setRelation('coach', $coach);
             $extracurricular->setRelation('coaches', collect([$coach]));
             $extracurricular->setRelation('schedules', collect([$schedule]));
+            $extracurricular->setRelation('achievements', collect($item['achievements'] ?? [])->map(function (array $achievement) use ($extracurricular) {
+                return new \App\Models\ExtracurricularAchievement([
+                    'title' => $achievement['title'],
+                    'achievement_date' => $achievement['date'] ?? null,
+                ]);
+            }));
 
             return $extracurricular;
         });

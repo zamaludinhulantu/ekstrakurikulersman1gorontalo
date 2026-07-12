@@ -12,6 +12,7 @@ SET FOREIGN_KEY_CHECKS=0;
 
 DELETE FROM attendances;
 DELETE FROM assessments;
+DELETE FROM extracurricular_achievements;
 DELETE FROM registrations;
 DELETE FROM reports;
 DELETE FROM announcements;
@@ -29,6 +30,7 @@ DELETE FROM users;
 
 ALTER TABLE attendances AUTO_INCREMENT = 1;
 ALTER TABLE assessments AUTO_INCREMENT = 1;
+ALTER TABLE extracurricular_achievements AUTO_INCREMENT = 1;
 ALTER TABLE registrations AUTO_INCREMENT = 1;
 ALTER TABLE reports AUTO_INCREMENT = 1;
 ALTER TABLE announcements AUTO_INCREMENT = 1;
@@ -150,29 +152,41 @@ INSERT INTO extracurriculars (
     description,
     requirements,
     schedule_overview,
-    achievements_overview,
     image_path,
     is_active,
     created_at,
     updated_at
 ) VALUES
-    (1, 1, 'Pramuka', 'Kegiatan pembinaan karakter dan kepemimpinan melalui kepramukaan.', 'Disiplin, bersedia mengikuti latihan rutin.', 'Setiap Jumat sore.', 'Juara 2 Lomba Pramuka Tingkat Kota 2025.', NULL, 1, NOW(), NOW()),
-    (2, 2, 'Paskibra', 'Pelatihan baris-berbaris dan pengibaran bendera.', 'Sehat jasmani, disiplin tinggi.', 'Setiap Rabu dan Sabtu.', 'Anggota terpilih paskibraka kota.', NULL, 1, NOW(), NOW()),
-    (3, 1, 'PMR', 'Kegiatan pertolongan pertama dan kesehatan remaja.', 'Memiliki minat di bidang kesehatan.', 'Setiap Kamis.', 'Partisipasi aktif donor darah pelajar.', NULL, 1, NOW(), NOW()),
-    (4, NULL, 'Tilawatil Qur''an', 'Kegiatan pembinaan bacaan Al-Qur''an dengan fokus pada tajwid, adab, dan kualitas tilawah siswa.', 'Memiliki minat belajar tilawah dan siap mengikuti pembinaan rutin.', 'Jadwal latihan ditetapkan oleh pembina dan pengurus.', 'Pembinaan tilawah untuk kegiatan keagamaan dan lomba sekolah.', NULL, 1, NOW(), NOW()),
-    (5, NULL, 'Tartil dan Hifzil Qur''an', 'Program pembinaan tartil dan hafalan Al-Qur''an untuk meningkatkan kemampuan membaca dan menghafal siswa.', 'Memiliki komitmen mengikuti setoran hafalan dan pembinaan tartil.', 'Jadwal pembinaan disesuaikan dengan agenda keagamaan sekolah.', 'Mendukung penguatan karakter religius dan prestasi bidang tahfiz.', NULL, 1, NOW(), NOW()),
-    (6, NULL, 'OPSI', 'Ekstrakurikuler riset dan karya ilmiah untuk mengembangkan budaya penelitian dan inovasi siswa.', 'Tertarik pada penelitian, observasi, dan presentasi ilmiah.', 'Pertemuan riset diatur sesuai proyek dan pembimbing.', 'Mendorong partisipasi siswa pada lomba penelitian dan inovasi.', NULL, 1, NOW(), NOW()),
-    (7, NULL, 'Menulis Artikel', 'Wadah pengembangan literasi, opini, dan penulisan artikel populer maupun informatif oleh siswa.', 'Menyukai membaca, menulis, dan siap mengikuti proses editorial.', 'Sesi penulisan dan review artikel dilakukan berkala.', 'Mendukung publikasi karya siswa di media sekolah dan lomba literasi.', NULL, 1, NOW(), NOW()),
-    (8, NULL, 'Pelsis', 'Kegiatan organisasi siswa untuk membangun kolaborasi, kepemimpinan, dan pelayanan sekolah.', 'Aktif, disiplin, dan siap terlibat dalam program organisasi sekolah.', 'Rapat dan program kerja dilaksanakan sesuai agenda kepengurusan.', 'Meningkatkan pengalaman organisasi dan manajemen kegiatan siswa.', NULL, 1, NOW(), NOW()),
-    (9, NULL, 'Rohis', 'Kegiatan pembinaan karakter, kajian rutin, dan pengembangan kepemimpinan siswa berbasis nilai keislaman.', 'Aktif mengikuti pembinaan dan kegiatan kerohanian sekolah.', 'Pertemuan rutin mengikuti agenda pembinaan Rohis.', 'Program kajian, pembinaan, dan kegiatan sosial keagamaan siswa.', NULL, 1, NOW(), NOW()),
-    (10, 2, 'PBB/Paskib', 'Pelatihan peraturan baris-berbaris, kepemimpinan, disiplin, dan kesiapan petugas upacara sekolah.', 'Memiliki kedisiplinan tinggi, fisik prima, dan siap mengikuti latihan rutin.', 'Latihan dilakukan berkala sesuai agenda upacara dan lomba.', 'Mendukung pembinaan pasukan upacara dan kompetisi baris-berbaris.', NULL, 1, NOW(), NOW()),
-    (11, NULL, 'PKS', 'Patroli Keamanan Sekolah untuk membina kedisiplinan, ketertiban, dan kepedulian siswa terhadap lingkungan sekolah.', 'Disiplin, bertanggung jawab, dan siap menjaga ketertiban lingkungan sekolah.', 'Kegiatan dilaksanakan sesuai jadwal piket dan pembinaan.', 'Membantu penguatan budaya tertib dan aman di sekolah.', NULL, 1, NOW(), NOW()),
-    (12, NULL, 'SMAG', 'Kegiatan pengembangan karakter dan kreativitas siswa dalam berbagai program sekolah unggulan.', 'Siap berkolaborasi dalam kegiatan sekolah dan pengembangan diri.', 'Pertemuan mengikuti program kerja dan agenda pembinaan.', 'Mendukung partisipasi aktif siswa dalam agenda sekolah.', NULL, 1, NOW(), NOW()),
-    (13, NULL, 'RELS', 'Wadah pembinaan kepemimpinan, pelayanan, dan tanggung jawab sosial siswa.', 'Memiliki sikap disiplin, komunikatif, dan siap bekerja dalam tim.', 'Agenda kegiatan dilaksanakan sesuai program organisasi.', 'Mengembangkan soft skill dan pengalaman organisasi siswa.', NULL, 1, NOW(), NOW()),
-    (14, NULL, 'OSIS / MPK', 'Organisasi siswa dan majelis perwakilan kelas untuk menjalankan kepemimpinan, aspirasi, dan program sekolah.', 'Memiliki minat organisasi, kepemimpinan, dan tanggung jawab yang baik.', 'Rapat dan kegiatan menyesuaikan program kerja OSIS/MPK.', 'Mendorong lahirnya kepemimpinan dan kolaborasi siswa yang kuat.', NULL, 1, NOW(), NOW()),
-    (15, NULL, 'PA/PI Duta', 'Pembinaan siswa untuk peran duta sekolah dalam kegiatan promosi, representasi, dan pelayanan acara resmi.', 'Percaya diri, komunikatif, dan mampu merepresentasikan sekolah dengan baik.', 'Latihan dan briefing dilakukan menjelang agenda representasi sekolah.', 'Menyiapkan duta siswa untuk mendukung citra dan kegiatan sekolah.', NULL, 1, NOW(), NOW()),
-    (16, NULL, 'Fortina', 'Ekstrakurikuler pengembangan bakat dan kerja tim siswa dalam program pembinaan sekolah.', 'Aktif, disiplin, dan siap berpartisipasi dalam kegiatan kelompok.', 'Jadwal kegiatan disusun sesuai agenda pembina dan pengurus.', 'Mendorong keterlibatan siswa dalam kegiatan positif sekolah.', NULL, 1, NOW(), NOW()),
-    (17, NULL, 'Konten Kreator', 'Wadah bagi siswa untuk belajar produksi konten digital, dokumentasi, desain, dan publikasi kreatif.', 'Memiliki minat pada foto, video, desain, atau media sosial sekolah.', 'Produksi konten mengikuti agenda sekolah dan jadwal tim kreatif.', 'Mendukung publikasi kegiatan sekolah melalui karya digital siswa.', NULL, 1, NOW(), NOW());
+    (1, 1, 'Pramuka', 'Kegiatan pembinaan karakter dan kepemimpinan melalui kepramukaan.', 'Disiplin, bersedia mengikuti latihan rutin.', 'Setiap Jumat sore.', NULL, 1, NOW(), NOW()),
+    (2, 2, 'Paskibra', 'Pelatihan baris-berbaris dan pengibaran bendera.', 'Sehat jasmani, disiplin tinggi.', 'Setiap Rabu dan Sabtu.', NULL, 1, NOW(), NOW()),
+    (3, 1, 'PMR', 'Kegiatan pertolongan pertama dan kesehatan remaja.', 'Memiliki minat di bidang kesehatan.', 'Setiap Kamis.', NULL, 1, NOW(), NOW()),
+    (4, NULL, 'Tilawatil Qur''an', 'Kegiatan pembinaan bacaan Al-Qur''an dengan fokus pada tajwid, adab, dan kualitas tilawah siswa.', 'Memiliki minat belajar tilawah dan siap mengikuti pembinaan rutin.', 'Jadwal latihan ditetapkan oleh pembina dan pengurus.', NULL, 1, NOW(), NOW()),
+    (5, NULL, 'Tartil dan Hifzil Qur''an', 'Program pembinaan tartil dan hafalan Al-Qur''an untuk meningkatkan kemampuan membaca dan menghafal siswa.', 'Memiliki komitmen mengikuti setoran hafalan dan pembinaan tartil.', 'Jadwal pembinaan disesuaikan dengan agenda keagamaan sekolah.', NULL, 1, NOW(), NOW()),
+    (6, NULL, 'OPSI', 'Ekstrakurikuler riset dan karya ilmiah untuk mengembangkan budaya penelitian dan inovasi siswa.', 'Tertarik pada penelitian, observasi, dan presentasi ilmiah.', 'Pertemuan riset diatur sesuai proyek dan pembimbing.', NULL, 1, NOW(), NOW()),
+    (7, NULL, 'Menulis Artikel', 'Wadah pengembangan literasi, opini, dan penulisan artikel populer maupun informatif oleh siswa.', 'Menyukai membaca, menulis, dan siap mengikuti proses editorial.', 'Sesi penulisan dan review artikel dilakukan berkala.', NULL, 1, NOW(), NOW()),
+    (8, NULL, 'Pelsis', 'Kegiatan organisasi siswa untuk membangun kolaborasi, kepemimpinan, dan pelayanan sekolah.', 'Aktif, disiplin, dan siap terlibat dalam program organisasi sekolah.', 'Rapat dan program kerja dilaksanakan sesuai agenda kepengurusan.', NULL, 1, NOW(), NOW()),
+    (9, NULL, 'Rohis', 'Kegiatan pembinaan karakter, kajian rutin, dan pengembangan kepemimpinan siswa berbasis nilai keislaman.', 'Aktif mengikuti pembinaan dan kegiatan kerohanian sekolah.', 'Pertemuan rutin mengikuti agenda pembinaan Rohis.', NULL, 1, NOW(), NOW()),
+    (10, 2, 'PBB/Paskib', 'Pelatihan peraturan baris-berbaris, kepemimpinan, disiplin, dan kesiapan petugas upacara sekolah.', 'Memiliki kedisiplinan tinggi, fisik prima, dan siap mengikuti latihan rutin.', 'Latihan dilakukan berkala sesuai agenda upacara dan lomba.', NULL, 1, NOW(), NOW()),
+    (11, NULL, 'PKS', 'Patroli Keamanan Sekolah untuk membina kedisiplinan, ketertiban, dan kepedulian siswa terhadap lingkungan sekolah.', 'Disiplin, bertanggung jawab, dan siap menjaga ketertiban lingkungan sekolah.', 'Kegiatan dilaksanakan sesuai jadwal piket dan pembinaan.', NULL, 1, NOW(), NOW()),
+    (12, NULL, 'SMAG', 'Kegiatan pengembangan karakter dan kreativitas siswa dalam berbagai program sekolah unggulan.', 'Siap berkolaborasi dalam kegiatan sekolah dan pengembangan diri.', 'Pertemuan mengikuti program kerja dan agenda pembinaan.', NULL, 1, NOW(), NOW()),
+    (13, NULL, 'RELS', 'Wadah pembinaan kepemimpinan, pelayanan, dan tanggung jawab sosial siswa.', 'Memiliki sikap disiplin, komunikatif, dan siap bekerja dalam tim.', 'Agenda kegiatan dilaksanakan sesuai program organisasi.', NULL, 1, NOW(), NOW()),
+    (14, NULL, 'OSIS / MPK', 'Organisasi siswa dan majelis perwakilan kelas untuk menjalankan kepemimpinan, aspirasi, dan program sekolah.', 'Memiliki minat organisasi, kepemimpinan, dan tanggung jawab yang baik.', 'Rapat dan kegiatan menyesuaikan program kerja OSIS/MPK.', NULL, 1, NOW(), NOW()),
+    (15, NULL, 'PA/PI Duta', 'Pembinaan siswa untuk peran duta sekolah dalam kegiatan promosi, representasi, dan pelayanan acara resmi.', 'Percaya diri, komunikatif, dan mampu merepresentasikan sekolah dengan baik.', 'Latihan dan briefing dilakukan menjelang agenda representasi sekolah.', NULL, 1, NOW(), NOW()),
+    (16, NULL, 'Fortina', 'Ekstrakurikuler pengembangan bakat dan kerja tim siswa dalam program pembinaan sekolah.', 'Aktif, disiplin, dan siap berpartisipasi dalam kegiatan kelompok.', 'Jadwal kegiatan disusun sesuai agenda pembina dan pengurus.', NULL, 1, NOW(), NOW()),
+    (17, NULL, 'Konten Kreator', 'Wadah bagi siswa untuk belajar produksi konten digital, dokumentasi, desain, dan publikasi kreatif.', 'Memiliki minat pada foto, video, desain, atau media sosial sekolah.', 'Produksi konten mengikuti agenda sekolah dan jadwal tim kreatif.', NULL, 1, NOW(), NOW());
+
+INSERT INTO extracurricular_achievements (
+    id,
+    extracurricular_id,
+    title,
+    description,
+    achievement_date,
+    created_at,
+    updated_at
+) VALUES
+    (1, 1, 'Juara 2 Lomba Pramuka Tingkat Kota 2025', 'Diraih pada kompetisi kepramukaan tingkat kota.', DATE_SUB(CURDATE(), INTERVAL 60 DAY), NOW(), NOW()),
+    (2, 2, 'Anggota terpilih Paskibraka Kota', 'Peserta binaan lolos seleksi paskibraka tingkat kota.', DATE_SUB(CURDATE(), INTERVAL 30 DAY), NOW(), NOW()),
+    (3, 3, 'Partisipasi aktif donor darah pelajar', 'Tim PMR aktif dalam kegiatan sosial donor darah.', DATE_SUB(CURDATE(), INTERVAL 21 DAY), NOW(), NOW());
 
 INSERT INTO extracurricular_coach (
     id,

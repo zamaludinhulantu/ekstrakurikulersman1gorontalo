@@ -18,7 +18,6 @@ class Extracurricular extends Model
         'description',
         'requirements',
         'schedule_overview',
-        'achievements_overview',
         'image_path',
         'is_active',
     ];

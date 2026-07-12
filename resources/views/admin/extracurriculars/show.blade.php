@@ -20,7 +20,7 @@
                 <div class="col-md-6"><p class="text-muted small mb-1">Persyaratan</p><p class="mb-0">{{ $extracurricular->requirements ?? '-' }}</p></div>
                 <div class="col-12"><p class="text-muted small mb-1">Deskripsi</p><p class="mb-0">{{ $extracurricular->description }}</p></div>
                 <div class="col-md-6"><p class="text-muted small mb-1">Ringkasan Jadwal</p><p class="mb-0">{{ $extracurricular->schedule_overview ?? '-' }}</p></div>
-                <div class="col-md-6"><p class="text-muted small mb-1">Ringkasan Prestasi</p><p class="mb-0">{{ $extracurricular->achievements_overview ?? '-' }}</p></div>
+                <div class="col-md-6"><p class="text-muted small mb-1">Prestasi Tercatat</p><p class="mb-0">{{ $extracurricular->achievements->count() }} prestasi</p></div>
             </div>
         </div>
     </div>

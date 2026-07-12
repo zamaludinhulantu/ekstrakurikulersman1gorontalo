@@ -394,8 +394,8 @@
                                         </div>
                                     </div>
                                     <div class="catalog-card-info-item">
-                                        <strong>Info tambahan</strong>
-                                        <div>{{ $extracurricular->achievements_overview ?: 'Informasi lengkap tersedia di halaman detail.' }}</div>
+                                        <strong>Prestasi terbaru</strong>
+                                        <div>{{ $extracurricular->achievements->first()->title ?? 'Lihat detail untuk melihat prestasi ekstrakurikuler.' }}</div>
                                     </div>
                                 </div>
 

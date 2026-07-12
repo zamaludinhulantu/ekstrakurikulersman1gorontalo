@@ -94,7 +94,6 @@ class ExtracurricularController extends Controller
             'description' => ['required', 'string'],
             'requirements' => ['nullable', 'string'],
             'schedule_overview' => ['nullable', 'string'],
-            'achievements_overview' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:3072', 'mimes:jpg,jpeg,png,webp'],
             'remove_image' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
