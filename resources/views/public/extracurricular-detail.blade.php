@@ -129,6 +129,38 @@
             color: rgba(239, 246, 255, 0.88);
         }
 
+        .achievement-list {
+            display: grid;
+            gap: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .achievement-item {
+            border: 1px solid #dbe5f0;
+            border-radius: 20px;
+            padding: 1rem 1.1rem;
+            background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%);
+        }
+
+        .achievement-item.fallback {
+            background: linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
+        }
+
+        .achievement-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem 1rem;
+            margin-top: 0.55rem;
+            font-size: 0.92rem;
+            color: #5a6f8d;
+        }
+
+        .achievement-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
         @media (max-width: 991.98px) {
             .detail-cover-frame {
                 max-width: 560px;
@@ -144,6 +176,11 @@
             $user = auth()->user();
             $isStudent = $user?->hasRole(\App\Models\User::ROLE_STUDENT) ?? false;
             $firstSchedule = $extracurricular->schedules->first();
+            $achievements = $extracurricular->assessments;
+            $overviewAchievements = collect(preg_split('/(?:\r\n|\r|\n|;|•)+/u', (string) $extracurricular->achievements_overview))
+                ->map(fn ($item) => trim($item))
+                ->filter()
+                ->values();
             $normalizedName = \Illuminate\Support\Str::lower(trim($extracurricular->name));
             $visualMap = [
                 'pramuka' => ['icon' => 'bi-tree', 'label' => 'Kegiatan lapangan'],
@@ -231,8 +268,49 @@
             <div class="col-lg-12">
                 <div class="detail-panel">
                     <span class="section-kicker"><i class="bi bi-award"></i>Prestasi</span>
-                    <h3>Prestasi atau kegiatan unggulan</h3>
-                    <p class="mb-0">{{ $extracurricular->achievements_overview ?: 'Informasi prestasi dan dokumentasi belum tersedia.' }}</p>
+                    <h3>Daftar prestasi ekstrakurikuler</h3>
+                    @if($achievements->isNotEmpty())
+                        <p class="mb-0">Prestasi di bawah ini diambil dari data prestasi yang diinput admin atau pembina.</p>
+                    @elseif($overviewAchievements->isNotEmpty())
+                        <p class="mb-0">Belum ada data prestasi terpisah. Sistem menampilkan ringkasan prestasi/kegiatan yang diisi admin.</p>
+                    @else
+                        <p class="mb-0">Prestasi yang diinput admin atau pembina akan tampil pada daftar di bawah ini.</p>
+                    @endif
+
+                    @if($achievements->isNotEmpty())
+                        <div class="achievement-list">
+                            @foreach($achievements as $achievement)
+                                <div class="achievement-item">
+                                    <h4 class="h6 mb-1">{{ $achievement->title }}</h4>
+                                    @if($achievement->description)
+                                        <p class="mb-0">{{ $achievement->description }}</p>
+                                    @endif
+                                    <div class="achievement-meta">
+                                        <span><i class="bi bi-calendar-event"></i>{{ optional($achievement->assessment_date)->format('d-m-Y') ?: '-' }}</span>
+                                        @if($achievement->student?->user?->name)
+                                            <span><i class="bi bi-person"></i>{{ $achievement->student->user->name }}</span>
+                                        @endif
+                                        @if($achievement->score !== null)
+                                            <span><i class="bi bi-star"></i>Nilai: {{ rtrim(rtrim((string) $achievement->score, '0'), '.') }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif($overviewAchievements->isNotEmpty())
+                        <div class="achievement-list">
+                            @foreach($overviewAchievements as $overviewAchievement)
+                                <div class="achievement-item fallback">
+                                    <p class="mb-0">{{ $overviewAchievement }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="empty-state py-3">
+                            <div class="icon"><i class="bi bi-award"></i></div>
+                            <p class="mb-0">Belum ada data prestasi yang ditampilkan untuk ekstrakurikuler ini.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

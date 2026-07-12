@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CoachController as AdminCoachController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Admin\AssessmentController as AdminAssessmentController;
 use App\Http\Controllers\Admin\ExtracurricularController as AdminExtracurricularController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
@@ -54,6 +55,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('students', AdminStudentController::class);
     Route::resource('coaches', AdminCoachController::class);
     Route::resource('extracurriculars', AdminExtracurricularController::class);
+    Route::get('/assessments', [AdminAssessmentController::class, 'index'])->name('assessments.index');
+    Route::post('/assessments', [AdminAssessmentController::class, 'store'])->name('assessments.store');
+    Route::get('/assessments/{assessment}/edit', [AdminAssessmentController::class, 'edit'])->name('assessments.edit');
+    Route::put('/assessments/{assessment}', [AdminAssessmentController::class, 'update'])->name('assessments.update');
+    Route::delete('/assessments/{assessment}', [AdminAssessmentController::class, 'destroy'])->name('assessments.destroy');
+    Route::get('/assessments/report', [AdminReportController::class, 'assessments'])->name('assessments.report');
     Route::get('/announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
     Route::post('/announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
@@ -66,7 +73,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/participants', [AdminReportController::class, 'participants'])->name('participants.index');
     Route::get('/schedules', [AdminReportController::class, 'schedules'])->name('schedules.index');
     Route::get('/attendances', [AdminReportController::class, 'attendances'])->name('attendances.index');
-    Route::get('/assessments', [AdminReportController::class, 'assessments'])->name('assessments.index');
     Route::get('/reports/export/{type}', [AdminReportController::class, 'export'])->name('reports.export');
 });
 

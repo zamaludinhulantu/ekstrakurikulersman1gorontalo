@@ -32,6 +32,7 @@
     <div class="col-12">
         <label class="form-label" for="ex_achievements_overview">Ringkasan Prestasi/Kegiatan</label>
         <textarea id="ex_achievements_overview" name="achievements_overview" rows="3" class="form-control" placeholder="Contoh: Juara 2 Lomba Tingkat Kota">{{ old('achievements_overview', $extracurricular->achievements_overview ?? '') }}</textarea>
+        <div class="helper-text">Jika ada banyak prestasi, tulis satu prestasi atau kegiatan per baris. Contoh: <code>Pembinaan tilawah untuk kegiatan keagamaan</code> lalu baris berikutnya <code>Juara 1 lomba tilawah tingkat sekolah</code>.</div>
         @error('achievements_overview')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
     </div>
     <div class="col-12">

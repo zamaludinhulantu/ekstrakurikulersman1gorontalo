@@ -60,6 +60,10 @@ class RegistrationController extends Controller
 
         return redirect()
             ->route('student.extracurriculars.show', $extracurricular)
-            ->with('success', 'Pendaftaran berhasil dikirim dan menunggu verifikasi.');
+            ->with('success', 'Pendaftaran berhasil dikirim dan menunggu verifikasi.')
+            ->with('success_modal', [
+                'title' => 'Pendaftaran Berhasil',
+                'message' => 'Pendaftaran berhasil dikirim dan menunggu verifikasi.',
+            ]);
     }
 }

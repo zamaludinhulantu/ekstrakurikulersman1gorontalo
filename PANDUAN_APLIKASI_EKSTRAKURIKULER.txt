@@ -1,0 +1,543 @@
+PANDUAN APLIKASI SISTEM INFORMASI EKSTRAKURIKULER
+SMAN 1 GORONTALO
+
+========================================================================
+1. GAMBARAN UMUM APLIKASI
+========================================================================
+
+Aplikasi ini digunakan untuk mengelola kegiatan ekstrakurikuler sekolah
+secara online. Aplikasi dapat dipakai oleh 4 jenis pengguna:
+
+1. Admin
+2. Siswa
+3. Pembina
+4. Kepala Sekolah
+
+Fungsi utama aplikasi:
+
+- Menampilkan daftar ekstrakurikuler ke publik
+- Pendaftaran ekstrakurikuler oleh siswa
+- Verifikasi pendaftaran oleh admin atau pembina
+- Pengelolaan jadwal kegiatan
+- Pencatatan kehadiran siswa
+- Pencatatan penilaian atau prestasi siswa
+- Pengumuman kegiatan
+- Laporan peserta, jadwal, kehadiran, dan penilaian
+
+
+========================================================================
+2. ALAMAT HALAMAN YANG PENTING
+========================================================================
+
+Halaman umum:
+
+- Beranda / landing page
+- Informasi sistem
+- Pengumuman
+- Detail ekstrakurikuler
+- Login
+- Register siswa
+
+Setelah login, pengguna akan otomatis diarahkan ke dashboard sesuai role:
+
+- Admin -> Dashboard Admin
+- Siswa -> Dashboard Siswa
+- Pembina -> Dashboard Pembina
+- Kepala Sekolah -> Dashboard Kepala Sekolah
+
+
+========================================================================
+3. PENJELASAN SETIAP ROLE
+========================================================================
+
+3.1. ADMIN
+
+Admin adalah pengelola utama aplikasi.
+
+Tugas admin:
+
+- Mengelola akun pengguna
+- Mengelola data siswa
+- Mengelola data pembina
+- Mengelola data ekstrakurikuler
+- Menambah atau menghapus pengumuman
+- Memeriksa pendaftaran siswa
+- Menyetujui atau menolak pendaftaran
+- Melihat laporan peserta
+- Melihat laporan jadwal
+- Melihat laporan kehadiran
+- Melihat laporan penilaian
+- Export data pendaftaran dan laporan
+
+Menu penting admin:
+
+- Dashboard
+- Users
+- Students
+- Coaches
+- Extracurriculars
+- Announcements
+- Registrations
+- Participants
+- Schedules
+- Attendances
+- Assessments
+- Profile
+
+
+3.2. SISWA
+
+Siswa adalah pengguna yang mendaftar ekstrakurikuler dan melihat hasil
+pembinaan.
+
+Tugas siswa:
+
+- Membuat akun sendiri
+- Login ke sistem
+- Melihat daftar ekstrakurikuler
+- Membaca detail ekstrakurikuler
+- Mendaftar ke ekstrakurikuler
+- Melihat status pendaftaran
+- Melihat jadwal kegiatan yang diikuti
+- Melihat riwayat kehadiran
+- Melihat penilaian atau prestasi
+- Memperbarui data profil
+
+Menu penting siswa:
+
+- Dashboard
+- Extracurriculars
+- Registrations
+- Schedules
+- Attendances
+- Assessments
+- Profile
+
+
+3.3. PEMBINA
+
+Pembina adalah pengguna yang menangani ekstrakurikuler tertentu.
+
+Tugas pembina:
+
+- Melihat daftar ekstrakurikuler yang dibinanya
+- Melihat peserta ekstrakurikuler
+- Melihat pendaftaran siswa
+- Menyetujui atau menolak pendaftaran siswa
+- Menambah jadwal kegiatan
+- Mengubah jadwal kegiatan
+- Menghapus jadwal kegiatan
+- Mengisi kehadiran siswa
+- Menambah penilaian siswa
+- Mengubah penilaian siswa
+- Menghapus penilaian siswa
+- Membuat pengumuman
+
+Menu penting pembina:
+
+- Dashboard
+- Extracurriculars
+- Participants
+- Registrations
+- Schedules
+- Attendances
+- Assessments
+- Announcements
+- Profile
+
+
+3.4. KEPALA SEKOLAH
+
+Kepala sekolah berfungsi sebagai pemantau atau pengawas.
+
+Tugas kepala sekolah:
+
+- Melihat dashboard ringkasan
+- Melihat data kehadiran
+- Export data kehadiran
+- Melihat perkembangan umum kegiatan
+
+Menu penting kepala sekolah:
+
+- Dashboard
+- Attendances
+- Profile
+
+
+========================================================================
+4. ALUR SISWA MENDAFTAR DARI AWAL
+========================================================================
+
+Ini adalah bagian paling penting untuk orang awam.
+
+Langkah 1. Buka website
+
+- Siswa membuka website aplikasi
+- Siswa melihat daftar ekstrakurikuler yang tersedia di halaman depan
+
+Langkah 2. Baca informasi ekstrakurikuler
+
+- Siswa bisa klik salah satu ekstrakurikuler
+- Siswa membaca:
+  - nama ekstrakurikuler
+  - deskripsi
+  - syarat
+  - jadwal latihan
+  - informasi tambahan
+  - pembina
+
+Langkah 3. Klik tombol daftar
+
+- Jika siswa belum login, sistem akan meminta login
+- Jika siswa belum punya akun, siswa harus register dahulu
+
+Langkah 4. Register akun siswa
+
+Data yang diisi siswa saat register:
+
+- Nama lengkap
+- Email
+- Password
+- Konfirmasi password
+- Jenis kelamin
+- Tanggal lahir
+- Nomor telepon
+- Alamat
+- Nama orang tua atau wali
+- Nomor telepon orang tua atau wali
+
+Catatan penting:
+
+- Saat register, role akun otomatis menjadi siswa
+- Sistem juga otomatis membuat data siswa
+- NIS dan kelas bisa saja belum diisi pada saat awal
+
+Langkah 5. Login otomatis atau login manual
+
+- Setelah register berhasil, siswa biasanya langsung masuk ke sistem
+- Jika siswa sudah punya akun, cukup login dengan email dan password
+
+Langkah 6. Lanjutkan pendaftaran ekstrakurikuler
+
+- Jika siswa tadi memulai dari halaman detail ekstrakurikuler, sistem akan
+  mengarahkan kembali ke ekstrakurikuler tersebut
+- Siswa klik daftar atau kirim pendaftaran
+- Siswa boleh menambahkan catatan bila diperlukan
+
+Langkah 7. Status menjadi menunggu verifikasi
+
+Setelah pendaftaran dikirim:
+
+- Status pendaftaran menjadi Pending
+- Siswa harus menunggu verifikasi admin atau pembina
+
+Langkah 8. Admin atau pembina memverifikasi
+
+Kemungkinan hasil verifikasi:
+
+- Approved -> siswa diterima
+- Rejected -> siswa ditolak
+- Pending -> masih menunggu
+
+Langkah 9. Jika disetujui
+
+Jika status Approved:
+
+- Siswa dianggap menjadi peserta ekstrakurikuler
+- Jadwal kegiatan akan terlihat di menu siswa
+- Kehadiran dan penilaian siswa bisa dicatat oleh pembina
+
+Langkah 10. Siswa memantau perkembangan
+
+Siswa dapat melihat:
+
+- Status pendaftaran
+- Jadwal kegiatan
+- Riwayat kehadiran
+- Nilai atau prestasi
+- Notifikasi pada dashboard
+
+
+========================================================================
+5. ALUR KERJA ADMIN
+========================================================================
+
+Langkah umum admin:
+
+1. Login sebagai admin
+2. Periksa dashboard
+3. Kelola data dasar:
+   - users
+   - students
+   - coaches
+   - extracurriculars
+4. Periksa menu registrations
+5. Setujui atau tolak pendaftaran siswa
+6. Buat atau perbarui pengumuman
+7. Cek laporan peserta, jadwal, kehadiran, dan penilaian
+8. Export data jika diperlukan
+
+Contoh pekerjaan admin:
+
+- Menambahkan akun pembina baru
+- Menambahkan ekstrakurikuler baru
+- Mengunggah gambar ekstrakurikuler
+- Menonaktifkan akun tertentu
+- Mengubah status pendaftaran siswa
+
+
+========================================================================
+6. ALUR KERJA PEMBINA
+========================================================================
+
+Langkah umum pembina:
+
+1. Login sebagai pembina
+2. Buka dashboard pembina
+3. Lihat ekstrakurikuler yang dibina
+4. Lihat peserta yang sudah disetujui
+5. Cek pendaftaran siswa
+6. Setujui atau tolak pendaftaran bila diberi hak
+7. Buat jadwal kegiatan
+8. Isi presensi setelah kegiatan
+9. Isi penilaian atau prestasi siswa
+10. Buat pengumuman jika diperlukan
+
+Contoh pekerjaan pembina:
+
+- Menambah jadwal latihan
+- Menandai siswa hadir, sakit, izin, atau absen
+- Memberi nilai pembinaan
+- Menulis prestasi siswa
+
+
+========================================================================
+7. ALUR KERJA KEPALA SEKOLAH
+========================================================================
+
+Langkah umum kepala sekolah:
+
+1. Login sebagai kepala sekolah
+2. Buka dashboard
+3. Lihat ringkasan kegiatan
+4. Buka menu attendance
+5. Pantau kehadiran siswa
+6. Export data kehadiran bila diperlukan
+
+
+========================================================================
+8. AKUN YANG DAPAT DIGUNAKAN
+========================================================================
+
+Catatan:
+
+- Akun di bawah ini adalah akun yang dibuat oleh file seed SQL saat ini
+- Jika database sudah diubah atau akun diganti manual, data login bisa berubah
+
+AKUN ADMIN
+
+- Email    : admin@gmail.com
+- Password : admin12345
+
+AKUN KEPALA SEKOLAH
+
+- Email    : kepsek@gmail.com
+- Password : kepsek12345
+
+AKUN PEMBINA 1
+
+- Email    : pembina1@gmail.com
+- Password : pembina12345
+
+AKUN PEMBINA 2
+
+- Email    : pembina2@gmail.com
+- Password : pembina12345
+
+CATATAN TENTANG AKUN SISWA
+
+- Akun siswa biasanya dibuat sendiri melalui halaman register
+- Jadi akun siswa tidak harus dibuat manual oleh admin
+- Setelah siswa register, siswa dapat langsung login
+
+
+========================================================================
+9. DATA YANG PERLU DIPERHATIKAN
+========================================================================
+
+Data utama aplikasi:
+
+- Users
+- Students
+- Coaches
+- Extracurriculars
+- Registrations
+- Schedules
+- Attendances
+- Assessments
+- Announcements
+- Reports
+
+Hubungan sederhana:
+
+- Satu user bisa menjadi admin, siswa, pembina, atau kepala sekolah
+- Siswa mendaftar ke ekstrakurikuler
+- Pendaftaran diverifikasi oleh admin atau pembina
+- Pembina membuat jadwal
+- Pembina mengisi kehadiran
+- Pembina memberi penilaian
+
+
+========================================================================
+10. PENJELASAN STATUS PENTING
+========================================================================
+
+Status pendaftaran:
+
+- pending  = masih menunggu verifikasi
+- approved = diterima
+- rejected = ditolak
+
+Status kehadiran:
+
+- present    = hadir
+- absent     = tidak hadir
+- sick       = sakit
+- permission = izin
+
+Jenis penilaian:
+
+- assessment  = penilaian umum
+- achievement = prestasi
+
+
+========================================================================
+11. CARA GANTI GAMBAR EKSTRAKURIKULER
+========================================================================
+
+Cara normal:
+
+1. Login sebagai admin
+2. Buka menu Extracurriculars
+3. Klik edit pada ekstrakurikuler
+4. Pilih gambar baru
+5. Simpan
+
+Catatan penting untuk hosting shared:
+
+- Setelah perbaikan path hosting, upload manual dari admin harus masuk ke
+  folder public_html/uploads/extracurriculars
+- Jika gambar tidak muncul, biasanya masalah ada pada:
+  - file upload belum masuk ke folder publik yang benar
+  - image_path di database tidak sesuai
+  - cache belum dibersihkan
+
+
+========================================================================
+12. MASALAH YANG SERING TERJADI
+========================================================================
+
+Masalah 1. Siswa tidak bisa login
+
+Penyebab:
+
+- email salah
+- password salah
+- akun tidak aktif
+
+Solusi:
+
+- cek email dan password
+- cek status akun di admin
+
+
+Masalah 2. Siswa sudah daftar tapi belum masuk peserta
+
+Penyebab:
+
+- status pendaftaran masih pending
+
+Solusi:
+
+- admin atau pembina harus menyetujui pendaftaran
+
+
+Masalah 3. Gambar ekstrakurikuler tidak tampil
+
+Penyebab:
+
+- image_path salah
+- file tidak ada di folder publik
+- gambar diupload ke folder yang salah
+
+Solusi:
+
+- cek database kolom image_path
+- cek file ada di public_html/uploads/extracurriculars atau
+  public_html/images/extracurriculars
+- jalankan clear cache
+
+
+Masalah 4. Data lokal dan hosting berbeda
+
+Penyebab:
+
+- git push hanya memindahkan kode
+- data database tidak ikut pindah otomatis
+
+Solusi:
+
+- export database lokal lalu import ke hosting
+- atau input data langsung di hosting
+
+
+========================================================================
+13. SARAN PENGGUNAAN
+========================================================================
+
+Saran untuk admin:
+
+- Kelola data utama langsung di hosting
+- Jangan terlalu sering reset database produksi
+- Simpan akun penting dengan aman
+
+Saran untuk siswa:
+
+- Gunakan email aktif
+- Simpan password sendiri
+- Cek status pendaftaran secara berkala
+
+Saran untuk pembina:
+
+- Isi kehadiran segera setelah kegiatan selesai
+- Isi penilaian secara berkala agar siswa bisa memantau perkembangan
+
+Saran untuk kepala sekolah:
+
+- Gunakan dashboard dan data kehadiran untuk memantau keterlibatan siswa
+
+
+========================================================================
+14. RINGKASAN SINGKAT UNTUK ORANG AWAM
+========================================================================
+
+Kalau dijelaskan dengan sederhana:
+
+- Siswa membuat akun
+- Siswa memilih ekstrakurikuler
+- Siswa mendaftar
+- Admin atau pembina memeriksa pendaftaran
+- Jika diterima, siswa ikut kegiatan
+- Pembina membuat jadwal, mengisi kehadiran, dan memberi penilaian
+- Kepala sekolah memantau hasil kegiatan
+- Admin mengelola semua data dan laporan
+
+
+========================================================================
+15. PENUTUP
+========================================================================
+
+File ini dibuat sebagai panduan penggunaan aplikasi untuk pengguna umum.
+Jika tampilan, akun, atau alur di sistem berubah karena update aplikasi atau
+perubahan database, maka panduan ini bisa diperbarui menyesuaikan kondisi
+terbaru.

@@ -29,6 +29,13 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'password.required' => 'Password wajib diisi.',
+        ], [
+            'email' => 'email',
+            'password' => 'password',
         ]);
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -75,6 +82,33 @@ class AuthController extends Controller
             'address' => ['nullable', 'string'],
             'parent_name' => ['nullable', 'string', 'max:255'],
             'parent_phone' => ['nullable', 'string', 'max:30'],
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'name.max' => 'Nama lengkap maksimal 255 karakter.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.max' => 'Email maksimal 255 karakter.',
+            'email.unique' => 'Email sudah terdaftar, gunakan email lain.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'gender.required' => 'Jenis kelamin wajib dipilih.',
+            'gender.in' => 'Pilihan jenis kelamin tidak valid.',
+            'date_of_birth.date' => 'Tanggal lahir tidak valid.',
+            'phone.max' => 'No. telepon maksimal 30 karakter.',
+            'parent_phone.max' => 'No. telepon orang tua maksimal 30 karakter.',
+            'parent_name.max' => 'Nama orang tua / wali maksimal 255 karakter.',
+        ], [
+            'name' => 'nama lengkap',
+            'email' => 'email',
+            'password' => 'password',
+            'password_confirmation' => 'konfirmasi password',
+            'gender' => 'jenis kelamin',
+            'date_of_birth' => 'tanggal lahir',
+            'phone' => 'no. telepon',
+            'address' => 'alamat',
+            'parent_name' => 'nama orang tua / wali',
+            'parent_phone' => 'no. telepon orang tua',
         ]);
 
         $user = DB::transaction(function () use ($validated): User {

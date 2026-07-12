@@ -69,7 +69,7 @@
         'admin.participants.*' => 'Laporan Peserta',
         'admin.schedules.*' => 'Laporan Jadwal',
         'admin.attendances.*' => 'Laporan Presensi',
-        'admin.assessments.*' => 'Laporan Prestasi dan Penilaian',
+        'admin.assessments.*' => 'Kelola Prestasi dan Penilaian',
         'admin.announcements.*' => 'Pengumuman Admin',
         'student.dashboard' => 'Dashboard Siswa',
         'student.extracurriculars.*' => 'Informasi Ekstrakurikuler',
@@ -181,6 +181,25 @@
     </div>
 </div>
 
+@if(session('success_modal'))
+    <div class="modal fade" id="successStatusModal" tabindex="-1" aria-labelledby="successStatusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content success-status-modal">
+                <div class="modal-body text-center p-4 p-md-5">
+                    <div class="success-status-modal__icon">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <h2 class="success-status-modal__title" id="successStatusModalLabel">{{ session('success_modal.title') }}</h2>
+                    <p class="success-status-modal__message mb-0">{{ session('success_modal.message') }}</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 @stack('scripts')
 <script>
     (function () {
@@ -237,6 +256,11 @@
             });
             el.classList.add(resolvedClass);
         });
+
+        const successStatusModal = document.getElementById('successStatusModal');
+        if (successStatusModal && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(successStatusModal).show();
+        }
     })();
 </script>
 </body>

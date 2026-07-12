@@ -1,4 +1,4 @@
-@if(session('success'))
+@if(session('success') && !session()->has('success_modal'))
     <div class="alert alert-success alert-dismissible fade show d-flex align-items-start gap-3" role="alert">
         <i class="bi bi-check-circle-fill fs-5 mt-1"></i>
         <div class="flex-grow-1">{{ session('success') }}</div>
