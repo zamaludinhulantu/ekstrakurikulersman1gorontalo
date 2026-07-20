@@ -2941,20 +2941,31 @@ textarea.form-control {
 
     .app-topbar {
         padding: 0.8rem 0.85rem;
+        position: sticky;
     }
 
     .app-topbar__row {
-        align-items: center;
+        align-items: flex-start;
         gap: 0.75rem;
+        padding-right: 3.7rem;
     }
 
     .app-topbar__identity {
-        align-items: center;
+        align-items: flex-start;
         gap: 0.65rem;
+    }
+
+    .app-topbar__identity > div {
+        min-width: 0;
     }
 
     .page-breadcrumb {
         display: none;
+    }
+
+    .topbar-title {
+        font-size: 1rem;
+        line-height: 1.25;
     }
 
     .topbar-subtitle {
@@ -2969,7 +2980,12 @@ textarea.form-control {
 
     .topbar-mobile-account {
         display: block;
+        position: absolute;
+        top: 0.8rem;
+        right: 0.85rem;
+        margin: 0;
         flex-shrink: 0;
+        z-index: 2;
     }
 
     .app-content {
