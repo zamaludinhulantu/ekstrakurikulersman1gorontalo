@@ -17,8 +17,8 @@
 <div class="row g-3">
     <div class="col-12">
         <div class="form-section-card">
-            <h3 class="form-section-title">2. Minat dan kemampuan</h3>
-            <p class="form-section-copy">Isi singkat agar pembina mengetahui alasan mendaftar dan kemampuan awalmu.</p>
+            <h3 class="form-section-title">2. Minat dan kemampuan opsional</h3>
+            <p class="form-section-copy">Isi jika ingin memberi gambaran tambahan kepada pembina tentang alasan mendaftar dan kemampuan awalmu.</p>
             <div class="row g-3">
                 @if($branchOptions->isNotEmpty())
                     <div class="col-md-6">
@@ -35,10 +35,10 @@
                 @endif
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center gap-2">
-                        <label class="form-label mb-0" for="motivation_reason">Mengapa kamu ingin mengikuti ekstrakurikuler ini?</label>
+                        <label class="form-label mb-0" for="motivation_reason">Mengapa kamu ingin mengikuti ekstrakurikuler ini? <span class="helper-text">(Opsional)</span></label>
                         <span class="helper-text"><span id="motivationCount">{{ \Illuminate\Support\Str::length($motivationValue) }}</span>/280</span>
                     </div>
-                    <textarea id="motivation_reason" name="motivation_reason" class="form-control registration-textarea" rows="4" maxlength="280" required placeholder="Ceritakan singkat alasan dan tujuanmu mengikuti ekstrakurikuler ini.">{{ $motivationValue }}</textarea>
+                    <textarea id="motivation_reason" name="motivation_reason" class="form-control registration-textarea" rows="4" maxlength="280" placeholder="Ceritakan singkat alasan dan tujuanmu mengikuti ekstrakurikuler ini.">{{ $motivationValue }}</textarea>
                 </div>
                 @if($showPreferredPosition)
                     <div class="col-md-6">
@@ -47,17 +47,17 @@
                     </div>
                 @endif
                 <div class="col-12">
-                    <label class="form-label" for="current_skills">Pengalaman atau kemampuan yang dimiliki</label>
+                    <label class="form-label" for="current_skills">Pengalaman atau kemampuan yang dimiliki <span class="helper-text">(Opsional)</span></label>
                     <textarea id="current_skills" name="current_skills" class="form-control registration-textarea" rows="3" placeholder="Contoh: Pernah mengikuti latihan dasar dan memahami teknik dasar.">{{ $experienceValue }}</textarea>
                 </div>
                 <div class="col-12">
-                    <label class="form-label" for="student_notes">Catatan tambahan</label>
+                    <label class="form-label" for="student_notes">Catatan tambahan <span class="helper-text">(Opsional)</span></label>
                     <textarea id="student_notes" name="student_notes" class="form-control" rows="2" placeholder="Opsional, misalnya kebutuhan jadwal atau hal penting lain.">{{ old('student_notes', $registration->student_notes ?? '') }}</textarea>
                 </div>
                 <div class="col-12">
                     <div class="form-check mt-1">
                         <input class="form-check-input" type="checkbox" value="1" id="willing_to_take_test" name="willing_to_take_test" @checked(old('willing_to_take_test', $registration->willing_to_take_test ?? false))>
-                        <label class="form-check-label" for="willing_to_take_test">Saya bersedia mengikuti tes apabila dijadwalkan pembina.</label>
+                        <label class="form-check-label" for="willing_to_take_test">Saya bersedia mengikuti tes apabila dijadwalkan pembina. <span class="helper-text">(Opsional)</span></label>
                     </div>
                 </div>
             </div>
@@ -97,8 +97,8 @@
     <div class="col-12">
         <div class="form-section-card">
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="1" id="confirm_registration" name="confirm_registration" @checked(old('confirm_registration')) required>
-                <label class="form-check-label" for="confirm_registration">Saya telah memeriksa data pendaftaran.</label>
+                <input class="form-check-input" type="checkbox" value="1" id="confirm_registration" name="confirm_registration" @checked(old('confirm_registration'))>
+                <label class="form-check-label" for="confirm_registration">Saya telah memeriksa data pendaftaran. <span class="helper-text">(Opsional)</span></label>
             </div>
         </div>
     </div>

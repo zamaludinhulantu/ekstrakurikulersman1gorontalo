@@ -18,8 +18,8 @@ class StoreStudentRegistrationRequest extends FormRequest
     {
         return [
             'selected_branch' => ['nullable', 'string', 'max:255'],
-            'motivation_reason' => ['required', 'string'],
-            'goal_statement' => ['required', 'string'],
+            'motivation_reason' => ['nullable', 'string'],
+            'goal_statement' => ['nullable', 'string'],
             'prior_experience' => ['nullable', 'string'],
             'current_skills' => ['nullable', 'string'],
             'primary_talent' => ['nullable', 'string', 'max:255'],
