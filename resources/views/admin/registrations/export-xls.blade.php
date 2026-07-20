@@ -47,12 +47,7 @@
             white-space: nowrap;
         }
 
-        .text {
-            mso-number-format: "\\@";
-        }
-
         .date {
-            mso-number-format: "\\@";
             text-align: center;
             white-space: nowrap;
         }
@@ -71,6 +66,10 @@
             text-align: center;
             color: #6b7280;
             padding: 18px;
+        }
+
+        .excel-text {
+            text-align: left;
         }
     </style>
 </head>
@@ -108,9 +107,9 @@
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
                     <td>{{ $registration->student->user->name ?? '-' }}</td>
-                    <td class="text">{{ $registration->student->user->email ?? '-' }}</td>
-                    <td class="text">{{ $registration->student->user->phone ?? '-' }}</td>
-                    <td class="text">{{ $registration->student->nis ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->user->email ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->user->phone ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->nis ?? '-' }}</td>
                     <td class="center">
                         @if(($registration->student->gender ?? null) === 'L')
                             Laki-laki
@@ -123,7 +122,7 @@
                     <td class="date">{{ optional($registration->student->date_of_birth)->format('d-m-Y') ?? '-' }}</td>
                     <td>{{ $registration->student->address ?: ($registration->student->user->address ?? '-') }}</td>
                     <td>{{ $registration->student->parent_name ?? '-' }}</td>
-                    <td class="text">{{ $registration->student->parent_phone ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->parent_phone ?? '-' }}</td>
                     <td>{{ $registration->extracurricular->name ?? '-' }}</td>
                     <td>{{ $registration->selected_branch_label }}</td>
                     <td class="date">{{ optional($registration->registration_date)->format('d-m-Y') ?? '-' }}</td>
