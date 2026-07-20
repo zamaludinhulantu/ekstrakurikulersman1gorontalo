@@ -93,7 +93,6 @@
                 <th>Cabang Dipilih</th>
                 <th>Tanggal Daftar</th>
                 <th>Status</th>
-                <th>Catatan Verifikasi</th>
             </tr>
         </thead>
         <tbody>
@@ -120,11 +119,10 @@
                     <td>{{ $registration->selected_branch_label }}</td>
                     <td>{{ optional($registration->registration_date)->format('d-m-Y') ?? '-' }}</td>
                     <td>{{ $registration->status }}</td>
-                    <td>{{ $registration->notes ?: '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="14" class="empty">Tidak ada data pendaftar untuk filter ini.</td>
+                    <td colspan="13" class="empty">Tidak ada data pendaftar untuk filter ini.</td>
                 </tr>
             @endforelse
         </tbody>
