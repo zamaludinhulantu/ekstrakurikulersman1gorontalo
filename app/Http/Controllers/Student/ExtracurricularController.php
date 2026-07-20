@@ -134,7 +134,8 @@ class ExtracurricularController extends Controller
     private function resolvePreviewImage(Extracurricular $extracurricular): string
     {
         if ($extracurricular->image_path) {
-            return asset($extracurricular->image_path);
+            return Extracurricular::assetUrl($extracurricular->image_path, $extracurricular->updated_at?->timestamp)
+                ?? asset($extracurricular->image_path);
         }
 
         $name = $extracurricular->name;

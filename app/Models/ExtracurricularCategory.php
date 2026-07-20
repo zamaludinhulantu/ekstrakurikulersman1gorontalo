@@ -65,7 +65,9 @@ class ExtracurricularCategory extends Model
                     'description' => $record->description ?: $definition['description'],
                     'catalog_title' => $record->catalog_title ?: $definition['catalog_title'],
                     'catalog_subtitle' => $record->catalog_subtitle ?: $definition['catalog_subtitle'],
-                    'image' => $record->image_path ? asset($record->image_path) : $definition['image'],
+                    'image' => $record->image_path
+                        ? Extracurricular::assetUrl($record->image_path, $record->updated_at?->timestamp)
+                        : $definition['image'],
                     'image_path' => $record->image_path,
                     'sort_order' => $record->sort_order,
                     'is_active' => $record->is_active,

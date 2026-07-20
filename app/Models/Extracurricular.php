@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class Extracurricular extends Model
@@ -256,6 +257,24 @@ class Extracurricular extends Model
     public static function idsForCategory(string $category): array
     {
         return self::categoryIdsByKey()[$category] ?? [];
+    }
+
+    public static function assetUrl(?string $path, ?int $fallbackVersion = null): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        $absolutePath = public_path($path);
+        $version = File::exists($absolutePath)
+            ? File::lastModified($absolutePath)
+            : $fallbackVersion;
+
+        if (! $version) {
+            return asset($path);
+        }
+
+        return asset($path).'?v='.$version;
     }
 
     public static function activeCategoryCounts(): array
