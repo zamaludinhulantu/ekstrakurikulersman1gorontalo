@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class ExtracurricularCategory extends Model
@@ -40,34 +41,36 @@ class ExtracurricularCategory extends Model
 
     public static function catalogDefinitions(): Collection
     {
-        $defaults = collect(Extracurricular::defaultCategoryDefinitions());
+        return Cache::rememberForever('extracurricular.category-definitions.records.v1', function (): Collection {
+            $defaults = collect(Extracurricular::defaultCategoryDefinitions());
 
-        if (! Schema::hasTable('extracurricular_categories')) {
-            return $defaults->values();
-        }
-
-        $records = self::query()->ordered()->get()->keyBy('key');
-
-        return $defaults->map(function (array $definition, string $key) use ($records): array {
-            $record = $records->get($key);
-            if (! $record) {
-                return $definition;
+            if (! Schema::hasTable('extracurricular_categories')) {
+                return $defaults->values();
             }
 
-            return [
-                'key' => $definition['key'],
-                'slug' => $record->slug ?: $definition['slug'],
-                'label' => $record->label ?: $definition['label'],
-                'icon' => $record->icon ?: $definition['icon'],
-                'tone' => $record->tone ?: $definition['tone'],
-                'description' => $record->description ?: $definition['description'],
-                'catalog_title' => $record->catalog_title ?: $definition['catalog_title'],
-                'catalog_subtitle' => $record->catalog_subtitle ?: $definition['catalog_subtitle'],
-                'image' => $record->image_path ? asset($record->image_path) : $definition['image'],
-                'image_path' => $record->image_path,
-                'sort_order' => $record->sort_order,
-                'is_active' => $record->is_active,
-            ];
-        })->filter(fn (array $definition) => $definition['is_active'] ?? true)->values();
+            $records = self::query()->ordered()->get()->keyBy('key');
+
+            return $defaults->map(function (array $definition, string $key) use ($records): array {
+                $record = $records->get($key);
+                if (! $record) {
+                    return $definition;
+                }
+
+                return [
+                    'key' => $definition['key'],
+                    'slug' => $record->slug ?: $definition['slug'],
+                    'label' => $record->label ?: $definition['label'],
+                    'icon' => $record->icon ?: $definition['icon'],
+                    'tone' => $record->tone ?: $definition['tone'],
+                    'description' => $record->description ?: $definition['description'],
+                    'catalog_title' => $record->catalog_title ?: $definition['catalog_title'],
+                    'catalog_subtitle' => $record->catalog_subtitle ?: $definition['catalog_subtitle'],
+                    'image' => $record->image_path ? asset($record->image_path) : $definition['image'],
+                    'image_path' => $record->image_path,
+                    'sort_order' => $record->sort_order,
+                    'is_active' => $record->is_active,
+                ];
+            })->filter(fn (array $definition) => $definition['is_active'] ?? true)->values();
+        });
     }
 }

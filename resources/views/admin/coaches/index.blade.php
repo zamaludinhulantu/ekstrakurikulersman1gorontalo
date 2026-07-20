@@ -10,19 +10,19 @@
 
     <div class="card mb-3">
         <div class="card-body">
-            <form class="row g-2 align-items-end">
-                <div class="col-md-8">
+            <form class="toolbar-grid">
+                <div class="toolbar-col-8">
                     <label class="form-label">Pencarian</label>
                     <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama, email, atau NIP">
                 </div>
-                <div class="col-md-2"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Cari</button></div>
-                <div class="col-md-2"><a href="{{ route('admin.coaches.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a></div>
+                <div class="toolbar-col-2"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Cari</button></div>
+                <div class="toolbar-col-2"><a href="{{ route('admin.coaches.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a></div>
             </form>
         </div>
     </div>
 
     <div class="card">
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
@@ -61,6 +61,34 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($coaches as $coach)
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <h3 class="mobile-data-card-title">{{ $coach->user->name }}</h3>
+                        <span class="badge" data-status="{{ $coach->user->is_active ? 'active' : 'inactive' }}">{{ $coach->user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    </div>
+                    <div class="mobile-data-list">
+                        <div><span class="mobile-data-item-label">NIP</span><p class="mobile-data-item-value">{{ $coach->nip }}</p></div>
+                        <div><span class="mobile-data-item-label">Email</span><p class="mobile-data-item-value">{{ $coach->user->email }}</p></div>
+                    </div>
+                    <div class="mobile-data-card-actions">
+                        <a href="{{ route('admin.coaches.show', $coach) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
+                        <a href="{{ route('admin.coaches.edit', $coach) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
+                        <form method="post" action="{{ route('admin.coaches.destroy', $coach) }}" onsubmit="return confirm('Hapus pembina ini?')">
+                            @csrf
+                            @method('delete')
+                            <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash"></i>Hapus</button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-person-workspace"></i></div>
+                    <p class="mb-0">Data tidak ditemukan.</p>
+                </div>
+            @endforelse
         </div>
         <div class="card-body">{{ $coaches->links() }}</div>
     </div>

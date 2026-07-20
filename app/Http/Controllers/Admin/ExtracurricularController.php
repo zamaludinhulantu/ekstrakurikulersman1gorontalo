@@ -53,11 +53,7 @@ class ExtracurricularController extends Controller
                 });
             })
             ->when($category !== 'all', function ($query) use ($category): void {
-                $ids = Extracurricular::query()
-                    ->get(['id', 'name', 'type'])
-                    ->filter(fn (Extracurricular $item) => $item->category_key === $category)
-                    ->pluck('id')
-                    ->all();
+                $ids = Extracurricular::idsForCategory($category);
 
                 if ($ids === []) {
                     $query->whereRaw('1 = 0');
@@ -117,6 +113,7 @@ class ExtracurricularController extends Controller
         $validated['image_path'] = $this->storeImage($request);
 
         Extracurricular::create($validated);
+        Extracurricular::forgetCatalogCaches();
 
         return redirect()->route('admin.extracurriculars.index')->with('success', 'Data ekstrakurikuler berhasil ditambahkan.');
     }
@@ -151,6 +148,7 @@ class ExtracurricularController extends Controller
         $validated['image_path'] = $this->resolveUpdatedImage($request, $extracurricular);
 
         $extracurricular->update($validated);
+        Extracurricular::forgetCatalogCaches();
 
         return redirect()->route('admin.extracurriculars.index')->with('success', 'Data ekstrakurikuler berhasil diperbarui.');
     }
@@ -159,6 +157,7 @@ class ExtracurricularController extends Controller
     {
         $this->deleteImage($extracurricular->image_path);
         $extracurricular->delete();
+        Extracurricular::forgetCatalogCaches();
 
         return redirect()->route('admin.extracurriculars.index')->with('success', 'Data ekstrakurikuler berhasil dihapus.');
     }

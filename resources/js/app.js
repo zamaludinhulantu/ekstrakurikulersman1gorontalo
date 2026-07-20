@@ -752,6 +752,26 @@ const bindPublicNavbar = () => {
     window.addEventListener('scroll', sync, { passive: true });
 };
 
+const bindPublicMobileMenu = () => {
+    const menu = document.getElementById('publicMobileMenu');
+    if (!menu || typeof window.bootstrap === 'undefined') {
+        return;
+    }
+
+    const trigger = document.querySelector('.public-menu-button');
+    const firstFocusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    menu.addEventListener('shown.bs.offcanvas', () => {
+        const firstFocusable = menu.querySelector('.offcanvas-body ' + firstFocusableSelector)
+            || menu.querySelector('.offcanvas-header ' + firstFocusableSelector);
+        firstFocusable?.focus();
+    });
+
+    menu.addEventListener('hidden.bs.offcanvas', () => {
+        trigger?.focus();
+    });
+};
+
 const bindRevealAnimations = () => {
     const items = document.querySelectorAll('[data-reveal]');
     if (!items.length) {
@@ -774,8 +794,8 @@ const bindRevealAnimations = () => {
             observer.unobserve(entry.target);
         });
     }, {
-        threshold: 0.16,
-        rootMargin: '0px 0px -40px 0px',
+        threshold: 0.01,
+        rootMargin: '0px 0px 160px 0px',
     });
 
     items.forEach((item) => observer.observe(item));
@@ -851,6 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindTabScrollNav();
     bindTooltips();
     bindPublicNavbar();
+    bindPublicMobileMenu();
     bindRevealAnimations();
     bindCounters();
 

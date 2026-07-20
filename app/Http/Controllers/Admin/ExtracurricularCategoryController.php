@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Extracurricular;
 use App\Models\ExtracurricularCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -48,6 +50,8 @@ class ExtracurricularCategoryController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
 
         $extracurricularCategory->update($validated);
+        Extracurricular::forgetCatalogCaches();
+        Cache::forget('extracurricular.category-definitions.records.v1');
 
         return redirect()->route('admin.extracurricular-categories.index')
             ->with('success', 'Kategori ekskul berhasil diperbarui.');

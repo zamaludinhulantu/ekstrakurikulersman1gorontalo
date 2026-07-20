@@ -65,7 +65,7 @@
     </div>
 
     <div class="card">
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
@@ -104,6 +104,34 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($extracurriculars as $item)
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <h3 class="mobile-data-card-title">{{ $item->name }}</h3>
+                        <span class="badge" data-status="{{ $item->is_active ? 'active' : 'inactive' }}">{{ $item->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    </div>
+                    <div class="mobile-data-list">
+                        <div><span class="mobile-data-item-label">Kategori</span><p class="mobile-data-item-value">{{ $item->category_label }}</p></div>
+                        <div><span class="mobile-data-item-label">Pembina</span><p class="mobile-data-item-value">{{ $item->coach_names }}</p></div>
+                    </div>
+                    <div class="mobile-data-card-actions">
+                        <a href="{{ route('admin.extracurriculars.show', $item) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
+                        <a href="{{ route('admin.extracurriculars.edit', $item) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
+                        <form method="post" action="{{ route('admin.extracurriculars.destroy', $item) }}" onsubmit="return confirm('Hapus data ini?')">
+                            @csrf
+                            @method('delete')
+                            <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash"></i>Hapus</button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-grid-1x2"></i></div>
+                    <p class="mb-0">Data tidak ditemukan.</p>
+                </div>
+            @endforelse
         </div>
         <div class="card-body">{{ $extracurriculars->links() }}</div>
     </div>

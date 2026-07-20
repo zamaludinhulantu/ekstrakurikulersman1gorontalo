@@ -46,11 +46,7 @@ class ExtracurricularController extends Controller
                 });
             })
             ->when($category !== 'semua', function ($query) use ($category): void {
-                $ids = Extracurricular::query()
-                    ->get(['id', 'name', 'type'])
-                    ->filter(fn (Extracurricular $item) => $item->category_key === $category)
-                    ->pluck('id')
-                    ->all();
+                $ids = Extracurricular::idsForCategory($category);
 
                 if ($ids === []) {
                     $query->whereRaw('1 = 0');

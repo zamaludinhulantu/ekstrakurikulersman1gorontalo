@@ -17,8 +17,8 @@ class PublicLandingController extends Controller
 {
     public function index(): View
     {
-        $categorySummaries = $this->baseCategorySummaries();
-        $activityCounts = $this->activityCounts();
+        $activityCounts = Extracurricular::activeCategoryCounts();
+        $categorySummaries = $this->baseCategorySummaries($activityCounts);
 
         return view('public.landing', [
             'categorySummaries' => $this->decorateCategorySummaries($categorySummaries),
@@ -38,7 +38,9 @@ class PublicLandingController extends Controller
 
     public function activities(): View
     {
-        $categorySummaries = $this->decorateCategorySummaries($this->baseCategorySummaries());
+        $categorySummaries = $this->decorateCategorySummaries(
+            $this->baseCategorySummaries(Extracurricular::activeCategoryCounts())
+        );
 
         return view('public.activities-categories', [
             'categorySummaries' => $categorySummaries,
@@ -130,7 +132,7 @@ class PublicLandingController extends Controller
         ]);
 
         $search = trim((string) ($filters['search'] ?? ''));
-        $availableCategoryKeys = collect($this->baseCategorySummaries())->pluck('key')->all();
+        $availableCategoryKeys = collect($this->baseCategorySummaries(Extracurricular::activeCategoryCounts()))->pluck('key')->all();
         $requestedCategory = (string) ($filters['category'] ?? 'all');
         $category = $fixedCategory['key'] ?? (in_array($requestedCategory, $availableCategoryKeys, true) ? $requestedCategory : 'all');
         $status = $filters['status'] ?? 'all';
@@ -185,7 +187,7 @@ class PublicLandingController extends Controller
             'sort' => $sort,
             'fixedCategory' => $fixedCategory,
             'includeCategoryFilter' => $includeCategoryFilter,
-            'categorySummaries' => $this->decorateCategorySummaries($this->baseCategorySummaries()),
+            'categorySummaries' => $this->decorateCategorySummaries($this->baseCategorySummaries(Extracurricular::activeCategoryCounts())),
         ]);
     }
 
@@ -235,11 +237,7 @@ class PublicLandingController extends Controller
 
     private function applyCategoryFilter($query, string $category): void
     {
-        $ids = Extracurricular::query()
-            ->get(['id', 'name', 'type'])
-            ->filter(fn (Extracurricular $item) => $item->category_key === $category)
-            ->pluck('id')
-            ->all();
+        $ids = Extracurricular::idsForCategory($category);
 
         if ($ids === []) {
             $query->whereRaw('1 = 0');
@@ -265,10 +263,8 @@ class PublicLandingController extends Controller
         };
     }
 
-    private function baseCategorySummaries(): Collection
+    private function baseCategorySummaries(array $activityCounts): Collection
     {
-        $activityCounts = $this->activityCounts();
-
         return collect(Extracurricular::categoryDefinitions())
             ->map(function (array $definition) use ($activityCounts): array {
                 return [
@@ -289,27 +285,8 @@ class PublicLandingController extends Controller
 
     private function categoryBySlug(string $slug): ?array
     {
-        return $this->baseCategorySummaries()
+        return $this->baseCategorySummaries(Extracurricular::activeCategoryCounts())
             ->firstWhere('slug', $slug);
-    }
-
-    private function activityCounts(): array
-    {
-        $items = Extracurricular::query()
-            ->where('is_active', true)
-            ->where(function ($query): void {
-                $query->where('type', '!=', Extracurricular::TYPE_OLYMPIAD)
-                    ->orWhereNull('branch_options');
-            })
-            ->get(['id', 'name', 'type']);
-
-        $counts = ['total' => $items->count()];
-
-        foreach (array_keys(Extracurricular::categoryDefinitions()) as $key) {
-            $counts[$key] = $items->filter(fn (Extracurricular $item) => $item->category_key === $key)->count();
-        }
-
-        return $counts;
     }
 
     private function backToActivityUrl(Extracurricular $extracurricular): string

@@ -56,7 +56,7 @@
     </div>
 
     <div class="card">
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
@@ -97,6 +97,35 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($students as $student)
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <h3 class="mobile-data-card-title">{{ $student->user->name }}</h3>
+                        <span class="badge" data-status="{{ $student->user->is_active ? 'active' : 'inactive' }}">{{ $student->user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    </div>
+                    <div class="mobile-data-list">
+                        <div><span class="mobile-data-item-label">NIS</span><p class="mobile-data-item-value">{{ $student->nis }}</p></div>
+                        <div><span class="mobile-data-item-label">Kelas</span><p class="mobile-data-item-value">{{ $student->class_name }}</p></div>
+                        <div><span class="mobile-data-item-label">Email</span><p class="mobile-data-item-value">{{ $student->user->email }}</p></div>
+                    </div>
+                    <div class="mobile-data-card-actions">
+                        <a href="{{ route('admin.students.show', $student) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
+                        <a href="{{ route('admin.students.edit', $student) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
+                        <form method="post" action="{{ route('admin.students.destroy', $student) }}" onsubmit="return confirm('Hapus siswa ini?')">
+                            @csrf
+                            @method('delete')
+                            <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash"></i>Hapus</button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-person-badge"></i></div>
+                    <p class="mb-0">Data tidak ditemukan.</p>
+                </div>
+            @endforelse
         </div>
         <div class="card-body">{{ $students->links() }}</div>
     </div>

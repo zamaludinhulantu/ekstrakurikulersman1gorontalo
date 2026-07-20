@@ -7,11 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class Extracurricular extends Model
 {
     use HasFactory;
+
+    private const CACHE_KEY_CATEGORY_DEFINITIONS = 'extracurricular.category-definitions.v1';
+    private const CACHE_KEY_CATEGORY_IDS = 'extracurricular.category-ids.v1';
+    private const CACHE_KEY_ACTIVE_CATEGORY_COUNTS = 'extracurricular.active-category-counts.v1';
 
     public const TYPE_EXTRACURRICULAR = 'extracurricular';
     public const TYPE_OLYMPIAD = 'olympiad';
@@ -236,14 +241,66 @@ class Extracurricular extends Model
 
     public static function categoryDefinitions(): array
     {
-        if (class_exists(ExtracurricularCategory::class)) {
-            return ExtracurricularCategory::catalogDefinitions()
-                ->keyBy('key')
-                ->map(fn (array $definition) => $definition)
-                ->all();
-        }
+        return Cache::rememberForever(self::CACHE_KEY_CATEGORY_DEFINITIONS, function (): array {
+            if (class_exists(ExtracurricularCategory::class)) {
+                return ExtracurricularCategory::catalogDefinitions()
+                    ->keyBy('key')
+                    ->map(fn (array $definition) => $definition)
+                    ->all();
+            }
 
-        return self::defaultCategoryDefinitions();
+            return self::defaultCategoryDefinitions();
+        });
+    }
+
+    public static function idsForCategory(string $category): array
+    {
+        return self::categoryIdsByKey()[$category] ?? [];
+    }
+
+    public static function activeCategoryCounts(): array
+    {
+        return Cache::rememberForever(self::CACHE_KEY_ACTIVE_CATEGORY_COUNTS, function (): array {
+            $items = self::query()
+                ->where('is_active', true)
+                ->where(function ($query): void {
+                    $query->where('type', '!=', self::TYPE_OLYMPIAD)
+                        ->orWhereNull('branch_options');
+                })
+                ->get(['id', 'name', 'type']);
+
+            $counts = ['total' => $items->count()];
+
+            foreach (array_keys(self::categoryDefinitions()) as $key) {
+                $counts[$key] = $items->filter(fn (self $item) => $item->category_key === $key)->count();
+            }
+
+            return $counts;
+        });
+    }
+
+    public static function forgetCatalogCaches(): void
+    {
+        Cache::forget(self::CACHE_KEY_CATEGORY_DEFINITIONS);
+        Cache::forget(self::CACHE_KEY_CATEGORY_IDS);
+        Cache::forget(self::CACHE_KEY_ACTIVE_CATEGORY_COUNTS);
+    }
+
+    private static function categoryIdsByKey(): array
+    {
+        return Cache::rememberForever(self::CACHE_KEY_CATEGORY_IDS, function (): array {
+            $grouped = self::query()
+                ->get(['id', 'name', 'type'])
+                ->groupBy(fn (self $item) => $item->category_key)
+                ->map(fn ($items) => $items->pluck('id')->all())
+                ->all();
+
+            foreach (array_keys(self::categoryDefinitions()) as $key) {
+                $grouped[$key] = $grouped[$key] ?? [];
+            }
+
+            return $grouped;
+        });
     }
 
     public static function inferCategoryKey(?string $name, ?string $type = null): string

@@ -31,7 +31,7 @@
                 <span>SMA Negeri 1 Gorontalo</span>
             </span>
         </a>
-        <button class="btn btn-outline-primary btn-sm d-lg-none ms-auto public-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#publicMobileMenu" aria-label="Buka menu navigasi">
+        <button class="btn btn-outline-primary btn-sm d-lg-none ms-auto public-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#publicMobileMenu" aria-label="Buka menu navigasi" aria-controls="publicMobileMenu">
             <i class="bi bi-list"></i>Menu
         </button>
         <div class="public-nav-links mx-auto d-none d-lg-flex">
@@ -115,39 +115,57 @@
     </div>
 </footer>
 
-<div class="offcanvas offcanvas-start public-mobile-menu" tabindex="-1" id="publicMobileMenu">
+<div class="offcanvas offcanvas-start public-mobile-menu" tabindex="-1" id="publicMobileMenu" aria-labelledby="publicMobileMenuTitle">
     <div class="offcanvas-header">
-        <div>
-            <h5 class="offcanvas-title mb-1">Menu Utama</h5>
-            <div class="small text-muted">Navigasi untuk siswa baru</div>
+        <div class="public-mobile-menu-heading">
+            <h5 class="offcanvas-title mb-1" id="publicMobileMenuTitle">Navigasi</h5>
+            <div class="small">Pilih halaman yang ingin dibuka.</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
     </div>
     <div class="offcanvas-body">
-        <div class="public-mobile-links">
-            <a class="public-mobile-link {{ request()->routeIs('landing') ? 'active' : '' }}" href="{{ route('landing') }}">Beranda</a>
-            <button class="public-mobile-link public-mobile-link-button {{ request()->routeIs('public.activities.*') ? 'active' : '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#publicMobileActivitiesMenu" aria-expanded="{{ request()->routeIs('public.activities.*') ? 'true' : 'false' }}">
-                <span>Kategori</span>
-                <i class="bi bi-chevron-down"></i>
-            </button>
-            <div class="collapse {{ request()->routeIs('public.activities.*') ? 'show' : '' }}" id="publicMobileActivitiesMenu">
-                <div class="public-mobile-submenu">
-                    <a class="public-mobile-sublink" href="{{ route('public.activities.index') }}">Semua Kategori</a>
-                    @foreach($publicCategories as $publicCategory)
-                        <a class="public-mobile-sublink {{ $currentCategorySlug === $publicCategory['slug'] ? 'active' : '' }}" href="{{ route('public.activities.category', $publicCategory['slug']) }}">{{ $publicCategory['label'] }}</a>
-                    @endforeach
-                    <a class="public-mobile-sublink" href="{{ route('public.activities.all') }}">Semua Pilihan</a>
+        <div class="public-mobile-menu-scroll">
+            <div class="public-mobile-links">
+                <a class="public-mobile-link {{ request()->routeIs('landing') ? 'active' : '' }}" href="{{ route('landing') }}">
+                    <span class="public-mobile-link-icon"><i class="bi bi-house-door"></i></span>
+                    <span>Beranda</span>
+                </a>
+                <div class="public-mobile-accordion-item">
+                    <button class="public-mobile-link public-mobile-link-button {{ request()->routeIs('public.activities.*') ? 'active' : '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#publicMobileActivitiesMenu" aria-expanded="{{ request()->routeIs('public.activities.*') ? 'true' : 'false' }}" aria-controls="publicMobileActivitiesMenu">
+                        <span class="public-mobile-link-content">
+                            <span class="public-mobile-link-icon"><i class="bi bi-grid-1x2"></i></span>
+                            <span>Kegiatan</span>
+                        </span>
+                        <i class="bi bi-chevron-down public-mobile-link-caret"></i>
+                    </button>
+                    <div class="collapse public-mobile-submenu-wrap {{ request()->routeIs('public.activities.*') ? 'show' : '' }}" id="publicMobileActivitiesMenu">
+                        <div class="public-mobile-submenu">
+                            <a class="public-mobile-sublink {{ request()->routeIs('public.activities.index') ? 'active' : '' }}" href="{{ route('public.activities.index') }}">Semua Kategori</a>
+                            @foreach($publicCategories as $publicCategory)
+                                <a class="public-mobile-sublink {{ $currentCategorySlug === $publicCategory['slug'] ? 'active' : '' }}" href="{{ route('public.activities.category', $publicCategory['slug']) }}">{{ $publicCategory['label'] }}</a>
+                            @endforeach
+                            <a class="public-mobile-sublink {{ request()->routeIs('public.activities.all') ? 'active' : '' }}" href="{{ route('public.activities.all') }}">Semua Pilihan</a>
+                        </div>
+                    </div>
                 </div>
+                <a class="public-mobile-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}">
+                    <span class="public-mobile-link-icon"><i class="bi bi-megaphone"></i></span>
+                    <span>Pengumuman</span>
+                </a>
+                <a class="public-mobile-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">
+                    <span class="public-mobile-link-icon"><i class="bi bi-signpost-2"></i></span>
+                    <span>Alur Pendaftaran</span>
+                </a>
             </div>
-            <a class="public-mobile-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}">Pengumuman</a>
-            <a class="public-mobile-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">Alur Pendaftaran</a>
         </div>
-        <div class="d-grid gap-2 mt-4">
+        <div class="public-mobile-menu-footer">
             @auth
-                <a href="{{ route('dashboard') }}" class="btn btn-outline-primary"><i class="bi bi-speedometer2"></i>Buka Dashboard</a>
+                <a href="{{ route('dashboard') }}" class="btn btn-primary public-mobile-footer-btn"><i class="bi bi-speedometer2"></i>Buka Dashboard</a>
             @else
-                <a href="{{ route('login') }}" class="btn btn-outline-primary"><i class="bi bi-box-arrow-in-right"></i>Masuk</a>
-                <a href="{{ route('register') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i>Buat Akun</a>
+                <div class="d-grid gap-2">
+                    <a href="{{ route('login') }}" class="btn btn-primary public-mobile-footer-btn"><i class="bi bi-box-arrow-in-right"></i>Masuk</a>
+                    <a href="{{ route('register') }}" class="btn btn-outline-primary public-mobile-footer-btn is-secondary"><i class="bi bi-person-plus"></i>Buat Akun</a>
+                </div>
             @endauth
         </div>
     </div>

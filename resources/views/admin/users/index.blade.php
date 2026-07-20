@@ -43,7 +43,7 @@
             <span>Daftar Pengguna</span>
             <span class="small text-muted">{{ $users->total() }} data</span>
         </div>
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table align-middle">
                 <thead>
                 <tr>
@@ -90,6 +90,36 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($users as $user)
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <h3 class="mobile-data-card-title">{{ $user->name }}</h3>
+                        <span class="badge" data-status="{{ $user->is_active ? 'active' : 'inactive' }}">{{ $user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    </div>
+                    <div class="mobile-data-list">
+                        <div><span class="mobile-data-item-label">Role</span><p class="mobile-data-item-value">{{ strtoupper($user->role) }}</p></div>
+                        <div><span class="mobile-data-item-label">Email</span><p class="mobile-data-item-value">{{ $user->email }}</p></div>
+                        <div><span class="mobile-data-item-label">Telepon</span><p class="mobile-data-item-value">{{ $user->phone ?? '-' }}</p></div>
+                        <div><span class="mobile-data-item-label">Alamat</span><p class="mobile-data-item-value">{{ $user->address ?? 'Alamat belum diisi' }}</p></div>
+                    </div>
+                    <div class="mobile-data-card-actions">
+                        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
+                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
+                        <form method="post" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
+                            @csrf
+                            @method('delete')
+                            <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash"></i>Hapus</button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-inbox"></i></div>
+                    <p class="mb-0">Data pengguna tidak ditemukan.</p>
+                </div>
+            @endforelse
         </div>
         <div class="card-footer">{{ $users->links() }}</div>
     </div>

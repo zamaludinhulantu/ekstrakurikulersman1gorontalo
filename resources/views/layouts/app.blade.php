@@ -181,10 +181,10 @@
 
     <div class="app-main">
         <header class="app-topbar">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                <div class="d-flex align-items-start gap-2">
-                    <button class="btn btn-outline-primary btn-sm d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" type="button" aria-label="Toggle Menu">
-                        <i class="bi bi-list"></i>Menu
+            <div class="app-topbar__row">
+                <div class="app-topbar__identity">
+                    <button class="btn btn-outline-primary btn-sm d-lg-none app-topbar__menu-button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" type="button" aria-label="Buka menu navigasi">
+                        <i class="bi bi-list"></i>
                     </button>
                     <div>
                         <nav class="page-breadcrumb" aria-label="Breadcrumb">
@@ -200,7 +200,7 @@
                         <p class="topbar-subtitle">{{ $pageSubtitle ?: 'Panel kerja terintegrasi untuk mengelola aktivitas ekstrakurikuler sekolah.' }}</p>
                     </div>
                 </div>
-                <div class="topbar-meta">
+                <div class="topbar-meta topbar-meta-desktop">
                     <div class="date-pill">
                         <i class="bi bi-calendar3 text-primary"></i>
                         <div>
@@ -217,7 +217,28 @@
                     </div>
                 </div>
             </div>
-            <div class="page-actions mt-3">
+            <div class="topbar-mobile-account dropdown d-md-none">
+                <button class="btn btn-outline-primary btn-sm topbar-mobile-account__toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu akun">
+                    <span class="profile-chip-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($authUser->name ?? 'U', 0, 1)) }}</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end topbar-account-menu">
+                    <div class="topbar-account-menu__header">
+                        <strong>{{ $authUser->name ?? 'Pengguna' }}</strong>
+                        <span>{{ $roleLabel }}</span>
+                        <small>{{ now()->translatedFormat('d F Y') }} · {{ now()->translatedFormat('l') }}</small>
+                    </div>
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                        <i class="bi bi-person-circle"></i>Profil
+                    </a>
+                    <form action="{{ route('logout') }}" method="post">
+                        @csrf
+                        <button type="submit" class="dropdown-item text-danger" data-loading-text="Keluar...">
+                            <i class="bi bi-box-arrow-right"></i>Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="page-actions page-actions-desktop mt-3">
                 <a href="{{ route('profile.edit') }}" class="btn btn-outline-primary btn-sm" aria-label="Buka halaman profil"><i class="bi bi-person-circle"></i>Profil</a>
                 <form action="{{ route('logout') }}" method="post" class="d-inline-flex">
                     @csrf
