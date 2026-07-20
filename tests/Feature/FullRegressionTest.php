@@ -45,7 +45,7 @@ class FullRegressionTest extends TestCase
         $this->get(route('register'))
             ->assertOk()
             ->assertDontSee('name="nis"', false)
-            ->assertDontSee('name="class_name"', false);
+            ->assertSee('name="class_name"', false);
 
         $this->get(route('public.extracurriculars.register', $extracurricular->getKey()))
             ->assertRedirect(route('login'));
@@ -60,6 +60,7 @@ class FullRegressionTest extends TestCase
             'email' => 'siswa.mandiri@example.com',
             'password' => '11111111',
             'password_confirmation' => '11111111',
+            'class_name' => 'X IPA 5',
             'gender' => 'P',
             'date_of_birth' => '2010-02-20',
             'phone' => '081299999001',
@@ -75,7 +76,7 @@ class FullRegressionTest extends TestCase
         ]);
         $this->assertDatabaseHas('students', [
             'parent_name' => 'Ibu Mandiri',
-            'class_name' => null,
+            'class_name' => 'X IPA 5',
             'nis' => null,
         ]);
     }
@@ -361,7 +362,11 @@ class FullRegressionTest extends TestCase
 
         $this->actingAs($studentUser)
             ->post(route('student.registrations.store', $extracurricular), [
-                'notes' => 'Pendaftaran dari automated regression test.',
+                'motivation_reason' => 'Saya ingin berkembang melalui kegiatan ini.',
+                'goal_statement' => 'Saya ingin aktif dan disiplin.',
+                'current_skills' => 'Dasar kemampuan awal.',
+                'willing_to_take_test' => '1',
+                'student_notes' => 'Pendaftaran dari automated regression test.',
             ])
             ->assertRedirect(route('student.extracurriculars.show', $extracurricular));
 
@@ -385,6 +390,39 @@ class FullRegressionTest extends TestCase
         $studentUser->refresh();
         $this->assertSame('Rizky Ananda Update', $studentUser->name);
         $this->assertSame('081200000003', $studentUser->phone);
+    }
+
+    public function test_public_and_student_activity_filters_keep_osn_and_o2sn_visible(): void
+    {
+        $studentUser = $this->userByEmail('siswa3@gmail.com');
+
+        $this->get(route('public.activities.category', 'osn'))
+            ->assertOk()
+            ->assertSee('OSN')
+            ->assertSee('Matematika')
+            ->assertSee('Informatika')
+            ->assertDontSee('0 kegiatan ditemukan');
+
+        $this->get(route('public.activities.category', 'o2sn'))
+            ->assertOk()
+            ->assertSee('O2SN')
+            ->assertSee('Silat')
+            ->assertSee('Badminton')
+            ->assertDontSee('0 kegiatan ditemukan');
+
+        $this->actingAs($studentUser)
+            ->get(route('student.extracurriculars.index', ['category' => 'osn']))
+            ->assertOk()
+            ->assertSee('OSN')
+            ->assertSee('OSN - Matematika')
+            ->assertDontSee('O2SN - Silat');
+
+        $this->actingAs($studentUser)
+            ->get(route('student.extracurriculars.index', ['category' => 'o2sn']))
+            ->assertOk()
+            ->assertSee('O2SN')
+            ->assertSee('O2SN - Silat')
+            ->assertDontSee('OSN - Matematika');
     }
 
     public function test_coach_pages_schedule_attendance_assessment_and_report_flows_work(): void
@@ -542,6 +580,100 @@ class FullRegressionTest extends TestCase
             ->get(route('principal.attendances.export'))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_talent_test_flow_and_student_visibility_work(): void
+    {
+        $coachUser = $this->userByEmail('pembina1@gmail.com');
+        $coach = $coachUser->coach;
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
+        $registration = Registration::query()
+            ->where('extracurricular_id', $extracurricular->id)
+            ->whereIn('status', [Registration::STATUS_PENDING, Registration::STATUS_APPROVED])
+            ->firstOrFail();
+
+        $this->actingAs($coachUser)
+            ->post(route('coach.talent-tests.store'), [
+                'extracurricular_id' => $extracurricular->id,
+                'title' => 'Tes Bakat Regression',
+                'activity_date' => now()->addDays(5)->toDateString(),
+                'start_time' => '15:00',
+                'end_time' => '16:00',
+                'location' => 'Lapangan Timur',
+                'description' => 'Tes bakat dibuat oleh regression test.',
+                'equipment' => 'Sepatu olahraga',
+                'instructions' => 'Datang tepat waktu',
+                'participant_registration_ids' => [$registration->id],
+            ])
+            ->assertRedirect(route('coach.talent-tests.index'));
+
+        $talentTest = Schedule::query()->where('title', 'Tes Bakat Regression')->firstOrFail();
+
+        $this->actingAs($coachUser)
+            ->get(route('coach.talent-tests.manage', $talentTest))
+            ->assertOk();
+
+        $participant = $talentTest->talentTestParticipants()->firstOrFail();
+        $aspectIds = $extracurricular->talentTestAspects()->pluck('id')->all();
+        $scores = [];
+        foreach ($aspectIds as $aspectId) {
+            $scores[$aspectId] = 85;
+        }
+
+        $this->actingAs($coachUser)
+            ->post(route('coach.talent-tests.results.save', $talentTest), [
+                'participants' => [[
+                    'participant_id' => $participant->id,
+                    'attendance_status' => 'present',
+                    'attendance_notes' => 'Hadir saat regression test.',
+                    'ability_category' => 'Menengah',
+                    'training_group' => 'Kelompok A',
+                    'recommended_role' => 'Anggota inti',
+                    'recommendation' => 'Layak ikut pembinaan lanjutan.',
+                    'coach_notes' => 'Stabil.',
+                    'internal_notes' => 'Catatan internal.',
+                    'scores' => $scores,
+                ]],
+            ])
+            ->assertRedirect();
+
+        $result = \App\Models\TalentTestResult::query()
+            ->where('schedule_id', $talentTest->id)
+            ->where('student_id', $participant->student_id)
+            ->firstOrFail();
+
+        $this->assertSame('draft', $result->status);
+
+        $this->actingAs($coachUser)
+            ->post(route('coach.talent-tests.results.save', $talentTest), [
+                'publish' => '1',
+                'participants' => [[
+                    'participant_id' => $participant->id,
+                    'attendance_status' => 'present',
+                    'ability_category' => 'Menengah',
+                    'training_group' => 'Kelompok A',
+                    'recommended_role' => 'Anggota inti',
+                    'recommendation' => 'Layak ikut pembinaan lanjutan.',
+                    'coach_notes' => 'Stabil.',
+                    'scores' => $scores,
+                ]],
+            ])
+            ->assertRedirect();
+
+        $result->refresh();
+        $this->assertSame('published', $result->status);
+
+        $studentUser = $registration->student->user;
+        $this->actingAs($studentUser)
+            ->get(route('student.talent-tests.index'))
+            ->assertOk()
+            ->assertSee('Tes Bakat Regression')
+            ->assertSee('Kelompok A');
+
+        $otherStudent = $this->userByEmail('siswa3@gmail.com');
+        $this->actingAs($otherStudent)
+            ->get(route('registrations.profile-preview', $registration))
+            ->assertForbidden();
     }
 
     private function userByEmail(string $email): User

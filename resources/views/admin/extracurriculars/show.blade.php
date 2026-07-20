@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('page_title', 'Detail Ekstrakurikuler')
+@section('page_title', 'Detail Kegiatan')
 @section('page_subtitle', $extracurricular->name)
 
 @section('content')
@@ -8,7 +8,10 @@
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                 <h4 class="mb-0">{{ $extracurricular->name }}</h4>
-                <span class="badge" data-status="{{ $extracurricular->is_active ? 'active' : 'inactive' }}">{{ $extracurricular->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge badge-status-secondary">{{ $extracurricular->category_label }}</span>
+                    <span class="badge" data-status="{{ $extracurricular->is_active ? 'active' : 'inactive' }}">{{ $extracurricular->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                </div>
             </div>
             @if($extracurricular->image_path)
                 <div class="mb-3">
@@ -16,11 +19,13 @@
                 </div>
             @endif
             <div class="row g-3">
+                <div class="col-md-6"><p class="text-muted small mb-1">Kategori Ekskul</p><p class="mb-0">{{ $extracurricular->category_label }}</p></div>
                 <div class="col-md-6"><p class="text-muted small mb-1">Pembina</p><p class="mb-0">{{ $extracurricular->coach_names }}</p></div>
                 <div class="col-md-6"><p class="text-muted small mb-1">Persyaratan</p><p class="mb-0">{{ $extracurricular->requirements ?? '-' }}</p></div>
                 <div class="col-12"><p class="text-muted small mb-1">Deskripsi</p><p class="mb-0">{{ $extracurricular->description }}</p></div>
                 <div class="col-md-6"><p class="text-muted small mb-1">Ringkasan Jadwal</p><p class="mb-0">{{ $extracurricular->schedule_overview ?? '-' }}</p></div>
                 <div class="col-md-6"><p class="text-muted small mb-1">Prestasi Tercatat</p><p class="mb-0">{{ $extracurricular->achievements->count() }} prestasi</p></div>
+                <div class="col-12"><p class="text-muted small mb-1">Pilihan Cabang</p><p class="mb-0">{{ collect($extracurricular->branch_options ?? [])->filter()->implode(', ') ?: '-' }}</p></div>
             </div>
         </div>
     </div>
@@ -45,7 +50,7 @@
         </div>
         <div class="col-12 col-xl-6">
             <div class="card h-100">
-                <div class="card-header">Prestasi Ekstrakurikuler</div>
+                <div class="card-header">Prestasi Kegiatan</div>
                 <div class="card-body">
                     <form method="post" action="{{ route('admin.extracurricular-achievements.store', $extracurricular) }}" class="row g-3 mb-3">
                         @csrf
@@ -89,7 +94,7 @@
                         @empty
                             <div class="empty-state py-3">
                                 <div class="icon"><i class="bi bi-award"></i></div>
-                                <p class="mb-0">Belum ada prestasi ekstrakurikuler.</p>
+                                <p class="mb-0">Belum ada prestasi kegiatan.</p>
                             </div>
                         @endforelse
                     </div>
@@ -103,7 +108,7 @@
                     <ul class="list-group list-group-flush">
                         @forelse($extracurricular->registrations as $registration)
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>{{ $registration->student->user->name ?? '-' }}</span>
+                                <span>{{ $registration->student->user->name ?? '-' }}@if($registration->selected_branch) <span class="text-muted">| {{ $registration->selected_branch }}</span>@endif</span>
                                 <span class="badge" data-status="{{ $registration->status }}">{{ $registration->status }}</span>
                             </li>
                         @empty

@@ -56,4 +56,14 @@ class Student extends Model
     {
         return $this->hasMany(Assessment::class);
     }
+
+    public function talentTestParticipants(): HasMany
+    {
+        return $this->hasMany(TalentTestParticipant::class);
+    }
+
+    public function talentTestResults(): HasMany
+    {
+        return $this->hasMany(TalentTestResult::class);
+    }
 }

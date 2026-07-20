@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Extracurricular;
 use App\Models\Registration;
@@ -16,6 +17,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RegistrationController extends Controller
 {
+    use SanitizesCsvExports;
+
     public function index(Request $request): View
     {
         $filters = $this->validateFilters($request);
@@ -31,6 +34,23 @@ class RegistrationController extends Controller
             'extracurricularId' => $filters['extracurricular_id'] ?? '',
             'extracurriculars' => Extracurricular::orderBy('name')->get(),
         ]);
+    }
+
+    public function show(Registration $registration): View
+    {
+        $registration->load([
+            'student.user',
+            'extracurricular.coaches.user',
+            'talentTestParticipants.schedule',
+            'talentTestResults.schedule',
+        ]);
+
+        return view('admin.registrations.show', compact('registration'));
+    }
+
+    public function redirectStatus(): RedirectResponse
+    {
+        return redirect()->route('admin.registrations.index');
     }
 
     public function export(Request $request): StreamedResponse
@@ -79,14 +99,15 @@ class RegistrationController extends Controller
                 'Alamat',
                 'Nama Orang Tua / Wali',
                 'No. Telepon Orang Tua',
-                'Ekstrakurikuler',
+                'Kegiatan',
+                'Cabang Dipilih',
                 'Tanggal Daftar',
                 'Status',
                 'Catatan Verifikasi',
             ], "\t");
 
             foreach ($registrations as $registration) {
-                fputcsv($handle, [
+                fputcsv($handle, $this->sanitizeExportRow([
                     $registration->student->user->name ?? '-',
                     $registration->student->user->email ?? '-',
                     $registration->student->user->phone ?? '-',
@@ -101,10 +122,11 @@ class RegistrationController extends Controller
                     $registration->student->parent_name ?? '-',
                     $registration->student->parent_phone ?? '-',
                     $registration->extracurricular->name ?? '-',
+                    $registration->selected_branch_label,
                     optional($registration->registration_date)->format('Y-m-d') ?? '-',
                     $registration->status,
                     $registration->notes ?: '-',
-                ], "\t");
+                ]), "\t");
             }
 
             fclose($handle);
@@ -140,6 +162,7 @@ class RegistrationController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in([
                 Registration::STATUS_PENDING,
+                'waiting_test',
                 Registration::STATUS_APPROVED,
                 Registration::STATUS_REJECTED,
             ])],
@@ -155,13 +178,38 @@ class RegistrationController extends Controller
 
     private function filteredRegistrationsQuery(array $filters)
     {
-        return Registration::with(['student.user', 'extracurricular', 'verifier'])
+        return Registration::with(['student.user', 'extracurricular', 'verifier', 'talentTestResults'])
             ->when($filters['search'] ?? null, function ($query, $searchValue) {
-                $query->whereHas('student.user', function ($userQuery) use ($searchValue): void {
-                    $userQuery->where('name', 'like', "%{$searchValue}%");
+                $query->where(function ($searchQuery) use ($searchValue): void {
+                    $searchQuery->whereHas('student.user', function ($userQuery) use ($searchValue): void {
+                        $userQuery->where('name', 'like', "%{$searchValue}%");
+                    })->orWhereHas('student', function ($studentQuery) use ($searchValue): void {
+                        $studentQuery->where('nis', 'like', "%{$searchValue}%");
+                    });
                 });
             })
-            ->when($filters['status'] ?? null, fn ($query, $statusValue) => $query->where('status', $statusValue))
+            ->with(['talentTestParticipants.schedule'])
+            ->when($filters['status'] ?? null, function ($query, $statusValue): void {
+                if ($statusValue === 'waiting_test') {
+                    $query->where('status', Registration::STATUS_APPROVED)
+                        ->where('willing_to_take_test', true)
+                        ->whereDoesntHave('talentTestResults', fn ($resultQuery) => $resultQuery->where('status', 'published'));
+
+                    return;
+                }
+
+                if ($statusValue === Registration::STATUS_APPROVED) {
+                    $query->where('status', Registration::STATUS_APPROVED)
+                        ->where(function ($approvedQuery): void {
+                            $approvedQuery->where('willing_to_take_test', false)
+                                ->orWhereHas('talentTestResults', fn ($resultQuery) => $resultQuery->where('status', 'published'));
+                        });
+
+                    return;
+                }
+
+                $query->where('status', $statusValue);
+            })
             ->when($filters['extracurricular_id'] ?? null, fn ($query, $idValue) => $query->where('extracurricular_id', $idValue))
             ->latest();
     }

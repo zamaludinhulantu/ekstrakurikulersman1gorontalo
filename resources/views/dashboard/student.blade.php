@@ -58,6 +58,34 @@
     @endif
 
     <div class="card">
+        <div class="card-header">Jadwal Tes Bakat</div>
+        <div class="card-body">
+            <div class="info-list">
+                @forelse($upcomingTalentTests as $test)
+                    <div class="info-item">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="title">{{ $test->schedule->title ?? '-' }}</div>
+                                <div class="small text-muted mt-1">{{ $test->schedule->extracurricular->name ?? '-' }} | {{ $test->schedule->location ?? '-' }}</div>
+                            </div>
+                            <span class="badge" data-status="{{ $test->attendance_status }}">{{ $test->attendance_status }}</span>
+                        </div>
+                        <div class="small mt-2">{{ optional($test->schedule->activity_date)->format('d-m-Y') }} | {{ \Illuminate\Support\Str::substr($test->schedule->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr($test->schedule->end_time, 0, 5) }}</div>
+                    </div>
+                @empty
+                    <div class="empty-state py-3">
+                        <div class="icon"><i class="bi bi-clipboard2-pulse"></i></div>
+                        <p class="mb-0">Belum ada jadwal tes bakat terdekat.</p>
+                    </div>
+                @endforelse
+            </div>
+            <div class="form-actions mt-3">
+                <a href="{{ route('student.talent-tests.index') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Semua Tes</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
         <div class="card-header">Pengumuman Terbaru</div>
         <div class="card-body">
             <div class="info-list">

@@ -17,6 +17,9 @@ class ExtracurricularController extends Controller
     public function index(Request $request): View
     {
         $search = $request->string('search')->toString();
+        $allowedCategories = array_keys(Extracurricular::categoryDefinitions());
+        $requestedCategory = $request->string('category')->toString() ?: 'all';
+        $category = in_array($requestedCategory, $allowedCategories, true) ? $requestedCategory : 'all';
 
         $extracurriculars = Extracurricular::with(['coach.user', 'coaches.user'])
             ->when($search, function ($query, $searchValue) {
@@ -25,21 +28,47 @@ class ExtracurricularController extends Controller
                         $userQuery->where('name', 'like', "%{$searchValue}%");
                     });
             })
+            ->when($category !== 'all', function ($query) use ($category): void {
+                $ids = Extracurricular::query()
+                    ->get(['id', 'name', 'type'])
+                    ->filter(fn (Extracurricular $item) => $item->category_key === $category)
+                    ->pluck('id')
+                    ->all();
+
+                if ($ids === []) {
+                    $query->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $query->whereIn('id', $ids);
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.extracurriculars.index', compact('extracurriculars', 'search'));
+        return view('admin.extracurriculars.index', [
+            'extracurriculars' => $extracurriculars,
+            'search' => $search,
+            'category' => $category,
+            'categories' => collect(Extracurricular::categoryDefinitions())
+                ->map(fn (array $definition) => ['key' => $definition['key'], 'label' => $definition['label']])
+                ->values(),
+        ]);
     }
 
     public function create(): View
     {
-        return view('admin.extracurriculars.create');
+        return view('admin.extracurriculars.create', [
+            'types' => $this->types(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validatePayload($request);
+        $validated['type'] = $validated['type'] ?? Extracurricular::TYPE_EXTRACURRICULAR;
+        $validated['branch_options'] = $this->normalizeBranchOptions($request->input('branch_options'));
         $validated['is_active'] = $request->boolean('is_active');
         $validated['image_path'] = $this->storeImage($request);
 
@@ -65,12 +94,15 @@ class ExtracurricularController extends Controller
     {
         return view('admin.extracurriculars.edit', [
             'extracurricular' => $extracurricular,
+            'types' => $this->types(),
         ]);
     }
 
     public function update(Request $request, Extracurricular $extracurricular): RedirectResponse
     {
         $validated = $this->validatePayload($request, $extracurricular);
+        $validated['type'] = $validated['type'] ?? Extracurricular::TYPE_EXTRACURRICULAR;
+        $validated['branch_options'] = $this->normalizeBranchOptions($request->input('branch_options'));
         $validated['is_active'] = $request->boolean('is_active');
         $validated['image_path'] = $this->resolveUpdatedImage($request, $extracurricular);
 
@@ -90,10 +122,12 @@ class ExtracurricularController extends Controller
     private function validatePayload(Request $request, ?Extracurricular $extracurricular = null): array
     {
         return $request->validate([
+            'type' => ['nullable', Rule::in(array_keys($this->types()))],
             'name' => ['required', 'string', 'max:255', Rule::unique('extracurriculars', 'name')->ignore($extracurricular?->id)],
             'description' => ['required', 'string'],
             'requirements' => ['nullable', 'string'],
             'schedule_overview' => ['nullable', 'string'],
+            'branch_options' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:3072', 'mimes:jpg,jpeg,png,webp'],
             'remove_image' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
@@ -146,5 +180,25 @@ class ExtracurricularController extends Controller
         if (File::exists($absolutePath)) {
             File::delete($absolutePath);
         }
+    }
+
+    private function types(): array
+    {
+        return [
+            Extracurricular::TYPE_EXTRACURRICULAR => 'Ekstrakurikuler',
+            Extracurricular::TYPE_OLYMPIAD => 'Olimpiade',
+        ];
+    }
+
+    private function normalizeBranchOptions(?string $branchOptions): ?array
+    {
+        $items = collect(preg_split('/\r\n|\r|\n/', (string) $branchOptions))
+            ->map(fn ($value) => trim((string) $value))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return $items !== [] ? $items : null;
     }
 }

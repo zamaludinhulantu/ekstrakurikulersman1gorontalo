@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
-use App\Models\Coach;
 use App\Models\Extracurricular;
-use App\Models\Schedule;
+use App\Models\Registration;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -17,41 +17,50 @@ class PublicLandingController extends Controller
 {
     public function index(): View
     {
-        $extracurriculars = Extracurricular::with([
-            'coach.user',
-            'coaches.user',
-            'achievements' => fn ($query) => $query->select('id', 'extracurricular_id', 'title', 'achievement_date')
-                ->orderByDesc('achievement_date')
-                ->orderByDesc('id')
-                ->limit(1),
-            'schedules' => fn ($query) => $query->select('id', 'extracurricular_id', 'title', 'activity_date', 'start_time', 'location')
-                ->orderBy('activity_date')
-                ->orderBy('start_time')
-                ->limit(1),
-        ])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
-
-        $usesDummyExtracurriculars = $extracurriculars->isEmpty();
-
-        if ($usesDummyExtracurriculars) {
-            $extracurriculars = $this->dummyExtracurriculars();
-        }
-
-        $extracurriculars = $this->decorateExtracurriculars($extracurriculars);
+        $categorySummaries = $this->baseCategorySummaries();
+        $activityCounts = $this->activityCounts();
 
         return view('public.landing', [
-            'extracurriculars' => $extracurriculars,
-            'featuredExtracurricular' => $extracurriculars->first(),
-            'usesDummyExtracurriculars' => $usesDummyExtracurriculars,
+            'categorySummaries' => $this->decorateCategorySummaries($categorySummaries),
+            'statistics' => [
+                'totalActivities' => $activityCounts['total'],
+                'openActivities' => $activityCounts['total'],
+                'categories' => $categorySummaries->count(),
+                'onlineRegistration' => '24/7',
+            ],
+            'recentAnnouncements' => Announcement::with(['publisher', 'extracurricular'])
+                ->visibleToStudents()
+                ->latest()
+                ->limit(3)
+                ->get(),
         ]);
+    }
+
+    public function activities(): View
+    {
+        $categorySummaries = $this->decorateCategorySummaries($this->baseCategorySummaries());
+
+        return view('public.activities-categories', [
+            'categorySummaries' => $categorySummaries,
+            'totalActivities' => $categorySummaries->sum('count'),
+        ]);
+    }
+
+    public function catalog(Request $request): View
+    {
+        return $this->renderCatalogPage($request, null, includeCategoryFilter: true);
+    }
+
+    public function categoryCatalog(Request $request, string $slug): View
+    {
+        $category = $this->categoryBySlug($slug);
+        abort_unless($category !== null, 404);
+
+        return $this->renderCatalogPage($request, $category, includeCategoryFilter: false);
     }
 
     public function show(Extracurricular $extracurricular): View
     {
-        abort_unless($extracurricular->is_active, 404);
-
         $extracurricular->load([
             'coach.user',
             'coaches.user',
@@ -63,6 +72,13 @@ class PublicLandingController extends Controller
 
         return view('public.extracurricular-detail', [
             'extracurricular' => $extracurricular,
+            'relatedAnnouncements' => Announcement::with('publisher')
+                ->visibleToStudents()
+                ->where('extracurricular_id', $extracurricular->id)
+                ->latest()
+                ->limit(3)
+                ->get(),
+            'backToActivitiesUrl' => $this->backToActivityUrl($extracurricular),
         ]);
     }
 
@@ -74,7 +90,7 @@ class PublicLandingController extends Controller
     public function announcements(): View
     {
         $announcements = Announcement::with(['publisher', 'extracurricular'])
-            ->where('is_active', true)
+            ->visibleToStudents()
             ->latest()
             ->get();
 
@@ -89,101 +105,88 @@ class PublicLandingController extends Controller
 
         if (auth()->check()) {
             if (auth()->user()->hasRole(User::ROLE_STUDENT)) {
-                return redirect()->route('student.extracurriculars.show', $extracurricular);
+                return redirect()->route('student.extracurriculars.register', $extracurricular);
             }
 
             return redirect()->route('dashboard')
-                ->with('error', 'Pendaftaran ekstrakurikuler hanya dapat dilakukan menggunakan akun siswa.');
+                ->with('error', 'Pendaftaran kegiatan hanya dapat dilakukan menggunakan akun siswa.');
         }
+
+        abort_unless($extracurricular->is_active, 404);
 
         $request->session()->put('pending_extracurricular_id', $extracurricular->id);
 
         return redirect()->route('login')
-            ->with('info', 'Login sebagai siswa untuk melanjutkan pendaftaran ekstrakurikuler '.$extracurricular->name.'.');
+            ->with('info', 'Login sebagai siswa untuk melanjutkan pendaftaran kegiatan '.$extracurricular->name.'.');
     }
 
-    private function dummyExtracurriculars(): Collection
+    private function renderCatalogPage(Request $request, ?array $fixedCategory, bool $includeCategoryFilter): View
     {
-        return collect([
-            [
-                'name' => 'Basket',
-                'description' => 'Latihan teknik dasar, strategi tim, dan pembinaan fisik untuk kompetisi antarsekolah.',
-                'requirements' => 'Memiliki semangat latihan rutin dan menjaga sportivitas.',
-                'schedule_overview' => 'Setiap Selasa dan Kamis, pukul 15.30 - 17.30.',
-                'coach_name' => 'Pembina Basket',
-                'schedule_title' => 'Latihan Passing dan Shooting',
-                'schedule_date' => now()->addDays(2)->toDateString(),
-                'schedule_start' => '15:30:00',
-                'schedule_end' => '17:30:00',
-                'schedule_location' => 'Lapangan Basket Sekolah',
-                'achievements' => [
-                    ['title' => 'Finalis turnamen basket pelajar tingkat kota.', 'date' => now()->subMonths(2)->toDateString()],
-                ],
-            ],
-            [
-                'name' => 'Futsal',
-                'description' => 'Pembinaan teknik bermain futsal, kerja sama tim, dan persiapan turnamen sekolah.',
-                'requirements' => 'Sehat jasmani dan siap mengikuti seleksi dasar.',
-                'schedule_overview' => 'Setiap Senin dan Jumat, pukul 16.00 - 17.30.',
-                'coach_name' => 'Pembina Futsal',
-                'schedule_title' => 'Latihan Formasi dan Finishing',
-                'schedule_date' => now()->addDays(3)->toDateString(),
-                'schedule_start' => '16:00:00',
-                'schedule_end' => '17:30:00',
-                'schedule_location' => 'Lapangan Serbaguna',
-                'achievements' => [
-                    ['title' => 'Juara 3 Liga Futsal Pelajar wilayah kota.', 'date' => now()->subMonths(1)->toDateString()],
-                ],
-            ],
-            [
-                'name' => 'Rohis',
-                'description' => 'Kegiatan pembinaan karakter, kajian rutin, dan pengembangan kepemimpinan siswa.',
-                'requirements' => 'Aktif mengikuti pembinaan dan kegiatan keagamaan sekolah.',
-                'schedule_overview' => 'Setiap Rabu, pukul 15.30 - 17.00.',
-                'coach_name' => 'Pembina Rohis',
-                'schedule_title' => 'Kajian dan Diskusi Pekanan',
-                'schedule_date' => now()->addDays(5)->toDateString(),
-                'schedule_start' => '15:30:00',
-                'schedule_end' => '17:00:00',
-                'schedule_location' => 'Mushola Sekolah',
-                'achievements' => [
-                    ['title' => 'Program kajian rutin dan bakti sosial siswa.', 'date' => now()->subWeeks(3)->toDateString()],
-                ],
-            ],
-        ])->map(function (array $item): Extracurricular {
-            $coach = new Coach;
-            $coach->setRelation('user', new User([
-                'name' => $item['coach_name'],
-            ]));
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'in:all,open,closed'],
+            'sort' => ['nullable', 'in:relevant,name,latest,open'],
+            'category' => ['nullable', 'string', 'max:120'],
+        ]);
 
-            $schedule = new Schedule([
-                'title' => $item['schedule_title'],
-                'activity_date' => $item['schedule_date'],
-                'start_time' => $item['schedule_start'],
-                'end_time' => $item['schedule_end'],
-                'location' => $item['schedule_location'],
-            ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $availableCategoryKeys = collect($this->baseCategorySummaries())->pluck('key')->all();
+        $requestedCategory = (string) ($filters['category'] ?? 'all');
+        $category = $fixedCategory['key'] ?? (in_array($requestedCategory, $availableCategoryKeys, true) ? $requestedCategory : 'all');
+        $status = $filters['status'] ?? 'all';
+        $sort = $filters['sort'] ?? 'relevant';
 
-            $extracurricular = new Extracurricular([
-                'name' => $item['name'],
-                'description' => $item['description'],
-                'requirements' => $item['requirements'],
-                'schedule_overview' => $item['schedule_overview'],
-                'is_active' => true,
-            ]);
+        $query = $this->catalogQuery(activeOnly: false)
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($subQuery) use ($search): void {
+                    $subQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($category !== 'all', function ($query) use ($category): void {
+                $this->applyCategoryFilter($query, $category);
+            })
+            ->when($status !== 'all', function ($query) use ($status): void {
+                $query->where('is_active', $status === 'open');
+            });
 
-            $extracurricular->setRelation('coach', $coach);
-            $extracurricular->setRelation('coaches', collect([$coach]));
-            $extracurricular->setRelation('schedules', collect([$schedule]));
-            $extracurricular->setRelation('achievements', collect($item['achievements'] ?? [])->map(function (array $achievement) use ($extracurricular) {
-                return new \App\Models\ExtracurricularAchievement([
-                    'title' => $achievement['title'],
-                    'achievement_date' => $achievement['date'] ?? null,
-                ]);
-            }));
+        $this->applyCatalogSort($query, $sort, $search, $category);
 
-            return $extracurricular;
-        });
+        $extracurriculars = $query
+            ->paginate(12)
+            ->withQueryString();
+
+        $collection = $this->decorateExtracurriculars($extracurriculars->getCollection());
+
+        $user = $request->user();
+        if ($user?->hasRole(User::ROLE_STUDENT) && $user->student) {
+            $registrations = Registration::query()
+                ->where('student_id', $user->student->id)
+                ->whereIn('extracurricular_id', $collection->pluck('id'))
+                ->latest('registration_date')
+                ->latest('id')
+                ->get()
+                ->keyBy('extracurricular_id');
+
+            $collection = $collection->map(function (Extracurricular $activity) use ($registrations): Extracurricular {
+                $activity->setAttribute('current_registration', $registrations->get($activity->id));
+
+                return $activity;
+            });
+        }
+
+        $extracurriculars->setCollection($collection);
+
+        return view('public.catalog', [
+            'extracurriculars' => $extracurriculars,
+            'search' => $search,
+            'category' => $category,
+            'status' => $status,
+            'sort' => $sort,
+            'fixedCategory' => $fixedCategory,
+            'includeCategoryFilter' => $includeCategoryFilter,
+            'categorySummaries' => $this->decorateCategorySummaries($this->baseCategorySummaries()),
+        ]);
     }
 
     private function decorateExtracurriculars(Collection $extracurriculars): Collection
@@ -193,11 +196,125 @@ class PublicLandingController extends Controller
         );
     }
 
+    private function decorateCategorySummaries(Collection $summaries): Collection
+    {
+        return $summaries->map(function (array $summary): array {
+            $summary['slug'] = $summary['slug'] ?? str((string) ($summary['label'] ?? ''))->slug()->toString();
+            $summary['route'] = route('public.activities.category', $summary['slug']);
+
+            return $summary;
+        });
+    }
+
     private function decorateExtracurricular(Extracurricular $extracurricular): Extracurricular
     {
         $extracurricular->setAttribute('preview_image', $this->resolvePreviewImage($extracurricular));
 
         return $extracurricular;
+    }
+
+    private function catalogQuery(bool $activeOnly)
+    {
+        return Extracurricular::with([
+            'coach.user',
+            'coaches.user',
+            'schedules' => fn ($query) => $query->select('id', 'extracurricular_id', 'title', 'activity_date', 'start_time', 'location')
+                ->orderBy('activity_date')
+                ->orderBy('start_time')
+                ->limit(1),
+        ])
+            ->withCount([
+                'registrations as participants_count' => fn ($query) => $query->where('status', 'approved'),
+            ])
+            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+            ->where(function ($query): void {
+                $query->where('type', '!=', Extracurricular::TYPE_OLYMPIAD)
+                    ->orWhereNull('branch_options');
+            });
+    }
+
+    private function applyCategoryFilter($query, string $category): void
+    {
+        $ids = Extracurricular::query()
+            ->get(['id', 'name', 'type'])
+            ->filter(fn (Extracurricular $item) => $item->category_key === $category)
+            ->pluck('id')
+            ->all();
+
+        if ($ids === []) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->whereIn('id', $ids);
+    }
+
+    private function applyCatalogSort($query, string $sort, string $search, string $category): void
+    {
+        match ($sort) {
+            'name' => $query->orderBy('name'),
+            'latest' => $query->orderByDesc('id'),
+            'open' => $query->orderByDesc('is_active')->orderBy('name'),
+            default => $search !== ''
+                ? $query->orderByRaw(
+                    "case when name = ? then 0 when name like ? then 1 when name like ? then 2 when description like ? then 3 else 4 end",
+                    [$search, $search.'%', '%'.$search.'%', '%'.$search.'%']
+                )->orderBy('name')
+                : $query->orderByDesc('is_active')->orderBy('name'),
+        };
+    }
+
+    private function baseCategorySummaries(): Collection
+    {
+        $activityCounts = $this->activityCounts();
+
+        return collect(Extracurricular::categoryDefinitions())
+            ->map(function (array $definition) use ($activityCounts): array {
+                return [
+                    'label' => $definition['label'],
+                    'key' => $definition['key'],
+                    'slug' => $definition['slug'],
+                    'description' => $definition['description'],
+                    'catalogTitle' => $definition['catalog_title'],
+                    'catalogSubtitle' => $definition['catalog_subtitle'],
+                    'count' => $activityCounts[$definition['key']] ?? 0,
+                    'icon' => $definition['icon'],
+                    'image' => $definition['image'],
+                    'tone' => $definition['tone'],
+                ];
+            })
+            ->values();
+    }
+
+    private function categoryBySlug(string $slug): ?array
+    {
+        return $this->baseCategorySummaries()
+            ->firstWhere('slug', $slug);
+    }
+
+    private function activityCounts(): array
+    {
+        $items = Extracurricular::query()
+            ->where('is_active', true)
+            ->where(function ($query): void {
+                $query->where('type', '!=', Extracurricular::TYPE_OLYMPIAD)
+                    ->orWhereNull('branch_options');
+            })
+            ->get(['id', 'name', 'type']);
+
+        $counts = ['total' => $items->count()];
+
+        foreach (array_keys(Extracurricular::categoryDefinitions()) as $key) {
+            $counts[$key] = $items->filter(fn (Extracurricular $item) => $item->category_key === $key)->count();
+        }
+
+        return $counts;
+    }
+
+    private function backToActivityUrl(Extracurricular $extracurricular): string
+    {
+        return route('public.activities.category', $extracurricular->category_slug);
     }
 
     private function resolvePreviewImage(Extracurricular $extracurricular): string
@@ -206,68 +323,40 @@ class PublicLandingController extends Controller
             return asset($extracurricular->image_path);
         }
 
-        $name = $extracurricular->name;
-        $normalized = Str::of($name)->lower()->trim()->toString();
-
-        $imageMap = [
-            'pramuka' => asset('images/extracurriculars/pramuka.jpg'),
-            'paskibra' => asset('images/extracurriculars/paskibra.webp'),
-            'pmr' => asset('images/extracurriculars/pmr.jpg'),
-            'basket' => asset('images/extracurriculars/basket.jpg'),
-            'basketball' => asset('images/extracurriculars/basket.jpg'),
-            'futsal' => asset('images/extracurriculars/futsal.jpg'),
-            'rohis' => asset('images/extracurriculars/rohis.jpg'),
-            "tilawatil qur'an" => asset('images/extracurriculars/quran-student.jpg'),
-            "tartil dan hifzil qur'an" => asset('images/extracurriculars/quran-student.jpg'),
-            'opsi' => asset('images/extracurriculars/student-discussion.jpg'),
-            'menulis artikel' => asset('images/extracurriculars/student-discussion.jpg'),
-            'pelsis' => asset('images/extracurriculars/student-discussion.jpg'),
-            'smag' => asset('images/extracurriculars/student-discussion.jpg'),
-            'rels' => asset('images/extracurriculars/student-discussion.jpg'),
-            'osis / mpk' => asset('images/extracurriculars/student-discussion.jpg'),
-            'pa/pi duta' => asset('images/extracurriculars/student-discussion.jpg'),
-            'fortina' => asset('images/extracurriculars/student-discussion.jpg'),
-            'konten kreator' => asset('images/extracurriculars/student-camera.jpg'),
-            'pbb/paskib' => asset('images/extracurriculars/student-parade.jpg'),
-            'pks' => asset('images/extracurriculars/student-parade.jpg'),
-        ];
-
-        if (array_key_exists($normalized, $imageMap)) {
-            return $imageMap[$normalized];
-        }
-
-        return $this->makePreviewImage($name);
+        return $this->makePreviewImage($extracurricular->name);
     }
 
     private function makePreviewImage(string $name): string
     {
         $palette = collect([
-            ['#0f766e', '#14b8a6', '#99f6e4'],
-            ['#1d4ed8', '#38bdf8', '#dbeafe'],
-            ['#7c3aed', '#c084fc', '#f3e8ff'],
-            ['#be123c', '#fb7185', '#ffe4e6'],
-            ['#b45309', '#f59e0b', '#fef3c7'],
+            ['#c70f43', '#ff6f87', '#ffd5e0'],
+            ['#008d8a', '#34d2c5', '#dcfffb'],
+            ['#d67b00', '#ffb11a', '#fff0c7'],
+            ['#2d63d8', '#63a3ff', '#dce9ff'],
+            ['#6a35cc', '#9f72ff', '#efe4ff'],
         ]);
 
         $colors = $palette[abs(crc32($name)) % $palette->count()];
-        $initial = Str::upper(Str::substr($name, 0, 1));
         $label = e(Str::upper($name));
 
         $svg = <<<SVG
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520">
     <defs>
-        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="bg" x1="0%" y1="8%" x2="100%" y2="92%">
             <stop offset="0%" stop-color="{$colors[0]}"/>
             <stop offset="55%" stop-color="{$colors[1]}"/>
             <stop offset="100%" stop-color="{$colors[2]}"/>
         </linearGradient>
     </defs>
     <rect width="800" height="520" rx="36" fill="url(#bg)"/>
-    <circle cx="664" cy="96" r="96" fill="rgba(255,255,255,0.18)"/>
-    <circle cx="110" cy="440" r="120" fill="rgba(255,255,255,0.14)"/>
-    <circle cx="610" cy="370" r="150" fill="rgba(15,23,42,0.12)"/>
-    <text x="76" y="156" font-family="Segoe UI, Arial, sans-serif" font-size="148" font-weight="800" fill="rgba(255,255,255,0.92)">{$initial}</text>
-    <text x="78" y="446" font-family="Segoe UI, Arial, sans-serif" font-size="48" font-weight="700" fill="#ffffff">{$label}</text>
+    <rect x="6" y="6" width="788" height="508" rx="30" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="4"/>
+    <circle cx="118" cy="76" r="46" fill="rgba(255,255,255,0.96)"/>
+    <circle cx="696" cy="72" r="78" fill="rgba(255,255,255,0.14)"/>
+    <circle cx="620" cy="286" r="118" fill="rgba(15,23,42,0.14)"/>
+    <circle cx="92" cy="368" r="74" fill="rgba(255,255,255,0.16)"/>
+    <text x="84" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="900" fill="{$colors[0]}">O</text>
+    <rect x="0" y="410" width="800" height="110" fill="rgba(255,255,255,0.16)"/>
+    <text x="70" y="475" font-family="Segoe UI, Arial, sans-serif" font-size="46" font-weight="800" fill="#ffffff">{$label}</text>
 </svg>
 SVG;
 

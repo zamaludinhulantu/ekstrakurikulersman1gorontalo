@@ -77,22 +77,13 @@
                     </thead>
                     <tbody>
                     @forelse($attendances as $attendance)
-                        @php
-                            $statusLabel = match ($attendance->status) {
-                                'present' => 'Hadir',
-                                'permission' => 'Izin',
-                                'sick' => 'Sakit',
-                                'absent' => 'Alpa',
-                                default => $attendance->status,
-                            };
-                        @endphp
                         <tr>
                             <td>{{ $attendance->student->user->name ?? '-' }}</td>
                             <td>{{ $attendance->extracurricular->name ?? '-' }}</td>
                             <td>{{ $attendance->schedule->coach->user->name ?? $attendance->extracurricular->coach_names }}</td>
                             <td>{{ $attendance->schedule->title ?? '-' }}</td>
                             <td>{{ optional($attendance->schedule->activity_date)->format('d-m-Y') }}</td>
-                            <td><span class="badge" data-status="{{ $attendance->status }}">{{ $statusLabel }}</span></td>
+                            <td><span class="badge" data-status="{{ $attendance->display_status }}">{{ $attendance->display_status_label }}</span></td>
                         </tr>
                     @empty
                         <tr>

@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Detail Ekstrakurikuler | ' . $extracurricular->name)
+@section('title', 'Detail ' . $extracurricular->category_label . ' | ' . $extracurricular->name)
 
 @push('styles')
     <style>
@@ -117,6 +117,38 @@
             gap: 0.9rem;
         }
 
+        .detail-info-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+
+        .detail-info-card {
+            border: 1px solid #dbe5f0;
+            border-radius: 22px;
+            padding: 1rem 1.05rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.95));
+            box-shadow: 0 12px 24px rgba(16, 35, 63, 0.05);
+        }
+
+        .detail-info-card .label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 800;
+            color: #5f7897;
+            margin-bottom: 0.45rem;
+        }
+
+        .detail-info-card .value {
+            color: #173556;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
         .detail-cta-card {
             border-radius: 28px;
             background: linear-gradient(135deg, #0f2f57 0%, #1f5eff 100%);
@@ -161,6 +193,15 @@
             gap: 0.35rem;
         }
 
+        .detail-announcement-card {
+            border: 1px solid #dbe5f0;
+            border-radius: 20px;
+            padding: 1rem 1.05rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(246, 250, 255, 0.95));
+            box-shadow: 0 12px 24px rgba(16, 35, 63, 0.04);
+            height: 100%;
+        }
+
         @media (max-width: 991.98px) {
             .detail-cover-frame {
                 max-width: 560px;
@@ -177,6 +218,9 @@
             $isStudent = $user?->hasRole(\App\Models\User::ROLE_STUDENT) ?? false;
             $firstSchedule = $extracurricular->schedules->first();
             $achievements = $extracurricular->achievements;
+            $branchOptions = collect($extracurricular->branch_options ?? [])->filter()->values();
+            $location = $firstSchedule?->location ?: 'Belum ditentukan';
+            $quota = $extracurricular->quota ? $extracurricular->quota . ' peserta' : 'Belum ditentukan';
             $normalizedName = \Illuminate\Support\Str::lower(trim($extracurricular->name));
             $visualMap = [
                 'pramuka' => ['icon' => 'bi-tree', 'label' => 'Kegiatan lapangan'],
@@ -191,7 +235,7 @@
                 "tartil dan hifzil qur'an" => ['icon' => 'bi-book', 'label' => 'Pembinaan keagamaan'],
                 'konten kreator' => ['icon' => 'bi-camera-video', 'label' => 'Kegiatan media'],
                 'menulis artikel' => ['icon' => 'bi-pencil-square', 'label' => 'Kegiatan literasi'],
-                'opsis' => ['icon' => 'bi-lightbulb', 'label' => 'Kegiatan akademik'],
+                'opsi' => ['icon' => 'bi-lightbulb', 'label' => 'Kegiatan akademik'],
                 'osis / mpk' => ['icon' => 'bi-people', 'label' => 'Kegiatan organisasi'],
                 'pelsis' => ['icon' => 'bi-people', 'label' => 'Kegiatan organisasi'],
                 'smag' => ['icon' => 'bi-people', 'label' => 'Kegiatan organisasi'],
@@ -201,16 +245,21 @@
         @endphp
 
         <div class="split-actions mb-3">
-            <a href="{{ route('landing') }}#daftar-ekskul" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali ke Daftar Ekskul</a>
+            <a href="{{ $backToActivitiesUrl ?? route('public.activities.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali ke Kategori</a>
             <a href="{{ route('public.information') }}" class="btn btn-outline-primary"><i class="bi bi-signpost-2"></i>Lihat Alur Pendaftaran</a>
         </div>
 
         <section class="detail-hero">
             <div class="row g-4 align-items-center">
                 <div class="col-lg-7">
-                    <span class="section-kicker"><i class="bi bi-grid-1x2"></i>Detail Ekstrakurikuler</span>
+                    <span class="section-kicker"><i class="bi bi-grid-1x2"></i>Detail {{ $extracurricular->category_label }}</span>
                     <h1 class="section-title">{{ $extracurricular->name }}</h1>
                     <p class="section-subtitle mb-3">Baca informasi berikut terlebih dahulu agar kamu yakin sebelum mengirim pendaftaran.</p>
+
+                    <div class="catalog-card-meta mb-3">
+                        <span><i class="bi bi-bookmark-star"></i>{{ $extracurricular->category_label }}</span>
+                        <span><i class="bi bi-circle-fill"></i>{{ $extracurricular->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    </div>
 
                     <div class="detail-summary-list">
                         <div class="dashboard-highlight">
@@ -236,6 +285,15 @@
                                 </p>
                             </div>
                         </div>
+                        @if($branchOptions->isNotEmpty())
+                            <div class="dashboard-highlight">
+                                <span class="dashboard-highlight-icon"><i class="bi bi-diagram-3"></i></span>
+                                <div class="dashboard-highlight-copy">
+                                    <h3>Pilihan cabang</h3>
+                                    <p>{{ $branchOptions->implode(', ') }}</p>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
                 <div class="col-lg-5">
@@ -263,9 +321,43 @@
         <div class="row g-3 mb-3">
             <div class="col-lg-12">
                 <div class="detail-panel">
+                    <span class="section-kicker"><i class="bi bi-info-circle"></i>Informasi Utama</span>
+                    <h3>Rincian kegiatan</h3>
+                    <p class="mb-3">Semua informasi inti kegiatan dikumpulkan di sini agar siswa tidak perlu membaca kartu yang terlalu panjang.</p>
+
+                    <div class="detail-info-grid">
+                        <div class="detail-info-card">
+                            <div class="label"><i class="bi bi-bookmark-star"></i>Kategori</div>
+                            <div class="value">{{ $extracurricular->category_label }}</div>
+                        </div>
+                        <div class="detail-info-card">
+                            <div class="label"><i class="bi bi-circle-fill"></i>Status</div>
+                            <div class="value">{{ $extracurricular->is_active ? 'Pendaftaran Dibuka' : 'Pendaftaran Ditutup' }}</div>
+                        </div>
+                        <div class="detail-info-card">
+                            <div class="label"><i class="bi bi-person-workspace"></i>Pembina</div>
+                            <div class="value">{{ $extracurricular->coach_names }}</div>
+                        </div>
+                        <div class="detail-info-card">
+                            <div class="label"><i class="bi bi-geo-alt"></i>Lokasi</div>
+                            <div class="value">{{ $location }}</div>
+                        </div>
+                        <div class="detail-info-card">
+                            <div class="label"><i class="bi bi-people"></i>Kuota</div>
+                            <div class="value">{{ $quota }}</div>
+                        </div>
+                        <div class="detail-info-card">
+                            <div class="label"><i class="bi bi-card-checklist"></i>Syarat</div>
+                            <div class="value">Login sebagai siswa lalu lengkapi data pendaftaran sesuai instruksi pembina atau admin.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-12">
+                <div class="detail-panel">
                     <span class="section-kicker"><i class="bi bi-award"></i>Prestasi</span>
-                    <h3>Daftar prestasi ekstrakurikuler</h3>
-                    <p class="mb-0">Prestasi di bawah ini merupakan capaian kegiatan ekstrakurikuler yang diinput admin.</p>
+                    <h3>Daftar prestasi kegiatan</h3>
+                    <p class="mb-0">Prestasi di bawah ini merupakan capaian kegiatan yang diinput admin.</p>
 
                     @if($achievements->isNotEmpty())
                         <div class="achievement-list">
@@ -284,7 +376,7 @@
                     @else
                         <div class="empty-state py-3">
                             <div class="icon"><i class="bi bi-award"></i></div>
-                            <p class="mb-0">Belum ada prestasi ekstrakurikuler yang ditampilkan.</p>
+                            <p class="mb-0">Belum ada prestasi kegiatan yang ditampilkan.</p>
                         </div>
                     @endif
                 </div>
@@ -345,19 +437,48 @@
             <div class="col-lg-4">
                 <div class="detail-cta-card h-100">
                     <div class="small text-white-50 mb-2">Langkah berikutnya</div>
-                    <h3 class="h5">Siap mendaftar ke ekskul ini?</h3>
-                    <p class="mb-3">Pastikan data diri kamu sudah benar sebelum mendaftar. Setelah dikirim, pendaftaran akan menunggu konfirmasi dari pembina atau admin.</p>
+                    <h3 class="h5">Siap mendaftar ke kegiatan {{ strtolower($extracurricular->category_label) }} ini?</h3>
+                    <p class="mb-3">Form pendaftaran lengkap tidak ditampilkan di halaman ini. Setelah login, kamu akan diarahkan ke halaman pendaftaran terpisah.</p>
                     <div class="d-grid gap-2">
                         @if(!$user)
-                            <a href="{{ route('public.extracurriculars.register', $extracurricular) }}" class="btn btn-light text-primary"><i class="bi bi-send-check"></i>Daftar Ekstrakurikuler Ini</a>
+                            <a href="{{ route('public.extracurriculars.register', $extracurricular) }}" class="btn btn-light text-primary"><i class="bi bi-send-check"></i>Daftar Kegiatan Ini</a>
                             <a href="{{ route('login') }}" class="btn btn-outline-light"><i class="bi bi-box-arrow-in-right"></i>Masuk sebagai Siswa</a>
                             <a href="{{ route('register') }}" class="btn btn-outline-light"><i class="bi bi-person-plus"></i>Buat Akun Siswa</a>
                         @elseif($isStudent)
-                            <a href="{{ route('student.extracurriculars.show', $extracurricular) }}" class="btn btn-light text-primary"><i class="bi bi-send-check"></i>Daftar Ekstrakurikuler Ini</a>
+                            <a href="{{ route('student.extracurriculars.register', $extracurricular) }}" class="btn btn-light text-primary"><i class="bi bi-send-check"></i>Daftar Kegiatan Ini</a>
                         @else
                             <a href="{{ route('dashboard') }}" class="btn btn-light text-primary"><i class="bi bi-arrow-right-circle"></i>Kembali ke Dashboard</a>
                         @endif
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-12">
+                <div class="detail-panel">
+                    <span class="section-kicker"><i class="bi bi-megaphone"></i>Pengumuman Terkait</span>
+                    <h3>Informasi terbaru untuk kegiatan ini</h3>
+                    <p class="mb-3">Pengumuman terkait kegiatan dipusatkan di halaman detail agar beranda tetap ringkas.</p>
+
+                    @if($relatedAnnouncements->isNotEmpty())
+                        <div class="row g-3">
+                            @foreach($relatedAnnouncements as $announcement)
+                                <div class="col-12 col-lg-4">
+                                    <article class="detail-announcement-card">
+                                        <div class="small text-muted mb-2">{{ optional($announcement->created_at)->format('d-m-Y') }}</div>
+                                        <h4 class="h6 mb-2">{{ $announcement->title }}</h4>
+                                        <p class="mb-0 text-muted">{{ \Illuminate\Support\Str::limit($announcement->content, 160) }}</p>
+                                    </article>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="empty-state py-3">
+                            <div class="icon"><i class="bi bi-megaphone"></i></div>
+                            <p class="mb-0">Belum ada pengumuman terkait kegiatan ini.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

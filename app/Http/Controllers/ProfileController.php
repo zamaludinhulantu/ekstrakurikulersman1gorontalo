@@ -26,6 +26,8 @@ class ProfileController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->ignore($user->student?->id)],
+            'class_name' => ['nullable', 'string', 'max:100'],
             'gender' => ['nullable', Rule::in(['L', 'P'])],
             'date_of_birth' => ['nullable', 'date'],
             'parent_name' => ['nullable', 'string', 'max:255'],
@@ -46,6 +48,8 @@ class ProfileController extends Controller
 
         if ($user->hasRole(\App\Models\User::ROLE_STUDENT) && $user->student) {
             $user->student->update([
+                'nis' => filled($validated['nis'] ?? null) ? $validated['nis'] : null,
+                'class_name' => filled($validated['class_name'] ?? null) ? $validated['class_name'] : null,
                 'gender' => $validated['gender'] ?? $user->student->gender,
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'address' => $validated['address'] ?? null,

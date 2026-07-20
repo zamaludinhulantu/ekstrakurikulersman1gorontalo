@@ -19,9 +19,21 @@ class Registration extends Model
     protected $fillable = [
         'student_id',
         'extracurricular_id',
+        'selected_branch',
         'registration_date',
         'status',
         'notes',
+        'motivation_reason',
+        'goal_statement',
+        'prior_experience',
+        'current_skills',
+        'primary_talent',
+        'preferred_position',
+        'achievement_history',
+        'achievement_proof_path',
+        'willing_to_take_test',
+        'student_notes',
+        'allow_public_profile',
         'verified_by',
         'verified_at',
     ];
@@ -31,6 +43,8 @@ class Registration extends Model
         return [
             'registration_date' => 'date',
             'verified_at' => 'datetime',
+            'willing_to_take_test' => 'boolean',
+            'allow_public_profile' => 'boolean',
         ];
     }
 
@@ -47,5 +61,20 @@ class Registration extends Model
     public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function talentTestParticipants()
+    {
+        return $this->hasMany(TalentTestParticipant::class);
+    }
+
+    public function talentTestResults()
+    {
+        return $this->hasMany(TalentTestResult::class);
+    }
+
+    public function getSelectedBranchLabelAttribute(): string
+    {
+        return $this->selected_branch ?: '-';
     }
 }

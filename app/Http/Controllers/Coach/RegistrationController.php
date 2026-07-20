@@ -22,14 +22,39 @@ class RegistrationController extends Controller
         $extracurricularId = $request->string('extracurricular_id')->toString();
         $ownedExtracurricularIds = $coach->extracurriculars()->pluck('extracurriculars.id');
 
-        $registrations = Registration::with(['student.user', 'extracurricular', 'verifier'])
+        $registrations = Registration::with(['student.user', 'extracurricular', 'verifier', 'talentTestResults'])
             ->whereIn('extracurricular_id', $ownedExtracurricularIds)
             ->when($search, function ($query, $searchValue) {
-                $query->whereHas('student.user', function ($userQuery) use ($searchValue): void {
-                    $userQuery->where('name', 'like', "%{$searchValue}%");
+                $query->where(function ($searchQuery) use ($searchValue): void {
+                    $searchQuery->whereHas('student.user', function ($userQuery) use ($searchValue): void {
+                        $userQuery->where('name', 'like', "%{$searchValue}%");
+                    })->orWhereHas('student', function ($studentQuery) use ($searchValue): void {
+                        $studentQuery->where('nis', 'like', "%{$searchValue}%");
+                    });
                 });
             })
-            ->when($status, fn ($query, $statusValue) => $query->where('status', $statusValue))
+            ->with(['talentTestParticipants.schedule'])
+            ->when($status, function ($query, $statusValue): void {
+                if ($statusValue === 'waiting_test') {
+                    $query->where('status', Registration::STATUS_APPROVED)
+                        ->where('willing_to_take_test', true)
+                        ->whereDoesntHave('talentTestResults', fn ($resultQuery) => $resultQuery->where('status', 'published'));
+
+                    return;
+                }
+
+                if ($statusValue === Registration::STATUS_APPROVED) {
+                    $query->where('status', Registration::STATUS_APPROVED)
+                        ->where(function ($approvedQuery): void {
+                            $approvedQuery->where('willing_to_take_test', false)
+                                ->orWhereHas('talentTestResults', fn ($resultQuery) => $resultQuery->where('status', 'published'));
+                        });
+
+                    return;
+                }
+
+                $query->where('status', $statusValue);
+            })
             ->when($extracurricularId, fn ($query, $idValue) => $query->where('extracurricular_id', $idValue))
             ->latest('registration_date')
             ->latest('id')
@@ -43,6 +68,25 @@ class RegistrationController extends Controller
             'extracurricularId' => $extracurricularId,
             'extracurriculars' => Extracurricular::whereIn('id', $ownedExtracurricularIds)->orderBy('name')->get(),
         ]);
+    }
+
+    public function show(Registration $registration): View
+    {
+        $this->authorize('manageByCoach', $registration);
+
+        $registration->load([
+            'student.user',
+            'extracurricular.coaches.user',
+            'talentTestParticipants.schedule',
+            'talentTestResults.schedule',
+        ]);
+
+        return view('coach.registrations.show', compact('registration'));
+    }
+
+    public function redirectStatus(): RedirectResponse
+    {
+        return redirect()->route('coach.registrations.index');
     }
 
     public function updateStatus(Request $request, Registration $registration): RedirectResponse

@@ -52,17 +52,17 @@
             <div class="row g-4 align-items-center">
                 <div class="col-lg-8">
                     <span class="badge bg-white text-primary px-3 py-2 mb-3">Panduan Siswa Baru</span>
-                    <h1 class="hero-title mb-3">Pahami alur pendaftaran ekstrakurikuler sebelum mulai mendaftar.</h1>
+                    <h1 class="hero-title mb-3">Pahami alur pendaftaran sebelum memilih ekstrakurikuler.</h1>
                     <p class="hero-text mb-0">
-                        Halaman ini merangkum langkah yang perlu dilakukan siswa baru, mulai dari melihat daftar ekskul
-                        sampai mengikuti jadwal latihan setelah pendaftaran diterima.
+                        Halaman ini merangkum langkah yang perlu dilakukan siswa baru, mulai dari memilih kategori,
+                        membuka detail kegiatan, sampai menunggu verifikasi pendaftaran dari pembina.
                     </p>
                 </div>
                 <div class="col-lg-4">
                     <div class="d-grid gap-2">
-                        <a href="{{ route('landing') }}#daftar-ekskul" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Lihat Daftar Ekskul</a>
+                        <a href="{{ route('public.activities.index') }}" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Jelajahi Kategori</a>
                         @guest
-                            <a href="{{ route('register') }}" class="btn btn-outline-light"><i class="bi bi-person-plus"></i>Daftar Akun Siswa</a>
+                            <a href="{{ route('register') }}" class="btn btn-outline-light"><i class="bi bi-person-plus"></i>Buat Akun</a>
                         @endguest
                     </div>
                 </div>
@@ -72,13 +72,13 @@
         <section id="alur-sistem" class="mb-4">
             <span class="section-kicker"><i class="bi bi-signpost-split"></i>Alur Step-by-Step</span>
             <h2 class="section-title">Alur Penggunaan Sistem</h2>
-            <p class="section-subtitle">Ikuti urutan ini agar proses pendaftaran lebih mudah dipahami dan tidak membingungkan.</p>
+            <p class="section-subtitle">Ikuti urutan ini agar proses pendaftaran lebih terarah, singkat, dan tidak membingungkan.</p>
             <div class="step-flow-grid">
-                <div class="step-card"><span class="step-number">1</span><h3>Lihat daftar ekstrakurikuler</h3><p>Buka katalog ekskul untuk melihat pilihan kegiatan yang tersedia.</p></div>
-                <div class="step-card"><span class="step-number">2</span><h3>Pilih sesuai minat</h3><p>Baca detail ekskul, pembina, jadwal, dan syarat bergabung.</p></div>
-                <div class="step-card"><span class="step-number">3</span><h3>Isi formulir pendaftaran</h3><p>Masuk sebagai siswa lalu kirim pendaftaran melalui sistem.</p></div>
-                <div class="step-card"><span class="step-number">4</span><h3>Tunggu konfirmasi</h3><p>Admin atau pembina akan memeriksa pendaftaran yang sudah masuk.</p></div>
-                <div class="step-card"><span class="step-number">5</span><h3>Ikuti jadwal latihan</h3><p>Jika diterima, siswa dapat memantau jadwal latihan dari dashboard.</p></div>
+                <div class="step-card"><span class="step-number">1</span><h3>Pilih kategori terlebih dahulu</h3><p>Buka halaman kategori untuk memilih jalur Ekstrakurikuler, OSN, atau O2SN.</p></div>
+                <div class="step-card"><span class="step-number">2</span><h3>Buka detail kegiatan</h3><p>Lihat pembina, jadwal singkat, syarat, dan informasi penting sebelum mendaftar.</p></div>
+                <div class="step-card"><span class="step-number">3</span><h3>Masuk lalu kirim pendaftaran</h3><p>Gunakan akun siswa untuk membuka form pendaftaran terpisah dan mengirim data.</p></div>
+                <div class="step-card"><span class="step-number">4</span><h3>Tunggu verifikasi pembina</h3><p>Status pendaftaran akan diperiksa sebelum dinyatakan diterima atau perlu perbaikan.</p></div>
+                <div class="step-card"><span class="step-number">5</span><h3>Pantau status dan jadwal</h3><p>Setelah diterima, siswa dapat melihat perkembangan pendaftaran dan jadwal dari dashboard.</p></div>
             </div>
         </section>
 
@@ -87,15 +87,15 @@
                 <div class="col-md-6 col-xl-4">
                     <div class="feature-card">
                         <span class="feature-icon"><i class="bi bi-grid"></i></span>
-                        <h3>Informasi lebih mudah dicari</h3>
-                        <p>Nama ekskul, pembina, dan jadwal latihan ditampilkan lebih ringkas supaya siswa baru cepat paham.</p>
+                        <h3>Kategori lebih mudah dipahami</h3>
+                        <p>Pemisahan Ekstrakurikuler, OSN, dan O2SN membantu siswa menemukan jalur yang paling sesuai.</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-4">
                     <div class="feature-card">
                         <span class="feature-icon"><i class="bi bi-send-check"></i></span>
                         <h3>Pendaftaran online lebih praktis</h3>
-                        <p>Siswa tidak perlu proses manual yang panjang karena pendaftaran dapat dikirim langsung dari akun.</p>
+                        <p>Siswa tidak perlu proses manual yang panjang karena pendaftaran dikirim langsung melalui akun.</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-4">

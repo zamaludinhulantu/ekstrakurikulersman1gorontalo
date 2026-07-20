@@ -4,422 +4,420 @@
 
 @push('styles')
     <style>
-        .hero-section {
-            position: relative;
-            overflow: hidden;
-            border-radius: 36px;
-            background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 28%),
-                linear-gradient(135deg, #0f2f57 0%, #1f5eff 52%, #78c4ff 100%);
-            color: #fff;
-            padding: 1.5rem;
-            margin: 1.25rem 0 1.5rem;
-            box-shadow: 0 28px 48px rgba(16, 35, 63, 0.18);
+        .landing-shell section + section {
+            margin-top: 1.5rem;
         }
 
-        .hero-section::before,
-        .hero-section::after {
+        .hero-premium {
+            position: relative;
+            overflow: hidden;
+            border-radius: 34px;
+            padding: 1.5rem;
+            margin: 1rem 0 1.25rem;
+            color: #fff;
+            background:
+                linear-gradient(90deg, rgba(8, 25, 49, 0.92) 0%, rgba(12, 42, 82, 0.88) 42%, rgba(23, 78, 151, 0.76) 100%),
+                url('{{ asset('images/extracurriculars/smans1.jpeg') }}') center/cover no-repeat;
+            box-shadow: 0 28px 52px rgba(16, 35, 63, 0.18);
+        }
+
+        .hero-premium::before,
+        .hero-premium::after {
             content: "";
             position: absolute;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.1);
+            pointer-events: none;
         }
 
-        .hero-section::before {
-            width: 260px;
-            height: 260px;
-            top: -120px;
-            right: -60px;
+        .hero-premium::before {
+            inset: 0;
+            border-radius: inherit;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 20%),
+                linear-gradient(180deg, rgba(7, 20, 38, 0.14) 0%, rgba(7, 20, 38, 0.32) 100%);
         }
 
-        .hero-section::after {
+        .hero-premium::after {
             width: 180px;
             height: 180px;
-            bottom: -70px;
-            left: -40px;
+            left: -36px;
+            bottom: -76px;
+            background: rgba(90, 197, 255, 0.1);
         }
 
-        .hero-panel,
-        .hero-preview {
+        .hero-premium > * {
             position: relative;
             z-index: 1;
         }
 
-        .hero-title {
-            margin: 0 0 0.9rem;
-            font-size: clamp(2rem, 4vw, 3.35rem);
-            line-height: 1.08;
+        .hero-premium-title {
+            margin: 0 0 0.8rem;
+            font-size: clamp(2rem, 4vw, 3.6rem);
+            line-height: 1.02;
+            letter-spacing: -0.05em;
             font-weight: 900;
-            letter-spacing: -0.04em;
+            max-width: 10ch;
         }
 
-        .hero-text {
-            max-width: 680px;
+        .hero-premium-copy {
+            max-width: 36rem;
             color: rgba(239, 246, 255, 0.9);
             font-size: 1rem;
-            margin-bottom: 1.3rem;
+            line-height: 1.75;
+            margin-bottom: 1.15rem;
         }
 
-        .hero-step-card {
-            border-radius: 28px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        .hero-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-top: 1.15rem;
+            max-width: 38rem;
+        }
+
+        .hero-stat-chip {
+            padding: 0.9rem 1rem;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
         }
 
-        .hero-step-card {
-            padding: 1rem;
+        .hero-stat-chip .label {
+            display: block;
+            color: rgba(230, 241, 255, 0.72);
+            font-size: 0.74rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.3rem;
         }
 
-        .hero-step-list {
-            display: grid;
-            gap: 0.7rem;
+        .hero-stat-chip .value {
+            display: block;
+            color: #fff;
+            font-size: clamp(1.1rem, 2vw, 1.55rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
         }
 
-        .hero-step-item {
+        .premium-section-card,
+        .premium-step-card,
+        .premium-cta,
+        .activities-hub-card {
+            border-radius: 28px;
+            border: 1px solid #dbe5f0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(246, 250, 255, 0.96));
+            box-shadow: 0 14px 28px rgba(16, 35, 63, 0.06);
+        }
+
+        .activities-hub-card {
+            overflow: hidden;
+            height: 100%;
             display: flex;
-            gap: 0.75rem;
-            align-items: flex-start;
+            flex-direction: column;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         }
 
-        .hero-step-item span {
-            width: 2rem;
-            height: 2rem;
+        .activities-hub-card-media {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            background: #eef5ff;
+        }
+
+        .activities-hub-card-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.35s ease;
+        }
+
+        .activities-hub-card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(10, 24, 46, 0.04), rgba(10, 24, 46, 0.35));
+        }
+
+        .activities-hub-card-body {
+            padding: 1.15rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+        }
+
+        .activities-hub-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.95rem;
+        }
+
+        .activities-hub-card:hover {
+            transform: translateY(-4px);
+            border-color: #bfd3fb;
+            box-shadow: 0 20px 34px rgba(16, 35, 63, 0.1);
+        }
+
+        .activities-hub-card:hover .activities-hub-card-media img {
+            transform: scale(1.03);
+        }
+
+        .activities-hub-card-icon {
+            width: 3.1rem;
+            height: 3.1rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.18);
-            font-size: 0.82rem;
-            font-weight: 800;
+            border-radius: 20px;
+            font-size: 1.2rem;
             flex-shrink: 0;
         }
 
-        .catalog-card {
-            height: 100%;
-            border-radius: 20px;
-            border: 1px solid #dbe5f0;
-            background: #fff;
-            box-shadow: 0 10px 18px rgba(16, 35, 63, 0.05);
+        .activities-hub-card.is-extracurricular .activities-hub-card-icon {
+            background: #eaf2ff;
+            color: #1849cb;
         }
 
-        .catalog-card-media {
-            padding: 0.95rem 0.95rem 0;
+        .activities-hub-card.is-osn .activities-hub-card-icon {
+            background: #eaf8ff;
+            color: #0d78a7;
         }
 
-        .catalog-card-media img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            display: block;
-            border-radius: 14px;
-            border: 1px solid #dbe5f0;
+        .activities-hub-card.is-o2sn .activities-hub-card-icon {
+            background: #fff4dd;
+            color: #a76405;
         }
 
-        .catalog-card-default-visual {
-            height: 120px;
-            border-radius: 14px;
-            width: 100%;
-            overflow: hidden;
-            border: 1px solid #dbe5f0;
-            position: relative;
-            background: linear-gradient(135deg, #dfeeff 0%, #eef5ff 50%, #d9e9ff 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .catalog-card-default-visual::before,
-        .catalog-card-default-visual::after {
-            content: "";
-            position: absolute;
-            border-radius: 999px;
-            background: rgba(79, 124, 196, 0.1);
-        }
-
-        .catalog-card-default-visual::before {
-            width: 110px;
-            height: 110px;
-            top: -36px;
-            right: -24px;
-        }
-
-        .catalog-card-default-visual::after {
-            width: 90px;
-            height: 90px;
-            bottom: -30px;
-            left: -18px;
-        }
-
-        .catalog-card-visual-inner {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            width: 100%;
-            padding: 0 1rem;
-        }
-
-        .catalog-card-visual-icon {
-            width: 3.2rem;
-            height: 3.2rem;
-            border-radius: 16px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.72);
-            color: #355987;
-            font-size: 1.4rem;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
-        }
-
-        .catalog-card-visual-text {
-            min-width: 0;
-        }
-
-        .catalog-card-visual-label {
-            display: block;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 800;
-            color: #5d789a;
-            margin-bottom: 0.2rem;
-        }
-
-        .catalog-card-visual-title {
-            display: block;
-            color: #23446f;
-            font-size: 0.98rem;
-            font-weight: 800;
-            line-height: 1.25;
-        }
-
-        .catalog-card-body {
-            padding: 0.95rem;
-        }
-
-        .catalog-card-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.45rem;
-            margin-bottom: 0.7rem;
-        }
-
-        .catalog-card-meta span {
+        .activities-hub-card-count {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            padding: 0.36rem 0.62rem;
+            padding: 0.42rem 0.68rem;
             border-radius: 999px;
-            background: #eef5ff;
-            color: #355987;
-            font-size: 0.74rem;
-            font-weight: 700;
+            border: 1px solid #dbe5f0;
+            color: #48607b;
+            font-size: 0.76rem;
+            font-weight: 800;
+            background: #fff;
         }
 
-        .catalog-card-title {
-            margin: 0 0 0.2rem;
-            font-size: 1.02rem;
+        .activities-hub-card h2 {
+            margin: 0 0 0.45rem;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #163252;
+        }
+
+        .activities-hub-card p {
+            margin: 0 0 1rem;
+            color: #607389;
+            line-height: 1.75;
+            flex: 1 1 auto;
+        }
+
+        .activities-hub-card .btn {
+            margin-top: auto;
+        }
+
+        .premium-section-card {
+            padding: 1.2rem;
+        }
+
+        .premium-step-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .premium-step-card {
+            padding: 1rem;
+            height: 100%;
+        }
+
+        .premium-step-icon {
+            width: 2.8rem;
+            height: 2.8rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #1f5eff 0%, #5ac5ff 100%);
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .premium-step-card h3 {
+            margin: 0 0 0.4rem;
+            font-size: 1rem;
             font-weight: 800;
         }
 
-        .catalog-card-info {
-            display: grid;
-            gap: 0.45rem;
-            margin: 0.65rem 0;
+        .premium-step-card p {
+            margin: 0;
+            color: #607389;
         }
 
-        .catalog-card-info-item {
-            padding: 0.55rem 0.7rem;
-            border-radius: 10px;
-            background: #f8fbff;
-            border: 1px solid #e2ecf6;
-        }
-
-        .catalog-card-info-item strong {
-            display: block;
-            margin-bottom: 0.1rem;
-            font-size: 0.7rem;
-            color: #48607b;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        .catalog-card-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-        }
-
-        .featured-banner {
-            border-radius: 28px;
-            padding: 1.2rem;
-            background: linear-gradient(135deg, #0f2f57 0%, #255fff 100%);
+        .premium-cta {
+            padding: 1.35rem;
             color: #fff;
-            box-shadow: 0 24px 36px rgba(31, 94, 255, 0.18);
+            background:
+                radial-gradient(circle at top right, rgba(90, 197, 255, 0.22) 0%, rgba(90, 197, 255, 0) 28%),
+                linear-gradient(135deg, #0d2443 0%, #12325b 54%, #1849cb 100%);
+            box-shadow: 0 24px 40px rgba(16, 35, 63, 0.16);
+        }
+
+        .premium-cta p {
+            color: rgba(235, 244, 255, 0.84);
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 991.98px) {
+            .hero-stat-grid,
+            .premium-step-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 767.98px) {
-            .hero-section {
-                padding: 1.15rem;
-                border-radius: 28px;
+            .hero-premium {
+                padding: 1rem;
+                border-radius: 26px;
+                background-position: center right;
+            }
+
+            .hero-premium-title {
+                max-width: none;
+            }
+
+            .category-premium-top {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
 @endpush
 
 @section('content')
-    <div class="container py-3 py-md-4">
-        <section class="hero-section">
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-7">
-                    <div class="hero-panel">
-                        <span class="badge bg-white text-primary px-3 py-2 mb-3">Portal Pendaftaran Ekstrakurikuler</span>
-                        <h1 class="hero-title">Temukan ekstrakurikuler yang sesuai dengan minatmu.</h1>
-                        <p class="hero-text">
-                            Siswa baru bisa melihat daftar ekskul, membaca informasi penting, memahami alur pendaftaran,
-                            lalu mendaftar secara online dengan langkah yang jelas dari awal sampai selesai.
-                        </p>
-                        <div class="hero-actions">
-                            <a href="#daftar-ekskul" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Lihat Ekstrakurikuler</a>
-                            <a href="{{ route('register') }}" class="btn btn-primary"><i class="bi bi-person-plus"></i>Daftar Sekarang</a>
-                            <a href="{{ route('public.information') }}" class="btn btn-outline-light"><i class="bi bi-signpost-2"></i>Lihat Alur</a>
-                        </div>
+    <div class="container py-3 py-md-4 landing-shell">
+        <section class="hero-premium" data-reveal>
+            <div class="row">
+                <div class="col-lg-8 col-xl-7">
+                    <span class="badge bg-white text-primary px-3 py-2 mb-3">Portal Informasi Ekstrakurikuler</span>
+                    <h1 class="hero-premium-title">Temukan ruang terbaik untuk bertumbuh.</h1>
+                    <p class="hero-premium-copy">
+                        Jelajahi ekstrakurikuler, OSN, dan O2SN yang sesuai dengan minat dan potensimu, mulai dari pembinaan seperti Tilawatil Qur&#039;an hingga jalur akademik dan olahraga sekolah.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="{{ route('public.activities.index') }}" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Jelajahi Kegiatan</a>
+                        <a href="{{ route('public.information') }}" class="btn btn-outline-light"><i class="bi bi-signpost-2"></i>Lihat Alur Pendaftaran</a>
                     </div>
-                </div>
-                <div class="col-lg-5">
-                    <div class="hero-preview">
-                        <div class="hero-step-card">
-                            <div class="small text-white-50 mb-3">Langkah untuk siswa baru</div>
-                            <div class="hero-step-list">
-                                <div class="hero-step-item"><span>1</span><div>Lihat daftar ekstrakurikuler yang tersedia.</div></div>
-                                <div class="hero-step-item"><span>2</span><div>Pilih ekskul yang sesuai minat dan baca detailnya.</div></div>
-                                <div class="hero-step-item"><span>3</span><div>Isi formulir pendaftaran dari akun siswa.</div></div>
-                                <div class="hero-step-item"><span>4</span><div>Tunggu konfirmasi pembina atau admin.</div></div>
-                                <div class="hero-step-item"><span>5</span><div>Ikuti jadwal latihan yang sudah diumumkan.</div></div>
-                            </div>
+                    <div class="hero-stat-grid">
+                        <div class="hero-stat-chip">
+                            <span class="label">Kegiatan Aktif</span>
+                            <span class="value" data-counter="{{ $statistics['totalActivities'] }}">{{ $statistics['totalActivities'] }}</span>
+                        </div>
+                        <div class="hero-stat-chip">
+                            <span class="label">Kategori</span>
+                            <span class="value" data-counter="{{ $statistics['categories'] }}">{{ $statistics['categories'] }}</span>
+                        </div>
+                        <div class="hero-stat-chip">
+                            <span class="label">Pendaftaran Online</span>
+                            <span class="value">{{ $statistics['onlineRegistration'] }}</span>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="daftar-ekskul" class="mb-4">
+        <section data-reveal>
             <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
                 <div>
-                    <span class="section-kicker"><i class="bi bi-stars"></i>Daftar Ekstrakurikuler</span>
-                    <h2 class="section-title">Pilih kegiatan yang paling sesuai</h2>
-                    <p class="section-subtitle mb-0">Setiap kartu menampilkan informasi singkat yang paling dibutuhkan siswa baru sebelum mendaftar.</p>
-                </div>
-                <div class="featured-banner">
-                    <div class="small text-white-50">Total pilihan aktif</div>
-                    <div class="h2 mb-1">{{ $extracurriculars->count() }}</div>
-                    <div class="small text-white-50">Siap dijelajahi secara online</div>
+                    <span class="section-kicker"><i class="bi bi-collection"></i>Kategori Kegiatan</span>
+                    <h2 class="section-title">Pilih kategori yang paling sesuai</h2>
+                    <p class="section-subtitle mb-0">Setiap kategori dirancang agar siswa baru bisa memahami jalur kegiatan dengan lebih cepat.</p>
                 </div>
             </div>
-
-            @if($usesDummyExtracurriculars)
-                <div class="alert alert-info mb-3">
-                    Data ekstrakurikuler di bawah ini masih berupa contoh tampilan. Data akan otomatis menyesuaikan saat admin menambahkan ekskul di sistem.
-                </div>
-            @endif
-
             <div class="row g-3">
-                @forelse($extracurriculars as $extracurricular)
-                    @php
-                        $firstSchedule = $extracurricular->schedules->first();
-                        $normalizedName = \Illuminate\Support\Str::lower(trim($extracurricular->name));
-                        $visualMap = [
-                            'pramuka' => ['icon' => 'bi-tree', 'label' => 'Kegiatan lapangan'],
-                            'paskibra' => ['icon' => 'bi-flag', 'label' => 'Latihan disiplin'],
-                            'pbb/paskib' => ['icon' => 'bi-flag', 'label' => 'Latihan disiplin'],
-                            'pmr' => ['icon' => 'bi-heart-pulse', 'label' => 'Kegiatan sosial'],
-                            'basket' => ['icon' => 'bi-dribbble', 'label' => 'Latihan olahraga'],
-                            'basketball' => ['icon' => 'bi-dribbble', 'label' => 'Latihan olahraga'],
-                            'futsal' => ['icon' => 'bi-trophy', 'label' => 'Latihan olahraga'],
-                            'rohis' => ['icon' => 'bi-moon-stars', 'label' => 'Pembinaan rohani'],
-                            "tilawatil qur'an" => ['icon' => 'bi-book', 'label' => 'Pembinaan keagamaan'],
-                            "tartil dan hifzil qur'an" => ['icon' => 'bi-book', 'label' => 'Pembinaan keagamaan'],
-                            'konten kreator' => ['icon' => 'bi-camera-video', 'label' => 'Kegiatan media'],
-                            'menulis artikel' => ['icon' => 'bi-pencil-square', 'label' => 'Kegiatan literasi'],
-                            'opsis' => ['icon' => 'bi-lightbulb', 'label' => 'Kegiatan akademik'],
-                            'osis / mpk' => ['icon' => 'bi-people', 'label' => 'Kegiatan organisasi'],
-                            'pelsis' => ['icon' => 'bi-people', 'label' => 'Kegiatan organisasi'],
-                            'smag' => ['icon' => 'bi-people', 'label' => 'Kegiatan organisasi'],
-                            'fortina' => ['icon' => 'bi-megaphone', 'label' => 'Kegiatan komunikasi'],
-                        ];
-                        $visual = $visualMap[$normalizedName] ?? ['icon' => 'bi-stars', 'label' => 'Kegiatan siswa'];
-                    @endphp
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <div class="catalog-card">
-                            <div class="catalog-card-media">
-                                @if(!empty($extracurricular->image_path))
-                                    <img src="{{ $extracurricular->preview_image }}" alt="{{ $extracurricular->name }}" width="640" height="360" loading="lazy" decoding="async">
-                                @else
-                                    <div class="catalog-card-default-visual" aria-hidden="true">
-                                        <div class="catalog-card-visual-inner">
-                                            <span class="catalog-card-visual-icon"><i class="bi {{ $visual['icon'] }}"></i></span>
-                                            <div class="catalog-card-visual-text">
-                                                <span class="catalog-card-visual-label">{{ $visual['label'] }}</span>
-                                                <span class="catalog-card-visual-title">{{ $extracurricular->name }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="catalog-card-body">
-                                <div class="catalog-card-meta">
-                                    <span><i class="bi bi-circle-fill"></i>{{ $extracurricular->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
-                                </div>
-                                <h3 class="catalog-card-title">{{ $extracurricular->name }}</h3>
+                @foreach($categorySummaries as $summary)
+                    <div class="col-12 col-lg-4">
+                        @include('public._category-card', ['summary' => $summary, 'variant' => 'media'])
+                    </div>
+                @endforeach
+            </div>
+        </section>
 
-                                <div class="catalog-card-info">
-                                    <div class="catalog-card-info-item">
-                                        <strong>Pembina</strong>
-                                        <div>{{ $extracurricular->coach_names }}</div>
-                                    </div>
-                                    <div class="catalog-card-info-item">
-                                        <strong>Jadwal latihan</strong>
-                                        <div>
-                                            @if($extracurricular->schedule_overview)
-                                                {{ $extracurricular->schedule_overview }}
-                                            @elseif($firstSchedule)
-                                                {{ $firstSchedule->title }} - {{ optional($firstSchedule->activity_date)->format('d-m-Y') }}
-                                            @else
-                                                Jadwal belum ditentukan
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <div class="catalog-card-info-item">
-                                        <strong>Prestasi terbaru</strong>
-                                        <div>{{ $extracurricular->achievements->first()->title ?? 'Lihat detail untuk melihat prestasi ekstrakurikuler.' }}</div>
-                                    </div>
-                                </div>
+        <section class="premium-section-card" data-reveal>
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+                <div>
+                    <span class="section-kicker"><i class="bi bi-signpost-split"></i>Alur Pendaftaran</span>
+                    <h2 class="section-title">Tiga langkah yang perlu dilakukan siswa</h2>
+                    <p class="section-subtitle mb-0">Rangkuman singkat di beranda, sementara detail lengkap tetap ada di halaman alur pendaftaran.</p>
+                </div>
+                <a href="{{ route('public.information') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Detail Alur</a>
+            </div>
+            <div class="premium-step-grid">
+                <article class="premium-step-card">
+                    <span class="premium-step-icon"><i class="bi bi-compass"></i></span>
+                    <h3>Pilih kegiatan</h3>
+                    <p>Telusuri kategori dan buka detail kegiatan yang paling cocok dengan minatmu.</p>
+                </article>
+                <article class="premium-step-card">
+                    <span class="premium-step-icon"><i class="bi bi-box-arrow-in-right"></i></span>
+                    <h3>Masuk dan kirim pendaftaran</h3>
+                    <p>Gunakan akun siswa untuk melanjutkan ke halaman form pendaftaran terpisah.</p>
+                </article>
+                <article class="premium-step-card">
+                    <span class="premium-step-icon"><i class="bi bi-patch-check"></i></span>
+                    <h3>Tunggu verifikasi pembina</h3>
+                    <p>Pendaftaran akan diperiksa pembina atau admin sebelum status akhirnya ditetapkan.</p>
+                </article>
+            </div>
+        </section>
 
-                                <div class="catalog-card-actions">
-                                    @if($extracurricular->exists)
-                                        <a href="{{ route('public.extracurriculars.show', $extracurricular) }}" class="btn btn-outline-primary flex-fill"><i class="bi bi-eye"></i>Lihat Detail</a>
-                                        <a href="{{ route('public.extracurriculars.register', $extracurricular) }}" class="btn btn-primary flex-fill"><i class="bi bi-send-check"></i>Daftar Ekskul</a>
-                                    @else
-                                        <a href="{{ route('login') }}" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right"></i>Masuk untuk Mendaftar</a>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
+        <section data-reveal>
+            <div class="section-header-inline">
+                <div>
+                    <span class="section-kicker"><i class="bi bi-megaphone"></i>Pengumuman</span>
+                    <h2 class="section-title">Informasi terbaru dari sekolah dan pembina</h2>
+                    <p class="section-subtitle mb-0">Pengumuman penting tetap singkat dan mudah dipindai dari beranda.</p>
+                </div>
+                <a href="{{ route('public.announcements') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Semua</a>
+            </div>
+            <div class="row g-3">
+                @forelse($recentAnnouncements as $announcement)
+                    <div class="col-12 col-lg-4">
+                        @include('public._announcement-card', ['announcement' => $announcement])
                     </div>
                 @empty
                     <div class="col-12">
                         <div class="card">
                             <div class="empty-state">
-                                <div class="icon"><i class="bi bi-inbox"></i></div>
-                                <p class="mb-0">Belum ada ekstrakurikuler yang tersedia saat ini.</p>
+                                <div class="icon"><i class="bi bi-megaphone"></i></div>
+                                <p class="mb-0">Belum ada pengumuman terbaru.</p>
                             </div>
                         </div>
                     </div>
                 @endforelse
+            </div>
+        </section>
+
+        <section class="premium-cta" data-reveal>
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-8">
+                    <span class="section-kicker bg-white text-primary border-0"><i class="bi bi-rocket-takeoff"></i>Mulai Sekarang</span>
+                    <h2 class="section-title text-white">Temukan kegiatan yang sesuai dengan potensimu.</h2>
+                    <p>Mulai dari katalog kegiatan, pahami detailnya, lalu lanjutkan pendaftaran melalui akun siswa.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="d-grid gap-2">
+                        <a href="{{ route('public.activities.index') }}" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Jelajahi Kegiatan</a>
+                        <a href="{{ route('register') }}" class="btn btn-outline-light"><i class="bi bi-person-plus"></i>Buat Akun</a>
+                    </div>
+                </div>
             </div>
         </section>
     </div>

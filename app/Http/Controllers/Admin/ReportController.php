@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\Attendance;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    use SanitizesCsvExports;
+
     public function participants(Request $request): View
     {
         $filters = $request->validate([
@@ -150,44 +153,44 @@ class ReportController extends Controller
                 fputcsv($handle, ['Siswa', 'NIS', 'Ekstrakurikuler', 'Tanggal Daftar', 'Pembina'], $delimiter);
                 $this->participantsQuery($filters)
                     ->each(function ($row) use ($handle, $delimiter): void {
-                        fputcsv($handle, [
+                        fputcsv($handle, $this->sanitizeExportRow([
                             $row->student->user->name ?? '-',
                             $row->student->nis ?? '-',
                             $row->extracurricular->name ?? '-',
                             optional($row->registration_date)->format('Y-m-d'),
                             $row->extracurricular->coach_names,
-                        ], $delimiter);
+                        ]), $delimiter);
                     });
             } elseif ($type === 'schedules') {
                 fputcsv($handle, ['Ekstrakurikuler', 'Pembina', 'Judul', 'Tanggal', 'Jam', 'Lokasi'], $delimiter);
                 $this->schedulesQuery($filters)
                     ->each(function ($row) use ($handle, $delimiter): void {
-                        fputcsv($handle, [
+                        fputcsv($handle, $this->sanitizeExportRow([
                             $row->extracurricular->name ?? '-',
                             $row->coach->user->name ?? $row->extracurricular->coach_names,
                             $row->title,
                             optional($row->activity_date)->format('Y-m-d'),
                             substr((string) $row->start_time, 0, 5).' - '.substr((string) $row->end_time, 0, 5),
                             $row->location ?: '-',
-                        ], $delimiter);
+                        ]), $delimiter);
                     });
             } elseif ($type === 'attendances') {
                 fputcsv($handle, ['Siswa', 'Ekstrakurikuler', 'Jadwal', 'Status', 'Tanggal'], $delimiter);
                 $this->attendancesQuery($filters)
                     ->each(function ($row) use ($handle, $delimiter): void {
-                        fputcsv($handle, [
+                        fputcsv($handle, $this->sanitizeExportRow([
                             $row->student->user->name ?? '-',
                             $row->extracurricular->name ?? '-',
                             $row->schedule->title ?? '-',
                             $this->formatAttendanceStatus($row->status),
                             optional($row->schedule->activity_date)->format('Y-m-d'),
-                        ], $delimiter);
+                        ]), $delimiter);
                     });
             } else {
                 fputcsv($handle, ['Siswa', 'Ekstrakurikuler', 'Jenis', 'Judul', 'Nilai', 'Tanggal', 'Pembina'], $delimiter);
                 $this->assessmentsQuery($filters)
                     ->each(function ($row) use ($handle, $delimiter): void {
-                        fputcsv($handle, [
+                        fputcsv($handle, $this->sanitizeExportRow([
                             $row->student->user->name ?? ($row->assessment_type === 'achievement' ? 'Prestasi kegiatan' : '-'),
                             $row->extracurricular->name ?? '-',
                             $row->assessment_type === 'achievement' ? 'Prestasi Kegiatan' : 'Penilaian Siswa',
@@ -195,7 +198,7 @@ class ReportController extends Controller
                             $row->score ?? '-',
                             optional($row->assessment_date)->format('Y-m-d'),
                             $row->coach->user->name ?? '-',
-                        ], $delimiter);
+                        ]), $delimiter);
                     });
             }
 
@@ -236,6 +239,10 @@ class ReportController extends Controller
     private function attendancesQuery(array $filters)
     {
         return Attendance::with(['student.user', 'extracurricular.coaches.user', 'schedule.coach.user'])
+            ->where(function ($query): void {
+                $query->whereNull('save_state')
+                    ->orWhere('save_state', Attendance::SAVE_STATE_FINALIZED);
+            })
             ->when($filters['extracurricular_id'] ?? null, fn ($query, $value) => $query->where('extracurricular_id', $value))
             ->when($filters['coach_id'] ?? null, function ($query, $value): void {
                 $query->where(function ($subQuery) use ($value): void {
@@ -271,7 +278,8 @@ class ReportController extends Controller
     {
         return match ($status) {
             'present' => 'Hadir',
-            'absent' => 'Alpa',
+            'late' => 'Terlambat',
+            'absent' => 'Tidak Hadir',
             'sick' => 'Sakit',
             'permission' => 'Izin',
             default => $status,

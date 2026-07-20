@@ -7,7 +7,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use App\Models\Extracurricular;
 use App\Models\User;
@@ -22,6 +25,66 @@ class AuthController extends Controller
     public function showRegistrationForm(): View
     {
         return view('auth.register');
+    }
+
+    public function showForgotPasswordForm(): View
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function sendResetLinkEmail(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+        ]);
+
+        $status = Password::sendResetLink([
+            'email' => $validated['email'],
+        ]);
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('success', __($status))
+            : back()->withErrors(['email' => __($status)])->onlyInput('email');
+    }
+
+    public function showResetPasswordForm(Request $request, string $token): View
+    {
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => $request->string('email')->toString(),
+        ]);
+    }
+
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'password.required' => 'Password baru wajib diisi.',
+            'password.min' => 'Password baru minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+        ]);
+
+        $status = Password::reset(
+            $validated,
+            function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('success', __($status))
+            : back()->withErrors(['email' => __($status)])->withInput($request->only('email'));
     }
 
     public function login(Request $request): RedirectResponse
@@ -76,6 +139,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'class_name' => ['nullable', 'string', 'max:100'],
             'gender' => ['required', Rule::in(['L', 'P'])],
             'date_of_birth' => ['nullable', 'date'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -103,6 +167,7 @@ class AuthController extends Controller
             'email' => 'email',
             'password' => 'password',
             'password_confirmation' => 'konfirmasi password',
+            'class_name' => 'kelas',
             'gender' => 'jenis kelamin',
             'date_of_birth' => 'tanggal lahir',
             'phone' => 'no. telepon',
@@ -125,7 +190,7 @@ class AuthController extends Controller
             Student::create([
                 'user_id' => $user->id,
                 'nis' => null,
-                'class_name' => null,
+                'class_name' => $validated['class_name'] ?? null,
                 'gender' => $validated['gender'],
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'address' => $validated['address'] ?? null,

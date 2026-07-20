@@ -30,7 +30,7 @@ class ExtracurricularController extends Controller
         $this->authorize('viewByCoach', $extracurricular);
 
         $participants = $extracurricular->registrations()
-            ->with('student.user')
+            ->with(['student.user', 'talentTestResults'])
             ->where('status', Registration::STATUS_APPROVED)
             ->latest()
             ->paginate(15);

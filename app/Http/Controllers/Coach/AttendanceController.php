@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Coach;
 
+use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Registration;
@@ -9,12 +10,17 @@ use App\Models\Schedule;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
+    use SanitizesCsvExports;
+
     public function index(Request $request): View
     {
         $coach = auth()->user()->coach;
@@ -37,6 +43,7 @@ class AttendanceController extends Controller
             $participants = Registration::with('student.user')
                 ->where('extracurricular_id', $selectedSchedule->extracurricular_id)
                 ->where('status', Registration::STATUS_APPROVED)
+                ->orderBy('created_at')
                 ->get();
 
             $attendanceMap = Attendance::where('schedule_id', $selectedSchedule->id)
@@ -63,28 +70,101 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'rows' => ['required', 'array', 'min:1'],
             'rows.*.student_id' => ['required', Rule::in($allowedStudentIds)],
-            'rows.*.status' => ['required', Rule::in(['present', 'absent', 'sick', 'permission'])],
+            'rows.*.status' => ['nullable', Rule::in(['present', 'late', 'absent', 'sick', 'permission'])],
             'rows.*.notes' => ['nullable', 'string'],
+            'submit_action' => ['nullable', Rule::in(['draft', 'finalize'])],
         ]);
 
-        collect($validated['rows'])->each(function (array $row) use ($schedule): void {
-            Attendance::updateOrCreate(
-                [
-                    'schedule_id' => $schedule->id,
-                    'student_id' => $row['student_id'],
-                ],
-                [
-                    'extracurricular_id' => $schedule->extracurricular_id,
-                    'recorded_by' => auth()->id(),
-                    'status' => $row['status'],
-                    'notes' => $row['notes'] ?? null,
-                    'recorded_at' => now(),
-                ]
-            );
+        $rows = collect($validated['rows'])
+            ->map(function (array $row): array {
+                return [
+                    'student_id' => (int) $row['student_id'],
+                    'status' => $row['status'] ?? null,
+                    'notes' => trim((string) ($row['notes'] ?? '')),
+                ];
+            });
+
+        $invalidNotes = $rows->contains(fn (array $row) => $row['status'] === null && $row['notes'] !== '');
+        if ($invalidNotes) {
+            throw ValidationException::withMessages([
+                'rows' => 'Pilih status kehadiran sebelum menambahkan catatan presensi.',
+            ]);
+        }
+
+        $existingStudentIds = Attendance::query()
+            ->where('schedule_id', $schedule->id)
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $submitAction = $validated['submit_action'] ?? 'finalize';
+        $timestamp = now();
+        $supportsEnhancedSchema = $this->supportsEnhancedAttendanceSchema();
+        $saveState = $submitAction === 'draft'
+            ? Attendance::SAVE_STATE_DRAFT
+            : Attendance::SAVE_STATE_FINALIZED;
+
+        $upsertRows = [];
+        $deleteStudentIds = [];
+
+        foreach ($rows as $row) {
+            if ($row['status'] === null) {
+                if (in_array($row['student_id'], $existingStudentIds, true)) {
+                    $deleteStudentIds[] = $row['student_id'];
+                }
+
+                continue;
+            }
+
+            $isLate = $row['status'] === 'late';
+            $status = $isLate ? 'present' : $row['status'];
+            $payload = [
+                'schedule_id' => $schedule->id,
+                'student_id' => $row['student_id'],
+                'extracurricular_id' => $schedule->extracurricular_id,
+                'recorded_by' => auth()->id(),
+                'status' => $status,
+                'notes' => $row['notes'] !== '' ? $row['notes'] : null,
+                'recorded_at' => $timestamp,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+
+            if ($supportsEnhancedSchema) {
+                $payload['is_late'] = $isLate;
+                $payload['save_state'] = $saveState;
+                $payload['finalized_at'] = $submitAction === 'finalize' ? $timestamp : null;
+            }
+
+            $upsertRows[] = $payload;
+        }
+
+        DB::transaction(function () use ($schedule, $deleteStudentIds, $upsertRows, $supportsEnhancedSchema): void {
+            if ($deleteStudentIds !== []) {
+                Attendance::query()
+                    ->where('schedule_id', $schedule->id)
+                    ->whereIn('student_id', $deleteStudentIds)
+                    ->delete();
+            }
+
+            if ($upsertRows !== []) {
+                $updateColumns = ['extracurricular_id', 'recorded_by', 'status', 'notes', 'recorded_at', 'updated_at'];
+                if ($supportsEnhancedSchema) {
+                    $updateColumns = array_merge($updateColumns, ['is_late', 'save_state', 'finalized_at']);
+                }
+
+                Attendance::query()->upsert(
+                    $upsertRows,
+                    ['schedule_id', 'student_id'],
+                    $updateColumns
+                );
+            }
         });
 
         return redirect()->route('coach.attendances.index', ['schedule_id' => $schedule->id])
-            ->with('success', 'Presensi berhasil disimpan.');
+            ->with('success', $submitAction === 'draft'
+                ? 'Draft presensi berhasil disimpan.'
+                : 'Presensi berhasil difinalisasi.');
     }
 
     public function export(Request $request): StreamedResponse
@@ -115,14 +195,14 @@ class AttendanceController extends Controller
             fputcsv($handle, ['Siswa', 'Ekstrakurikuler', 'Jadwal', 'Tanggal', 'Status', 'Catatan'], $delimiter);
 
             $query->each(function (Attendance $row) use ($handle, $delimiter): void {
-                fputcsv($handle, [
+                fputcsv($handle, $this->sanitizeExportRow([
                     $row->student->user->name ?? '-',
                     $row->extracurricular->name ?? '-',
                     $row->schedule->title ?? '-',
                     optional($row->schedule->activity_date)->format('Y-m-d'),
-                    $this->mapStatusLabel($row->status),
+                    $row->display_status_label,
                     $row->notes ?? '-',
-                ], $delimiter);
+                ]), $delimiter);
             });
 
             fclose($handle);
@@ -137,10 +217,16 @@ class AttendanceController extends Controller
     {
         return match ($status) {
             'present' => 'Hadir',
-            'absent' => 'Alpa',
+            'late' => 'Terlambat',
+            'absent' => 'Tidak Hadir',
             'sick' => 'Sakit',
             'permission' => 'Izin',
             default => $status,
         };
+    }
+
+    private function supportsEnhancedAttendanceSchema(): bool
+    {
+        return Schema::hasColumns('attendances', ['is_late', 'save_state', 'finalized_at']);
     }
 }

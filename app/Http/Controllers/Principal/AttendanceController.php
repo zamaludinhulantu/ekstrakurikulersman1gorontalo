@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Principal;
 
+use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Coach;
@@ -14,6 +15,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
+    use SanitizesCsvExports;
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -66,7 +69,7 @@ class AttendanceController extends Controller
                 ->orderByDesc('recorded_at')
                 ->orderByDesc('id')
                 ->each(function (Attendance $row) use ($handle, $delimiter): void {
-                    fputcsv($handle, [
+                    fputcsv($handle, $this->sanitizeExportRow([
                         $row->student->user->name ?? '-',
                         $row->extracurricular->name ?? '-',
                         $row->schedule->coach->user->name ?? $row->extracurricular->coach_names,
@@ -74,7 +77,7 @@ class AttendanceController extends Controller
                         optional($row->schedule->activity_date)->format('Y-m-d'),
                         $this->mapStatusLabel($row->status),
                         $row->notes ?? '-',
-                    ], $delimiter);
+                    ]), $delimiter);
                 });
 
             fclose($handle);
@@ -88,6 +91,10 @@ class AttendanceController extends Controller
     private function buildAttendanceQuery(array $filters)
     {
         return Attendance::with(['student.user', 'extracurricular.coaches.user', 'extracurricular.coach.user', 'schedule.coach.user'])
+            ->where(function ($query): void {
+                $query->whereNull('save_state')
+                    ->orWhere('save_state', Attendance::SAVE_STATE_FINALIZED);
+            })
             ->when($filters['extracurricular_id'] ?? null, fn ($query, $value) => $query->where('extracurricular_id', $value))
             ->when($filters['coach_id'] ?? null, function ($query, $value): void {
                 $query->where(function ($subQuery) use ($value): void {
@@ -108,7 +115,8 @@ class AttendanceController extends Controller
     {
         return match ($status) {
             'present' => 'Hadir',
-            'absent' => 'Alpa',
+            'late' => 'Terlambat',
+            'absent' => 'Tidak Hadir',
             'sick' => 'Sakit',
             'permission' => 'Izin',
             default => $status,

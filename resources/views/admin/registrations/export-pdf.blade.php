@@ -66,7 +66,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Laporan Pendaftar Ekstrakurikuler</h1>
+        <h1>Laporan Pendaftar Kegiatan</h1>
         <div class="meta">Dicetak pada {{ now()->format('d-m-Y H:i') }}</div>
         <div class="meta">Total data: {{ $registrations->count() }}</div>
     </div>
@@ -74,7 +74,7 @@
     <div class="filters">
         <div class="filters-row"><strong>Pencarian:</strong> {{ $filters['search'] ?? 'Semua siswa' }}</div>
         <div class="filters-row"><strong>Status:</strong> {{ $filters['status'] ?? 'Semua status' }}</div>
-        <div class="filters-row"><strong>ID Ekstrakurikuler:</strong> {{ $filters['extracurricular_id'] ?? 'Semua ekstrakurikuler' }}</div>
+        <div class="filters-row"><strong>ID Kegiatan:</strong> {{ $filters['extracurricular_id'] ?? 'Semua kegiatan' }}</div>
     </div>
 
     <table>
@@ -89,7 +89,8 @@
                 <th>Alamat</th>
                 <th>Nama Orang Tua / Wali</th>
                 <th>No. Telepon Orang Tua</th>
-                <th>Ekstrakurikuler</th>
+                <th>Kegiatan</th>
+                <th>Cabang Dipilih</th>
                 <th>Tanggal Daftar</th>
                 <th>Status</th>
                 <th>Catatan Verifikasi</th>
@@ -116,13 +117,14 @@
                     <td>{{ $registration->student->parent_name ?? '-' }}</td>
                     <td>{{ $registration->student->parent_phone ?? '-' }}</td>
                     <td>{{ $registration->extracurricular->name ?? '-' }}</td>
+                    <td>{{ $registration->selected_branch_label }}</td>
                     <td>{{ optional($registration->registration_date)->format('d-m-Y') ?? '-' }}</td>
                     <td>{{ $registration->status }}</td>
                     <td>{{ $registration->notes ?: '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="13" class="empty">Tidak ada data pendaftar untuk filter ini.</td>
+                    <td colspan="14" class="empty">Tidak ada data pendaftar untuk filter ini.</td>
                 </tr>
             @endforelse
         </tbody>

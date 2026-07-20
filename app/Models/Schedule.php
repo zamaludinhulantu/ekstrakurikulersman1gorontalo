@@ -14,18 +14,24 @@ class Schedule extends Model
     protected $fillable = [
         'extracurricular_id',
         'coach_id',
+        'schedule_type',
         'title',
         'activity_date',
         'start_time',
         'end_time',
         'location',
         'description',
+        'status',
+        'equipment',
+        'instructions',
+        'cancelled_at',
     ];
 
     protected function casts(): array
     {
         return [
             'activity_date' => 'date',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -42,5 +48,20 @@ class Schedule extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function talentTestParticipants(): HasMany
+    {
+        return $this->hasMany(TalentTestParticipant::class);
+    }
+
+    public function talentTestResults(): HasMany
+    {
+        return $this->hasMany(TalentTestResult::class);
+    }
+
+    public function isTalentTest(): bool
+    {
+        return $this->schedule_type === 'talent_test';
     }
 }

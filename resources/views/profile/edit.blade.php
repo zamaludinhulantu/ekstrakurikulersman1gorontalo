@@ -37,6 +37,14 @@
 
                 @if($user->hasRole(\App\Models\User::ROLE_STUDENT) && $user->student)
                     <div class="col-md-6">
+                        <label class="form-label">NIS</label>
+                        <input type="text" name="nis" value="{{ old('nis', $user->student->nis) }}" class="form-control" placeholder="Nomor induk siswa">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Kelas</label>
+                        <input type="text" name="class_name" value="{{ old('class_name', $user->student->class_name) }}" class="form-control" placeholder="Contoh: X IPA 1">
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">Jenis Kelamin</label>
                         <select name="gender" class="form-select">
                             <option value="">Pilih jenis kelamin</option>

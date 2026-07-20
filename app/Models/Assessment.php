@@ -10,11 +10,15 @@ class Assessment extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_PUBLISHED = 'published';
+
     protected $fillable = [
         'student_id',
         'extracurricular_id',
         'coach_id',
         'assessment_type',
+        'status',
         'title',
         'score',
         'description',

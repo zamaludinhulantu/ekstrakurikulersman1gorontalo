@@ -10,10 +10,12 @@ use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\Student;
+use App\Models\TalentTestParticipant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -33,14 +35,28 @@ class DashboardController extends Controller
 
     public function admin(): View
     {
+        $summary = DB::table('users')
+            ->selectRaw('COUNT(*) as total_users')
+            ->first();
+        $registrationSummary = Registration::query()
+            ->selectRaw("
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as approved_count
+            ", [Registration::STATUS_PENDING, Registration::STATUS_APPROVED])
+            ->first();
+
         return view('dashboard.admin', [
-            'totalUsers' => User::count(),
+            'totalUsers' => (int) ($summary->total_users ?? 0),
             'totalStudents' => Student::count(),
             'totalCoaches' => Coach::count(),
             'totalExtracurriculars' => Extracurricular::count(),
-            'pendingRegistrations' => Registration::where('status', Registration::STATUS_PENDING)->count(),
-            'approvedParticipants' => Registration::where('status', Registration::STATUS_APPROVED)->count(),
+            'pendingRegistrations' => (int) ($registrationSummary->pending_count ?? 0),
+            'approvedParticipants' => (int) ($registrationSummary->approved_count ?? 0),
             'todaySchedules' => Schedule::whereDate('activity_date', Carbon::today())->count(),
+            'upcomingTalentTests' => Schedule::where('schedule_type', 'talent_test')
+                ->where('status', 'scheduled')
+                ->whereDate('activity_date', '>=', Carbon::today())
+                ->count(),
             'attendanceCount' => Attendance::count(),
             'assessmentCount' => Assessment::count(),
             'recentRegistrations' => Registration::with(['student.user', 'extracurricular'])
@@ -48,8 +64,13 @@ class DashboardController extends Controller
                 ->latest('id')
                 ->limit(5)
                 ->get(),
+            'recentTalentTests' => Schedule::with('extracurricular')
+                ->where('schedule_type', 'talent_test')
+                ->latest('activity_date')
+                ->limit(4)
+                ->get(),
             'recentAnnouncements' => Announcement::with(['publisher', 'extracurricular'])
-                ->where('is_active', true)
+                ->visibleToStudents()
                 ->latest()
                 ->limit(4)
                 ->get(),
@@ -64,6 +85,18 @@ class DashboardController extends Controller
 
         $extracurricularIds = $coach->extracurriculars()->pluck('extracurriculars.id');
         $extracurricularIdList = $extracurricularIds->all();
+        $pendingTalentAssessments = TalentTestParticipant::query()
+            ->whereHas('schedule', function ($query) use ($extracurricularIdList): void {
+                $query->where('schedule_type', 'talent_test')
+                    ->whereIn('extracurricular_id', $extracurricularIdList);
+            })
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('talent_test_results')
+                    ->whereColumn('talent_test_results.schedule_id', 'talent_test_participants.schedule_id')
+                    ->whereColumn('talent_test_results.student_id', 'talent_test_participants.student_id');
+            })
+            ->count();
 
         return view('dashboard.coach', [
             'coach' => $coach,
@@ -73,6 +106,15 @@ class DashboardController extends Controller
                 ->count(),
             'todaySchedules' => Schedule::whereIn('extracurricular_id', $extracurricularIdList)
                 ->whereDate('activity_date', Carbon::today())
+                ->count(),
+            'pendingRegistrations' => Registration::whereIn('extracurricular_id', $extracurricularIdList)
+                ->where('status', Registration::STATUS_PENDING)
+                ->count(),
+            'pendingTalentAssessments' => $pendingTalentAssessments,
+            'upcomingTalentTests' => Schedule::whereIn('extracurricular_id', $extracurricularIdList)
+                ->where('schedule_type', 'talent_test')
+                ->where('status', 'scheduled')
+                ->whereDate('activity_date', '>=', Carbon::today())
                 ->count(),
             'assessmentCount' => Assessment::whereIn('extracurricular_id', $extracurricularIdList)->count(),
             'recentAttendances' => Attendance::with(['student.user', 'schedule.extracurricular'])
@@ -221,6 +263,21 @@ class DashboardController extends Controller
             approvedCount: $approvedRegistrationCount
         );
 
+        $upcomingTalentTests = TalentTestParticipant::with(['schedule.extracurricular'])
+            ->where('student_id', $student->id)
+            ->whereHas('schedule', function ($query): void {
+                $query->where('schedule_type', 'talent_test')
+                    ->where('status', 'scheduled')
+                    ->whereDate('activity_date', '>=', Carbon::today());
+            })
+            ->orderBy(
+                Schedule::select('activity_date')
+                    ->whereColumn('schedules.id', 'talent_test_participants.schedule_id')
+                    ->limit(1)
+            )
+            ->limit(3)
+            ->get();
+
         return view('dashboard.student', [
             'student' => $student,
             'availableExtracurriculars' => Extracurricular::where('is_active', true)->count(),
@@ -241,8 +298,13 @@ class DashboardController extends Controller
             'monthlyAttendance' => $monthlyAttendance,
             'performanceByExtracurricular' => $performanceByExtracurricular,
             'notifications' => $notifications,
+            'upcomingTalentTests' => $upcomingTalentTests,
             'recentAnnouncements' => Announcement::with(['publisher', 'extracurricular'])
-                ->where('is_active', true)
+                ->visibleToStudents()
+                ->where(function ($query) use ($approvedExtracurricularIdList): void {
+                    $query->whereNull('extracurricular_id')
+                        ->orWhereIn('extracurricular_id', $approvedExtracurricularIdList);
+                })
                 ->latest()
                 ->limit(5)
                 ->get(),
@@ -251,13 +313,22 @@ class DashboardController extends Controller
 
     private function buildMonthlyAttendanceSummary(HasMany $attendanceBaseQuery): array
     {
+        $driver = $attendanceBaseQuery->getRelated()->getConnection()->getDriverName();
+        $monthExpression = match ($driver) {
+            'sqlite' => "strftime('%Y-%m', recorded_at)",
+            default => "DATE_FORMAT(recorded_at, '%Y-%m')",
+        };
+
         return (clone $attendanceBaseQuery)
             ->where('recorded_at', '>=', Carbon::now()->startOfMonth()->subMonths(5))
-            ->get(['recorded_at', 'status'])
-            ->groupBy(fn (Attendance $attendance): string => Carbon::parse($attendance->recorded_at)->format('Y-m'))
-            ->map(fn ($records): array => [
-                'total' => $records->count(),
-                'present' => $records->where('status', 'present')->count(),
+            ->selectRaw("{$monthExpression} as month_key, COUNT(*) as total, SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present")
+            ->groupBy('month_key')
+            ->get()
+            ->mapWithKeys(fn ($row): array => [
+                $row->month_key => [
+                    'total' => (int) $row->total,
+                    'present' => (int) $row->present,
+                ],
             ])
             ->all();
     }

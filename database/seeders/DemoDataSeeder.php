@@ -11,6 +11,10 @@ use App\Models\Registration;
 use App\Models\Report;
 use App\Models\Schedule;
 use App\Models\Student;
+use App\Models\TalentTestAspect;
+use App\Models\TalentTestParticipant;
+use App\Models\TalentTestResult;
+use App\Models\TalentTestResultItem;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -174,6 +178,11 @@ class DemoDataSeeder extends Seeder
             'registration_date' => now()->subDays(12)->toDateString(),
             'status' => Registration::STATUS_APPROVED,
             'notes' => 'Disetujui oleh admin',
+            'motivation_reason' => 'Ingin mengembangkan kepemimpinan dan disiplin.',
+            'goal_statement' => 'Ingin aktif mengikuti kegiatan pramuka sekolah.',
+            'current_skills' => 'Dasar tali-temali dan kerja tim.',
+            'primary_talent' => 'Kepemimpinan',
+            'willing_to_take_test' => true,
             'verified_by' => $admin->id,
             'verified_at' => now()->subDays(11),
         ]);
@@ -183,6 +192,9 @@ class DemoDataSeeder extends Seeder
             'extracurricular_id' => $paskibra->id,
             'registration_date' => now()->subDays(4)->toDateString(),
             'status' => Registration::STATUS_PENDING,
+            'motivation_reason' => 'Tertarik pada baris-berbaris dan kedisiplinan.',
+            'goal_statement' => 'Ingin lolos ke tim upacara sekolah.',
+            'willing_to_take_test' => true,
         ]);
 
         Registration::create([
@@ -190,6 +202,11 @@ class DemoDataSeeder extends Seeder
             'extracurricular_id' => $paskibra->id,
             'registration_date' => now()->subDays(8)->toDateString(),
             'status' => Registration::STATUS_APPROVED,
+            'motivation_reason' => 'Ingin meningkatkan ketegasan dan kekompakan.',
+            'goal_statement' => 'Menjadi anggota aktif paskibra sekolah.',
+            'current_skills' => 'Sudah pernah ikut PBB dasar.',
+            'primary_talent' => 'Disiplin',
+            'willing_to_take_test' => true,
             'verified_by' => $admin->id,
             'verified_at' => now()->subDays(7),
         ]);
@@ -200,6 +217,9 @@ class DemoDataSeeder extends Seeder
             'registration_date' => now()->subDays(5)->toDateString(),
             'status' => Registration::STATUS_REJECTED,
             'notes' => 'Kuota penuh',
+            'motivation_reason' => 'Ingin menambah pengalaman lapangan.',
+            'goal_statement' => 'Belajar kerja sama dan kepemimpinan.',
+            'willing_to_take_test' => false,
             'verified_by' => $admin->id,
             'verified_at' => now()->subDays(4),
         ]);
@@ -328,6 +348,77 @@ class DemoDataSeeder extends Seeder
             'period_start' => now()->startOfMonth()->toDateString(),
             'period_end' => now()->toDateString(),
             'content' => 'Terdapat peningkatan performa siswa pada ekstrakurikuler aktif.',
+        ]);
+
+        $pramukaDiscipline = TalentTestAspect::create([
+            'extracurricular_id' => $pramuka->id,
+            'name' => 'Disiplin',
+            'description' => 'Ketepatan waktu dan kesiapan mengikuti arahan.',
+            'display_order' => 1,
+        ]);
+
+        $pramukaLeadership = TalentTestAspect::create([
+            'extracurricular_id' => $pramuka->id,
+            'name' => 'Kepemimpinan',
+            'description' => 'Kemampuan memimpin kelompok kecil.',
+            'display_order' => 2,
+        ]);
+
+        $talentTestSchedule = Schedule::create([
+            'extracurricular_id' => $pramuka->id,
+            'coach_id' => $coach1->id,
+            'schedule_type' => 'talent_test',
+            'title' => 'Tes Bakat Dasar Pramuka',
+            'activity_date' => now()->addDays(2)->toDateString(),
+            'start_time' => '15:00:00',
+            'end_time' => '16:30:00',
+            'location' => 'Lapangan Serbaguna',
+            'description' => 'Tes bakat untuk pemetaan kemampuan awal.',
+            'equipment' => 'Sepatu olahraga, alat tulis',
+            'instructions' => 'Datang 15 menit lebih awal.',
+            'status' => 'scheduled',
+        ]);
+
+        $approvedPramukaRegistration = Registration::where('student_id', $student1->id)
+            ->where('extracurricular_id', $pramuka->id)
+            ->first();
+
+        TalentTestParticipant::create([
+            'schedule_id' => $talentTestSchedule->id,
+            'registration_id' => $approvedPramukaRegistration->id,
+            'student_id' => $student1->id,
+            'assigned_by' => $coachUser1->id,
+            'attendance_status' => 'pending',
+        ]);
+
+        $result = TalentTestResult::create([
+            'schedule_id' => $talentTestSchedule->id,
+            'registration_id' => $approvedPramukaRegistration->id,
+            'student_id' => $student1->id,
+            'coach_id' => $coach1->id,
+            'status' => 'published',
+            'overall_score' => 86.50,
+            'ability_category' => 'Menengah',
+            'training_group' => 'Regu Dasar A',
+            'recommended_role' => 'Pemimpin regu cadangan',
+            'recommendation' => 'Layak masuk kelompok pembinaan dasar lanjutan.',
+            'coach_notes' => 'Perlu ditingkatkan pada konsistensi instruksi.',
+            'published_at' => now()->subDay(),
+            'evaluated_at' => now()->subDay(),
+        ]);
+
+        TalentTestResultItem::create([
+            'talent_test_result_id' => $result->id,
+            'talent_test_aspect_id' => $pramukaDiscipline->id,
+            'score' => 88,
+            'notes' => 'Tepat waktu dan fokus.',
+        ]);
+
+        TalentTestResultItem::create([
+            'talent_test_result_id' => $result->id,
+            'talent_test_aspect_id' => $pramukaLeadership->id,
+            'score' => 85,
+            'notes' => 'Sudah berani mengarahkan teman satu kelompok.',
         ]);
     }
 }
