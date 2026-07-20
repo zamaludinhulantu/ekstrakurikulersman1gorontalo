@@ -323,43 +323,6 @@ class PublicLandingController extends Controller
             return asset($extracurricular->image_path);
         }
 
-        return $this->makePreviewImage($extracurricular->name);
-    }
-
-    private function makePreviewImage(string $name): string
-    {
-        $palette = collect([
-            ['#c70f43', '#ff6f87', '#ffd5e0'],
-            ['#008d8a', '#34d2c5', '#dcfffb'],
-            ['#d67b00', '#ffb11a', '#fff0c7'],
-            ['#2d63d8', '#63a3ff', '#dce9ff'],
-            ['#6a35cc', '#9f72ff', '#efe4ff'],
-        ]);
-
-        $colors = $palette[abs(crc32($name)) % $palette->count()];
-        $label = e(Str::upper($name));
-
-        $svg = <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520">
-    <defs>
-        <linearGradient id="bg" x1="0%" y1="8%" x2="100%" y2="92%">
-            <stop offset="0%" stop-color="{$colors[0]}"/>
-            <stop offset="55%" stop-color="{$colors[1]}"/>
-            <stop offset="100%" stop-color="{$colors[2]}"/>
-        </linearGradient>
-    </defs>
-    <rect width="800" height="520" rx="36" fill="url(#bg)"/>
-    <rect x="6" y="6" width="788" height="508" rx="30" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="4"/>
-    <circle cx="118" cy="76" r="46" fill="rgba(255,255,255,0.96)"/>
-    <circle cx="696" cy="72" r="78" fill="rgba(255,255,255,0.14)"/>
-    <circle cx="620" cy="286" r="118" fill="rgba(15,23,42,0.14)"/>
-    <circle cx="92" cy="368" r="74" fill="rgba(255,255,255,0.16)"/>
-    <text x="84" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="900" fill="{$colors[0]}">O</text>
-    <rect x="0" y="410" width="800" height="110" fill="rgba(255,255,255,0.16)"/>
-    <text x="70" y="475" font-family="Segoe UI, Arial, sans-serif" font-size="46" font-weight="800" fill="#ffffff">{$label}</text>
-</svg>
-SVG;
-
-        return 'data:image/svg+xml;utf8,'.rawurlencode($svg);
+        return Extracurricular::makePreviewImage($extracurricular->name);
     }
 }

@@ -11,11 +11,11 @@
     <div class="card mb-3">
         <div class="card-body">
             <form class="row g-2 align-items-end">
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <label class="form-label">Pencarian</label>
                     <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama, email, NIS, atau kelas">
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-3">
                     <label class="form-label">Kelas</label>
                     <select name="class_name" class="form-select">
                         <option value="">Semua Kelas</option>
@@ -24,7 +24,16 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Kegiatan yang Diikuti</label>
+                    <select name="extracurricular_id" class="form-select">
+                        <option value="">Semua Kegiatan</option>
+                        @foreach($extracurricularOptions as $activity)
+                            <option value="{{ $activity->id }}" @selected(($extracurricularId ?? null) === $activity->id)>{{ $activity->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-3">
                     <label class="form-label">Jenis Kelamin</label>
                     <select name="gender" class="form-select">
                         <option value="">Semua</option>
@@ -32,7 +41,7 @@
                         <option value="P" @selected($gender === 'P')>Perempuan</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-3">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">Semua</option>
@@ -40,8 +49,8 @@
                         <option value="inactive" @selected($status === 'inactive')>Tidak Aktif</option>
                     </select>
                 </div>
-                <div class="col-md-1"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Cari</button></div>
-                <div class="col-md-1"><a href="{{ route('admin.students.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a></div>
+                <div class="col-lg-1 col-md-2"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Cari</button></div>
+                <div class="col-lg-1 col-md-2"><a href="{{ route('admin.students.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a></div>
             </form>
         </div>
     </div>

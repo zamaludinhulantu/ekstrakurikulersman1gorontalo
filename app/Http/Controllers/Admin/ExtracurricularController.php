@@ -16,17 +16,41 @@ class ExtracurricularController extends Controller
 {
     public function index(Request $request): View
     {
-        $search = $request->string('search')->toString();
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:120'],
+            'type' => ['nullable', Rule::in(['all', ...array_keys($this->types())])],
+            'status' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
+            'coach_id' => ['nullable', 'integer', 'exists:coaches,id'],
+            'sort' => ['nullable', Rule::in(['latest', 'name', 'oldest'])],
+        ]);
+
+        $search = trim((string) ($filters['search'] ?? ''));
         $allowedCategories = array_keys(Extracurricular::categoryDefinitions());
-        $requestedCategory = $request->string('category')->toString() ?: 'all';
+        $requestedCategory = (string) ($filters['category'] ?? 'all');
         $category = in_array($requestedCategory, $allowedCategories, true) ? $requestedCategory : 'all';
+        $type = (string) ($filters['type'] ?? 'all');
+        $status = (string) ($filters['status'] ?? 'all');
+        $coachId = (int) ($filters['coach_id'] ?? 0);
+        $sort = (string) ($filters['sort'] ?? 'latest');
 
         $extracurriculars = Extracurricular::with(['coach.user', 'coaches.user'])
             ->when($search, function ($query, $searchValue) {
-                $query->where('name', 'like', "%{$searchValue}%")
-                    ->orWhereHas('coaches.user', function ($userQuery) use ($searchValue): void {
-                        $userQuery->where('name', 'like', "%{$searchValue}%");
-                    });
+                $query->where(function ($searchQuery) use ($searchValue): void {
+                    $searchQuery->where('name', 'like', "%{$searchValue}%")
+                        ->orWhere('description', 'like', "%{$searchValue}%")
+                        ->orWhereHas('coaches.user', function ($userQuery) use ($searchValue): void {
+                            $userQuery->where('name', 'like', "%{$searchValue}%");
+                        });
+                });
+            })
+            ->when($type !== 'all', fn ($query) => $query->where('type', $type))
+            ->when($status !== 'all', fn ($query) => $query->where('is_active', $status === 'active'))
+            ->when($coachId > 0, function ($query) use ($coachId): void {
+                $query->where(function ($coachQuery) use ($coachId): void {
+                    $coachQuery->where('coach_id', $coachId)
+                        ->orWhereHas('coaches', fn ($assignedCoachQuery) => $assignedCoachQuery->whereKey($coachId));
+                });
             })
             ->when($category !== 'all', function ($query) use ($category): void {
                 $ids = Extracurricular::query()
@@ -43,7 +67,9 @@ class ExtracurricularController extends Controller
 
                 $query->whereIn('id', $ids);
             })
-            ->latest()
+            ->when($sort === 'name', fn ($query) => $query->orderBy('name'))
+            ->when($sort === 'oldest', fn ($query) => $query->oldest())
+            ->when($sort === 'latest', fn ($query) => $query->latest())
             ->paginate(10)
             ->withQueryString();
 
@@ -51,9 +77,27 @@ class ExtracurricularController extends Controller
             'extracurriculars' => $extracurriculars,
             'search' => $search,
             'category' => $category,
+            'type' => $type,
+            'status' => $status,
+            'coachId' => $coachId > 0 ? $coachId : null,
+            'sort' => $sort,
             'categories' => collect(Extracurricular::categoryDefinitions())
                 ->map(fn (array $definition) => ['key' => $definition['key'], 'label' => $definition['label']])
                 ->values(),
+            'types' => $this->types(),
+            'coaches' => Coach::with('user')
+                ->orderByRaw('coalesce(nip, "")')
+                ->get(),
+            'statusOptions' => [
+                ['value' => 'all', 'label' => 'Semua status'],
+                ['value' => 'active', 'label' => 'Aktif'],
+                ['value' => 'inactive', 'label' => 'Tidak aktif'],
+            ],
+            'sortOptions' => [
+                ['value' => 'latest', 'label' => 'Terbaru'],
+                ['value' => 'name', 'label' => 'Nama A-Z'],
+                ['value' => 'oldest', 'label' => 'Terlama'],
+            ],
         ]);
     }
 

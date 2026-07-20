@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Extracurricular;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -19,12 +20,16 @@ class StudentController extends Controller
         $className = $request->string('class_name')->toString();
         $gender = $request->string('gender')->toString();
         $status = $request->string('status')->toString();
+        $extracurricularId = $request->integer('extracurricular_id');
 
-        $students = Student::with('user')
+        $students = Student::with(['user', 'registrations.extracurricular'])
             ->when($className, fn ($query, $value) => $query->where('class_name', $value))
             ->when($gender, fn ($query, $value) => $query->where('gender', $value))
             ->when($status !== '', function ($query) use ($status) {
                 $query->whereHas('user', fn ($userQuery) => $userQuery->where('is_active', $status === 'active'));
+            })
+            ->when($extracurricularId > 0, function ($query) use ($extracurricularId): void {
+                $query->whereHas('registrations', fn ($registrationQuery) => $registrationQuery->where('extracurricular_id', $extracurricularId));
             })
             ->when($search, function ($query, $searchValue) {
                 $query->where(function ($studentQuery) use ($searchValue): void {
@@ -46,13 +51,19 @@ class StudentController extends Controller
             ->orderBy('class_name')
             ->pluck('class_name');
 
+        $extracurricularOptions = Extracurricular::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('admin.students.index', [
             'students' => $students,
             'search' => $search,
             'className' => $className,
             'gender' => $gender,
             'status' => $status,
+            'extracurricularId' => $extracurricularId > 0 ? $extracurricularId : null,
             'classOptions' => $classOptions,
+            'extracurricularOptions' => $extracurricularOptions,
         ]);
     }
 
