@@ -85,51 +85,14 @@ class RegistrationController extends Controller
         }
 
         $filename = 'pendaftar-ekstrakurikuler-'.$timestamp.'.xls';
+        $html = view('admin.registrations.export-xls', [
+            'registrations' => $registrations,
+            'filters' => $filters,
+        ])->render();
 
-        return response()->streamDownload(function () use ($registrations): void {
-            $handle = fopen('php://output', 'w');
-
-            fputcsv($handle, [
-                'Siswa',
-                'Email',
-                'No. Telepon',
-                'NIS',
-                'Jenis Kelamin',
-                'Tanggal Lahir',
-                'Alamat',
-                'Nama Orang Tua / Wali',
-                'No. Telepon Orang Tua',
-                'Kegiatan',
-                'Cabang Dipilih',
-                'Tanggal Daftar',
-                'Status',
-                'Catatan Verifikasi',
-            ], "\t");
-
-            foreach ($registrations as $registration) {
-                fputcsv($handle, $this->sanitizeExportRow([
-                    $registration->student->user->name ?? '-',
-                    $registration->student->user->email ?? '-',
-                    $registration->student->user->phone ?? '-',
-                    $registration->student->nis ?? '-',
-                    match ($registration->student->gender ?? null) {
-                        'L' => 'Laki-laki',
-                        'P' => 'Perempuan',
-                        default => '-',
-                    },
-                    optional($registration->student->date_of_birth)->format('Y-m-d') ?? '-',
-                    $registration->student->address ?: ($registration->student->user->address ?? '-'),
-                    $registration->student->parent_name ?? '-',
-                    $registration->student->parent_phone ?? '-',
-                    $registration->extracurricular->name ?? '-',
-                    $registration->selected_branch_label,
-                    optional($registration->registration_date)->format('Y-m-d') ?? '-',
-                    $registration->status,
-                    $registration->notes ?: '-',
-                ]), "\t");
-            }
-
-            fclose($handle);
+        return response()->streamDownload(function () use ($html): void {
+            echo "\xEF\xBB\xBF";
+            echo $html;
         }, $filename, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
         ]);
