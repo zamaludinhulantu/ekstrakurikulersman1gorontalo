@@ -767,6 +767,7 @@ textarea.form-control {
     gap: 0.45rem;
     width: 100%;
     min-width: 0;
+    white-space: nowrap;
 }
 
 .btn-loading-label {
@@ -774,6 +775,10 @@ textarea.form-control {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.btn-loading-content .spinner-border {
+    flex-shrink: 0;
 }
 
 .btn:hover {

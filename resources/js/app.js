@@ -917,13 +917,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 button.dataset.submitting = '1';
                 button.dataset.originalHtml = button.innerHTML;
+                const originalWidth = button.offsetWidth;
                 const loadingText = button.getAttribute('data-loading-text') || 'Memproses...';
+                const compactLoadingText = button.getAttribute('data-loading-short-text') || 'Proses...';
+                const resolvedLoadingText = originalWidth < 140 ? compactLoadingText : loadingText;
                 if (button instanceof HTMLButtonElement) {
-                    button.style.width = `${button.offsetWidth}px`;
+                    button.style.width = `${originalWidth}px`;
+                    button.style.maxWidth = '100%';
                     button.classList.add('is-loading');
                 }
                 button.disabled = true;
-                button.innerHTML = `<span class="btn-loading-content"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span class="btn-loading-label">${loadingText}</span></span>`;
+                button.innerHTML = `<span class="btn-loading-content"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span class="btn-loading-label">${resolvedLoadingText}</span></span>`;
             });
         });
     });

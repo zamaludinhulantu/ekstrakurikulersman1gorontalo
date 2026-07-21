@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -99,6 +100,83 @@ class PublicLandingController extends Controller
         return view('public.announcements', [
             'announcements' => $announcements,
         ]);
+    }
+
+    public function sitemap(): Response
+    {
+        $staticPages = collect([
+            [
+                'loc' => route('landing'),
+                'lastmod' => now()->toDateString(),
+                'changefreq' => 'daily',
+                'priority' => '1.0',
+            ],
+            [
+                'loc' => route('public.activities.index'),
+                'lastmod' => now()->toDateString(),
+                'changefreq' => 'daily',
+                'priority' => '0.9',
+            ],
+            [
+                'loc' => route('public.activities.all'),
+                'lastmod' => now()->toDateString(),
+                'changefreq' => 'daily',
+                'priority' => '0.9',
+            ],
+            [
+                'loc' => route('public.announcements'),
+                'lastmod' => Announcement::query()->visibleToStudents()->max('updated_at')?->toDateString() ?? now()->toDateString(),
+                'changefreq' => 'daily',
+                'priority' => '0.8',
+            ],
+            [
+                'loc' => route('public.information'),
+                'lastmod' => now()->toDateString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.7',
+            ],
+        ]);
+
+        $categoryPages = collect($this->baseCategorySummaries(Extracurricular::activeCategoryCounts()))
+            ->map(fn (array $category) => [
+                'loc' => route('public.activities.category', $category['slug']),
+                'lastmod' => now()->toDateString(),
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
+            ]);
+
+        $activityPages = Extracurricular::query()
+            ->where('is_active', true)
+            ->where(function ($query): void {
+                $query->where('type', '!=', Extracurricular::TYPE_OLYMPIAD)
+                    ->orWhereNull('branch_options');
+            })
+            ->orderBy('name')
+            ->get(['id', 'updated_at'])
+            ->map(fn (Extracurricular $activity) => [
+                'loc' => route('public.extracurriculars.show', $activity),
+                'lastmod' => optional($activity->updated_at)->toDateString() ?? now()->toDateString(),
+                'changefreq' => 'weekly',
+                'priority' => '0.7',
+            ]);
+
+        $pages = $staticPages
+            ->concat($categoryPages)
+            ->concat($activityPages)
+            ->unique('loc')
+            ->values();
+
+        return response()
+            ->view('public.sitemap', ['pages' => $pages], 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    public function robots(): Response
+    {
+        return response(
+            "User-agent: *\nAllow: /\nSitemap: ".route('public.sitemap')."\n",
+            200,
+            ['Content-Type' => 'text/plain; charset=UTF-8']
+        );
     }
 
     public function beginRegistration(Request $request, Extracurricular $extracurricular): RedirectResponse

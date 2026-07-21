@@ -35,6 +35,8 @@ use App\Http\Controllers\Coach\TalentTestController as CoachTalentTestController
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicLandingController::class, 'index'])->name('landing');
+Route::get('/sitemap.xml', [PublicLandingController::class, 'sitemap'])->name('public.sitemap');
+Route::get('/robots.txt', [PublicLandingController::class, 'robots'])->name('public.robots');
 Route::get('/kegiatan', [PublicLandingController::class, 'activities'])->name('public.activities.index');
 Route::get('/kegiatan/semua', [PublicLandingController::class, 'catalog'])->name('public.activities.all');
 Route::get('/kegiatan/{slug}', [PublicLandingController::class, 'categoryCatalog'])->name('public.activities.category');
