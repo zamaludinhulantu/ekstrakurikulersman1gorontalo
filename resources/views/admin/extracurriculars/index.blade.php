@@ -69,6 +69,7 @@
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
+                    <th>No</th>
                     <th>Nama</th>
                     <th>Jenis</th>
                     <th>Pembina</th>
@@ -79,6 +80,7 @@
                 <tbody>
                 @forelse($extracurriculars as $item)
                     <tr>
+                        <td>{{ $extracurriculars->firstItem() + $loop->index }}</td>
                         <td>{{ $item->name }}</td>
                         <td><span class="badge badge-status-secondary">{{ $item->category_label }}</span></td>
                         <td>{{ $item->coach_names }}</td>
@@ -94,7 +96,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5">
+                        <td colspan="6">
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-grid-1x2"></i></div>
                                 <p class="mb-0">Data tidak ditemukan.</p>

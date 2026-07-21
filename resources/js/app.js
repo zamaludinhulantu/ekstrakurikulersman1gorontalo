@@ -565,13 +565,32 @@ const bindMassAssessmentForm = () => {
         });
     };
 
+    const compareClassNames = (left, right) => {
+        const rank = (value) => {
+            const normalized = String(value || '').trim().toUpperCase();
+            if (normalized === 'X') {
+                return 0;
+            }
+
+            const match = normalized.match(/^X\s*-\s*(\d{1,2})$/);
+
+            if (match) {
+                return Number.parseInt(match[1], 10);
+            }
+
+            return Number.MAX_SAFE_INTEGER;
+        };
+
+        return rank(left) - rank(right) || String(left).localeCompare(String(right), 'id');
+    };
+
     const rebuildClassFilter = () => {
         const extracurricularId = extracurricularSelect.value;
         const availableClasses = Array.from(new Set(
             students
                 .filter((student) => !extracurricularId || String(student.extracurricular_id) === extracurricularId)
                 .map((student) => student.class_name || '-')
-        )).sort();
+        )).sort(compareClassNames);
 
         const current = classFilter.value;
         classFilter.innerHTML = '<option value="">Semua kelas</option>';
@@ -899,8 +918,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.dataset.submitting = '1';
                 button.dataset.originalHtml = button.innerHTML;
                 const loadingText = button.getAttribute('data-loading-text') || 'Memproses...';
+                if (button instanceof HTMLButtonElement) {
+                    button.style.width = `${button.offsetWidth}px`;
+                    button.classList.add('is-loading');
+                }
                 button.disabled = true;
-                button.innerHTML = `<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>${loadingText}</span>`;
+                button.innerHTML = `<span class="btn-loading-content"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span class="btn-loading-label">${loadingText}</span></span>`;
             });
         });
     });

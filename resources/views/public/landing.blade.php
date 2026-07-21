@@ -16,7 +16,7 @@
             margin: 1rem 0 1.25rem;
             color: #fff;
             background:
-                linear-gradient(90deg, rgba(8, 25, 49, 0.92) 0%, rgba(12, 42, 82, 0.88) 42%, rgba(23, 78, 151, 0.76) 100%),
+                linear-gradient(90deg, rgba(13, 33, 61, 0.72) 0%, rgba(17, 53, 102, 0.62) 42%, rgba(48, 110, 191, 0.44) 100%),
                 url('{{ asset('images/extracurriculars/smans1.jpeg') }}') center/cover no-repeat;
             box-shadow: 0 28px 52px rgba(16, 35, 63, 0.18);
         }
@@ -33,8 +33,8 @@
             inset: 0;
             border-radius: inherit;
             background:
-                radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 20%),
-                linear-gradient(180deg, rgba(7, 20, 38, 0.14) 0%, rgba(7, 20, 38, 0.32) 100%);
+                radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 22%),
+                linear-gradient(180deg, rgba(7, 20, 38, 0.08) 0%, rgba(7, 20, 38, 0.18) 100%);
         }
 
         .hero-premium::after {
@@ -42,7 +42,7 @@
             height: 180px;
             left: -36px;
             bottom: -76px;
-            background: rgba(90, 197, 255, 0.1);
+            background: rgba(90, 197, 255, 0.14);
         }
 
         .hero-premium > * {
@@ -61,7 +61,7 @@
 
         .hero-premium-copy {
             max-width: 36rem;
-            color: rgba(239, 246, 255, 0.9);
+            color: rgba(245, 249, 255, 0.96);
             font-size: 1rem;
             line-height: 1.75;
             margin-bottom: 1.15rem;
@@ -78,14 +78,14 @@
         .hero-stat-chip {
             padding: 0.9rem 1rem;
             border-radius: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.14);
             backdrop-filter: blur(10px);
         }
 
         .hero-stat-chip .label {
             display: block;
-            color: rgba(230, 241, 255, 0.72);
+            color: rgba(236, 244, 255, 0.82);
             font-size: 0.74rem;
             font-weight: 800;
             text-transform: uppercase;

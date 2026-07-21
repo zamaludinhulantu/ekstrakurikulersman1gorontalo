@@ -756,6 +756,26 @@ textarea.form-control {
     transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
+.btn.is-loading {
+    overflow: hidden;
+}
+
+.btn-loading-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.btn-loading-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .btn:hover {
     transform: translateY(-1px);
 }
@@ -2277,6 +2297,43 @@ textarea.form-control {
 .action-button-icon {
     min-width: 34px;
     padding: 0.45rem;
+}
+
+.student-activity-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: flex-start;
+}
+
+.student-activity-link {
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: min(100%, 260px);
+    min-height: 0;
+    padding: 0.42rem 0.78rem;
+    border: 1px solid #bfd3fb;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: var(--ui-primary-dark);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.35;
+    text-decoration: none;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.student-activity-link:hover,
+.student-activity-link:focus {
+    color: var(--ui-primary-dark);
+    background: #e3edff;
+    border-color: #9dbcf9;
+    box-shadow: 0 8px 16px rgba(16, 35, 63, 0.06);
 }
 
 .dropdown-menu-compact {

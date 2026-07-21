@@ -60,7 +60,7 @@ class FullRegressionTest extends TestCase
             'email' => 'siswa.mandiri@example.com',
             'password' => '11111111',
             'password_confirmation' => '11111111',
-            'class_name' => 'X IPA 5',
+            'class_name' => 'X - 5',
             'gender' => 'P',
             'date_of_birth' => '2010-02-20',
             'phone' => '081299999001',
@@ -76,7 +76,7 @@ class FullRegressionTest extends TestCase
         ]);
         $this->assertDatabaseHas('students', [
             'parent_name' => 'Ibu Mandiri',
-            'class_name' => 'X IPA 5',
+            'class_name' => 'X - 5',
             'nis' => null,
         ]);
     }
@@ -198,7 +198,7 @@ class FullRegressionTest extends TestCase
                 'password_confirmation' => '11111111',
                 'is_active' => '1',
                 'nis' => 'NIS-REG-001',
-                'class_name' => 'XI IPA 9',
+                'class_name' => 'X - 9',
                 'gender' => 'L',
                 'date_of_birth' => '2008-01-15',
                 'parent_name' => 'Orang Tua Regression',
@@ -218,7 +218,7 @@ class FullRegressionTest extends TestCase
                 'password_confirmation' => '',
                 'is_active' => '1',
                 'nis' => 'NIS-REG-001',
-                'class_name' => 'XI IPA 10',
+                'class_name' => 'X - 10',
                 'gender' => 'P',
                 'date_of_birth' => '2008-01-15',
                 'parent_name' => 'Orang Tua Regression Update',
@@ -227,7 +227,7 @@ class FullRegressionTest extends TestCase
             ->assertRedirect(route('admin.students.index'));
 
         $createdStudent->refresh();
-        $this->assertSame('XI IPA 10', $createdStudent->class_name);
+        $this->assertSame('X - 10', $createdStudent->class_name);
 
         $this->actingAs($admin)
             ->post(route('admin.coaches.store'), [

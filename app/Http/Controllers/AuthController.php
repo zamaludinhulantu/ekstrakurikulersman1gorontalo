@@ -24,7 +24,9 @@ class AuthController extends Controller
 
     public function showRegistrationForm(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'classOptions' => Student::registrationClassOptions(),
+        ]);
     }
 
     public function showForgotPasswordForm(): View
@@ -139,7 +141,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'class_name' => ['nullable', 'string', 'max:100'],
+            'class_name' => ['nullable', Rule::in(array_keys(Student::registrationClassOptions()))],
             'gender' => ['required', Rule::in(['L', 'P'])],
             'date_of_birth' => ['nullable', 'date'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -156,6 +158,7 @@ class AuthController extends Controller
             'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'class_name.in' => 'Pilihan kelas tidak valid.',
             'gender.required' => 'Jenis kelamin wajib dipilih.',
             'gender.in' => 'Pilihan jenis kelamin tidak valid.',
             'date_of_birth.date' => 'Tanggal lahir tidak valid.',
@@ -190,7 +193,7 @@ class AuthController extends Controller
             Student::create([
                 'user_id' => $user->id,
                 'nis' => null,
-                'class_name' => $validated['class_name'] ?? null,
+                'class_name' => Student::normalizeClassName($validated['class_name'] ?? null),
                 'gender' => $validated['gender'],
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'address' => $validated['address'] ?? null,

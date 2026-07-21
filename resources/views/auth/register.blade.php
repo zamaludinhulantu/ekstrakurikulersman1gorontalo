@@ -83,7 +83,12 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label for="class_name" class="form-label">Kelas</label>
-                                            <input type="text" id="class_name" name="class_name" value="{{ old('class_name') }}" class="form-control" placeholder="Contoh: X IPA 1">
+                                            <select id="class_name" name="class_name" class="form-select">
+                                                <option value="">Pilih kelas</option>
+                                                @foreach(($classOptions ?? []) as $value => $label)
+                                                    <option value="{{ $value }}" @selected(old('class_name') === $value)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
 
                                         <div class="col-md-6">

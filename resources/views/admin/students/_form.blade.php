@@ -40,7 +40,12 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" for="student_class_name">Kelas</label>
-                    <input type="text" id="student_class_name" name="class_name" value="{{ old('class_name', $student->class_name ?? '') }}" class="form-control" placeholder="Contoh: X IPA 1" required>
+                    <select id="student_class_name" name="class_name" class="form-select" required>
+                        <option value="">Pilih kelas</option>
+                        @foreach(($classOptions ?? []) as $value => $label)
+                            <option value="{{ $value }}" @selected(old('class_name', $student->class_name ?? '') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
                     @error('class_name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">

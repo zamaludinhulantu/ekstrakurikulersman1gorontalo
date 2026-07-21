@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -172,8 +173,13 @@ class AttendanceController extends Controller
         $coach = auth()->user()->coach;
         abort_unless($coach, 404, 'Data pembina tidak ditemukan.');
 
+        $allowedScheduleIds = Schedule::query()
+            ->whereHas('extracurricular.coaches', fn ($query) => $query->whereKey($coach->id))
+            ->pluck('id')
+            ->all();
+
         $validated = $request->validate([
-            'schedule_id' => ['nullable', 'integer'],
+            'schedule_id' => ['nullable', Rule::in($allowedScheduleIds)],
             'format' => ['nullable', Rule::in(['csv', 'xls'])],
         ]);
 
@@ -188,7 +194,7 @@ class AttendanceController extends Controller
             ->orderByDesc('recorded_at')
             ->orderByDesc('id');
 
-        $filename = 'presensi-pembina-'.Carbon::now()->format('YmdHis').'.'.$extension;
+        $filename = $this->buildFilename($validated).'-'.Carbon::now()->format('YmdHis').'.'.$extension;
 
         return response()->streamDownload(function () use ($query, $delimiter): void {
             $handle = fopen('php://output', 'w');
@@ -228,5 +234,22 @@ class AttendanceController extends Controller
     private function supportsEnhancedAttendanceSchema(): bool
     {
         return Schema::hasColumns('attendances', ['is_late', 'save_state', 'finalized_at']);
+    }
+
+    private function buildFilename(array $filters): string
+    {
+        $segments = ['presensi-pembina'];
+
+        if (! empty($filters['schedule_id'])) {
+            $schedule = Schedule::with('extracurricular')->find($filters['schedule_id']);
+
+            if ($schedule) {
+                $segments[] = $schedule->extracurricular->name ?? null;
+                $segments[] = $schedule->title;
+                $segments[] = optional($schedule->activity_date)->format('Y-m-d');
+            }
+        }
+
+        return Str::slug(implode('-', array_filter($segments)));
     }
 }

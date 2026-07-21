@@ -18,11 +18,24 @@
             </div>
             <form class="toolbar-grid">
                 <div class="toolbar-col-3">
+                    <label class="form-label" for="search">Cari data</label>
+                    <input id="search" name="search" type="text" value="{{ $search }}" class="form-control" placeholder="Nama siswa, NIS, kelas, kegiatan, atau jadwal">
+                </div>
+                <div class="toolbar-col-3">
                     <label class="form-label" for="extracurricular_id">Ekstrakurikuler</label>
                     <select id="extracurricular_id" name="extracurricular_id" class="form-select">
                         <option value="">Semua ekstrakurikuler</option>
                         @foreach($extracurriculars as $item)
                             <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="toolbar-col-2">
+                    <label class="form-label" for="category">Kategori</label>
+                    <select id="category" name="category" class="form-select">
+                        <option value="all">Semua kategori</option>
+                        @foreach($categories as $item)
+                            <option value="{{ $item['key'] }}" @selected($category === $item['key'])>{{ $item['label'] }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -32,6 +45,15 @@
                         <option value="">Semua pembina</option>
                         @foreach($coaches as $item)
                             <option value="{{ $item->id }}" @selected((string) $coachId === (string) $item->id)>{{ $item->user->name ?? '-' }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="toolbar-col-2">
+                    <label class="form-label" for="class_name">Kelas</label>
+                    <select id="class_name" name="class_name" class="form-select">
+                        <option value="">Semua kelas</option>
+                        @foreach($classOptions as $item)
+                            <option value="{{ $item }}" @selected($className === $item)>{{ $item }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -53,8 +75,11 @@
                     <label class="form-label" for="date_to">Sampai</label>
                     <input id="date_to" name="date_to" type="date" value="{{ $dateTo }}" class="form-control">
                 </div>
-                <div class="toolbar-col-12">
+                <div class="toolbar-col-2">
                     <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                </div>
+                <div class="toolbar-col-2">
+                    <a href="{{ route('principal.attendances.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
                 </div>
             </form>
         </div>

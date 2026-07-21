@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -200,7 +201,7 @@ class AssessmentController extends Controller
         $format = $validated['format'] ?? 'csv';
         $delimiter = $format === 'xls' ? "\t" : ',';
         $extension = $format === 'xls' ? 'xls' : 'csv';
-        $filename = 'prestasi-penilaian-pembina-'.Carbon::now()->format('YmdHis').'.'.$extension;
+        $filename = $this->buildExportFilename($validated).'-'.Carbon::now()->format('YmdHis').'.'.$extension;
 
         return response()->streamDownload(function () use ($coach, $validated, $delimiter): void {
             $handle = fopen('php://output', 'w');
@@ -450,5 +451,32 @@ class AssessmentController extends Controller
             ->when($filters['history_month'] ?? null, fn ($query, $value) => $query->whereMonth('assessment_date', (int) $value))
             ->when(($filters['history_period'] ?? null) === 'recent', fn ($query) => $query->whereDate('assessment_date', '>=', now()->subDays(30)))
             ->when(($filters['history_period'] ?? null) === 'semester', fn ($query) => $query->whereYear('assessment_date', now()->year)->whereIn(DB::raw('MONTH(assessment_date)'), now()->month <= 6 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12]));
+    }
+
+    private function buildExportFilename(array $filters): string
+    {
+        $segments = ['laporan-pembina'];
+
+        if (! empty($filters['history_type'])) {
+            $segments[] = $filters['history_type'] === 'achievement' ? 'prestasi' : 'penilaian';
+        }
+
+        if (! empty($filters['history_extracurricular_id'])) {
+            $segments[] = Extracurricular::query()->find($filters['history_extracurricular_id'])?->name;
+        }
+
+        if (! empty($filters['history_status'])) {
+            $segments[] = $filters['history_status'] === 'draft' ? 'draft' : 'dipublikasikan';
+        }
+
+        if (! empty($filters['history_month'])) {
+            $segments[] = 'bulan-'.$filters['history_month'];
+        }
+
+        if (! empty($filters['history_period'])) {
+            $segments[] = $filters['history_period'];
+        }
+
+        return Str::slug(implode('-', array_filter($segments)));
     }
 }

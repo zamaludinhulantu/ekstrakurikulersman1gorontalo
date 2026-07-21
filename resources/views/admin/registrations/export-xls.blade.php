@@ -76,10 +76,13 @@
 <body>
     <div class="title">Data Pendaftar Ekstrakurikuler</div>
     <div class="meta">Diekspor pada {{ now()->format('d-m-Y H:i') }}</div>
-    <div class="meta">Total data: {{ $registrations->count() }}</div>
-    <div class="meta">Pencarian: {{ filled($filters['search'] ?? null) ? $filters['search'] : 'Semua siswa' }}</div>
-    <div class="meta">Status: {{ filled($filters['status'] ?? null) ? $filters['status'] : 'Semua status' }}</div>
-    <div class="meta">Filter kegiatan: {{ filled($filters['extracurricular_id'] ?? null) ? $filters['extracurricular_id'] : 'Semua kegiatan' }}</div>
+    <div class="meta">Total data: {{ $students->count() }}</div>
+    <div class="meta">Pencarian: {{ $filterSummary['search'] }}</div>
+    <div class="meta">Kategori: {{ $filterSummary['category'] }}</div>
+    <div class="meta">Kegiatan: {{ $filterSummary['extracurricular'] }}</div>
+    <div class="meta">Kelas: {{ $filterSummary['class_name'] }}</div>
+    <div class="meta">Jenis kelamin: {{ $filterSummary['gender'] }}</div>
+    <div class="meta">Status: {{ $filterSummary['status'] }}</div>
 
     <div class="spacer"></div>
 
@@ -91,42 +94,68 @@
                 <th>Email</th>
                 <th>No. Telepon</th>
                 <th>NIS</th>
+                <th>Kelas</th>
                 <th>Jenis Kelamin</th>
                 <th>Tanggal Lahir</th>
                 <th>Alamat</th>
                 <th>Nama Orang Tua / Wali</th>
                 <th>No. Telepon Orang Tua</th>
-                <th>Kegiatan</th>
-                <th>Cabang Dipilih</th>
+                <th>Kegiatan yang Diikuti</th>
                 <th>Tanggal Daftar</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($registrations as $index => $registration)
+            @forelse($students as $index => $student)
+                @php
+                    $studentRegistrations = $student->registrations
+                        ->sortByDesc(fn ($item) => optional($item->registration_date)->timestamp ?? 0)
+                        ->values();
+                    $latestRegistration = $studentRegistrations->first();
+                    $activityNames = $studentRegistrations
+                        ->map(fn ($item) => $item->extracurricular->name ?? null)
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->implode(', ');
+                    $statusLabels = $studentRegistrations
+                        ->map(function ($registration) use ($statusMap) {
+                            $displayStatus = $registration->status;
+                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
+                            $hasScheduledTest = $registration->talentTestParticipants->isNotEmpty();
+                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
+                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
+                            }
+
+                            return $statusMap[$displayStatus] ?? ucfirst($displayStatus);
+                        })
+                        ->unique()
+                        ->values()
+                        ->implode(', ');
+                @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
-                    <td>{{ $registration->student->user->name ?? '-' }}</td>
-                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->user->email ?? '-' }}</td>
-                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->user->phone ?? '-' }}</td>
-                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->nis ?? '-' }}</td>
+                    <td>{{ $student->user->name ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $student->user->email ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $student->user->phone ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $student->nis ?? '-' }}</td>
+                    <td>{{ $student->class_name ?? '-' }}</td>
                     <td class="center">
-                        @if(($registration->student->gender ?? null) === 'L')
+                        @if(($student->gender ?? null) === 'L')
                             Laki-laki
-                        @elseif(($registration->student->gender ?? null) === 'P')
+                        @elseif(($student->gender ?? null) === 'P')
                             Perempuan
                         @else
                             -
                         @endif
                     </td>
-                    <td class="date">{{ optional($registration->student->date_of_birth)->format('d-m-Y') ?? '-' }}</td>
-                    <td>{{ $registration->student->address ?: ($registration->student->user->address ?? '-') }}</td>
-                    <td>{{ $registration->student->parent_name ?? '-' }}</td>
-                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $registration->student->parent_phone ?? '-' }}</td>
-                    <td>{{ $registration->extracurricular->name ?? '-' }}</td>
-                    <td>{{ $registration->selected_branch_label }}</td>
-                    <td class="date">{{ optional($registration->registration_date)->format('d-m-Y') ?? '-' }}</td>
-                    <td class="status">{{ $registration->status }}</td>
+                    <td class="date">{{ optional($student->date_of_birth)->format('d-m-Y') ?? '-' }}</td>
+                    <td>{{ $student->address ?: ($student->user->address ?? '-') }}</td>
+                    <td>{{ $student->parent_name ?? '-' }}</td>
+                    <td class="excel-text" style='mso-number-format:"\@";'>{{ $student->parent_phone ?? '-' }}</td>
+                    <td>{{ $activityNames !== '' ? $activityNames : '-' }}</td>
+                    <td class="date">{{ optional($latestRegistration?->registration_date)->format('d-m-Y') ?? '-' }}</td>
+                    <td class="status">{{ $statusLabels !== '' ? $statusLabels : '-' }}</td>
                 </tr>
             @empty
                 <tr>

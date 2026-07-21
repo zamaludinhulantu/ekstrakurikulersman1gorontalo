@@ -28,6 +28,14 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="toolbar-col-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Semua Status</option>
+                        <option value="active" @selected(($status ?? '') === 'active')>Aktif</option>
+                        <option value="inactive" @selected(($status ?? '') === 'inactive')>Tidak Aktif</option>
+                    </select>
+                </div>
                 <div class="toolbar-col-2">
                     <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-funnel"></i>Filter</button>
                 </div>
@@ -47,6 +55,7 @@
             <table class="table align-middle">
                 <thead>
                 <tr>
+                    <th>No</th>
                     <th>Nama</th>
                     <th>Email</th>
                     <th>Role</th>
@@ -58,6 +67,7 @@
                 <tbody>
                 @forelse($users as $user)
                     <tr>
+                        <td>{{ $users->firstItem() + $loop->index }}</td>
                         <td>
                             <div class="fw-semibold">{{ $user->name }}</div>
                             <div class="small text-muted">{{ $user->address ?? 'Alamat belum diisi' }}</div>
@@ -80,7 +90,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-inbox"></i></div>
                                 <p class="mb-0">Data pengguna tidak ditemukan.</p>

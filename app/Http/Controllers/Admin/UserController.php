@@ -15,6 +15,7 @@ class UserController extends Controller
     {
         $search = $request->string('search')->toString();
         $role = $request->string('role')->toString();
+        $status = $request->string('status')->toString();
 
         $users = User::query()
             ->when($search, function ($query, $searchValue) {
@@ -25,6 +26,7 @@ class UserController extends Controller
                 });
             })
             ->when($role, fn ($query, $roleValue) => $query->where('role', $roleValue))
+            ->when($status !== '', fn ($query) => $query->where('is_active', $status === 'active'))
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -33,6 +35,7 @@ class UserController extends Controller
             'users' => $users,
             'search' => $search,
             'role' => $role,
+            'status' => $status,
             'roles' => User::ROLES,
         ]);
     }

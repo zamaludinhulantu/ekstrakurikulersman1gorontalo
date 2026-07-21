@@ -15,9 +15,10 @@
         ->sortBy(fn ($participant) => strtolower($participant->student->user->name ?? ''))
         ->values();
     $classOptions = $sortedParticipants
-        ->map(fn ($participant) => $participant->student->class_name ?: 'Belum diatur')
+        ->map(fn ($participant) => \App\Models\Student::normalizeClassName($participant->student->class_name) ?: 'Belum diatur')
         ->filter()
         ->unique()
+        ->sort()
         ->values();
 @endphp
 

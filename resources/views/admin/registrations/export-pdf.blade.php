@@ -68,61 +68,92 @@
     <div class="header">
         <h1>Laporan Pendaftar Kegiatan</h1>
         <div class="meta">Dicetak pada {{ now()->format('d-m-Y H:i') }}</div>
-        <div class="meta">Total data: {{ $registrations->count() }}</div>
+        <div class="meta">Total data: {{ $students->count() }}</div>
     </div>
 
     <div class="filters">
-        <div class="filters-row"><strong>Pencarian:</strong> {{ $filters['search'] ?? 'Semua siswa' }}</div>
-        <div class="filters-row"><strong>Status:</strong> {{ $filters['status'] ?? 'Semua status' }}</div>
-        <div class="filters-row"><strong>ID Kegiatan:</strong> {{ $filters['extracurricular_id'] ?? 'Semua kegiatan' }}</div>
+        <div class="filters-row"><strong>Pencarian:</strong> {{ $filterSummary['search'] }}</div>
+        <div class="filters-row"><strong>Kategori:</strong> {{ $filterSummary['category'] }}</div>
+        <div class="filters-row"><strong>Kegiatan:</strong> {{ $filterSummary['extracurricular'] }}</div>
+        <div class="filters-row"><strong>Kelas:</strong> {{ $filterSummary['class_name'] }}</div>
+        <div class="filters-row"><strong>Jenis kelamin:</strong> {{ $filterSummary['gender'] }}</div>
+        <div class="filters-row"><strong>Status:</strong> {{ $filterSummary['status'] }}</div>
     </div>
 
     <table>
         <thead>
             <tr>
+                <th>No</th>
                 <th>Siswa</th>
                 <th>Email</th>
                 <th>No. Telepon</th>
                 <th>NIS</th>
+                <th>Kelas</th>
                 <th>Jenis Kelamin</th>
                 <th>Tanggal Lahir</th>
                 <th>Alamat</th>
                 <th>Nama Orang Tua / Wali</th>
                 <th>No. Telepon Orang Tua</th>
-                <th>Kegiatan</th>
-                <th>Cabang Dipilih</th>
+                <th>Kegiatan yang Diikuti</th>
                 <th>Tanggal Daftar</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($registrations as $registration)
+            @forelse($students as $index => $student)
+                @php
+                    $studentRegistrations = $student->registrations
+                        ->sortByDesc(fn ($item) => optional($item->registration_date)->timestamp ?? 0)
+                        ->values();
+                    $latestRegistration = $studentRegistrations->first();
+                    $activityNames = $studentRegistrations
+                        ->map(fn ($item) => $item->extracurricular->name ?? null)
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->implode(', ');
+                    $statusLabels = $studentRegistrations
+                        ->map(function ($registration) use ($statusMap) {
+                            $displayStatus = $registration->status;
+                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
+                            $hasScheduledTest = $registration->talentTestParticipants->isNotEmpty();
+                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
+                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
+                            }
+
+                            return $statusMap[$displayStatus] ?? ucfirst($displayStatus);
+                        })
+                        ->unique()
+                        ->values()
+                        ->implode(', ');
+                @endphp
                 <tr>
-                    <td>{{ $registration->student->user->name ?? '-' }}</td>
-                    <td>{{ $registration->student->user->email ?? '-' }}</td>
-                    <td>{{ $registration->student->user->phone ?? '-' }}</td>
-                    <td>{{ $registration->student->nis ?? '-' }}</td>
+                    <td>{{ $index + 1 }}</td>
+                    <td>{{ $student->user->name ?? '-' }}</td>
+                    <td>{{ $student->user->email ?? '-' }}</td>
+                    <td>{{ $student->user->phone ?? '-' }}</td>
+                    <td>{{ $student->nis ?? '-' }}</td>
+                    <td>{{ $student->class_name ?? '-' }}</td>
                     <td>
-                        @if(($registration->student->gender ?? null) === 'L')
+                        @if(($student->gender ?? null) === 'L')
                             Laki-laki
-                        @elseif(($registration->student->gender ?? null) === 'P')
+                        @elseif(($student->gender ?? null) === 'P')
                             Perempuan
                         @else
                             -
                         @endif
                     </td>
-                    <td>{{ optional($registration->student->date_of_birth)->format('d-m-Y') ?? '-' }}</td>
-                    <td>{{ $registration->student->address ?: ($registration->student->user->address ?? '-') }}</td>
-                    <td>{{ $registration->student->parent_name ?? '-' }}</td>
-                    <td>{{ $registration->student->parent_phone ?? '-' }}</td>
-                    <td>{{ $registration->extracurricular->name ?? '-' }}</td>
-                    <td>{{ $registration->selected_branch_label }}</td>
-                    <td>{{ optional($registration->registration_date)->format('d-m-Y') ?? '-' }}</td>
-                    <td>{{ $registration->status }}</td>
+                    <td>{{ optional($student->date_of_birth)->format('d-m-Y') ?? '-' }}</td>
+                    <td>{{ $student->address ?: ($student->user->address ?? '-') }}</td>
+                    <td>{{ $student->parent_name ?? '-' }}</td>
+                    <td>{{ $student->parent_phone ?? '-' }}</td>
+                    <td>{{ $activityNames !== '' ? $activityNames : '-' }}</td>
+                    <td>{{ optional($latestRegistration?->registration_date)->format('d-m-Y') ?? '-' }}</td>
+                    <td>{{ $statusLabels !== '' ? $statusLabels : '-' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="13" class="empty">Tidak ada data pendaftar untuk filter ini.</td>
+                    <td colspan="14" class="empty">Tidak ada data pendaftar untuk filter ini.</td>
                 </tr>
             @endforelse
         </tbody>

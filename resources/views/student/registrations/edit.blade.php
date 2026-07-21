@@ -125,12 +125,16 @@
                 }
 
                 submitButton.disabled = true;
+                submitButton.style.width = `${submitButton.offsetWidth}px`;
+                submitButton.classList.add('is-loading');
                 submitButton.dataset.originalHtml = submitButton.innerHTML;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' + (submitButton.dataset.loadingText || 'Memproses...');
+                submitButton.innerHTML = '<span class="btn-loading-content"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span class="btn-loading-label">' + (submitButton.dataset.loadingText || 'Memproses...') + '</span></span>';
 
                 if (!form.checkValidity()) {
                     event.preventDefault();
                     submitButton.disabled = false;
+                    submitButton.classList.remove('is-loading');
+                    submitButton.style.width = '';
                     submitButton.innerHTML = submitButton.dataset.originalHtml;
                 }
             });

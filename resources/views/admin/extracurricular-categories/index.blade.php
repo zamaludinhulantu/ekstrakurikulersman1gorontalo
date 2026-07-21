@@ -9,6 +9,7 @@
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
+                    <th>No</th>
                     <th>Urutan</th>
                     <th>Kategori</th>
                     <th>Slug</th>
@@ -20,6 +21,7 @@
                 <tbody>
                 @forelse($categories as $category)
                     <tr>
+                        <td>{{ $loop->iteration }}</td>
                         <td>{{ $category->sort_order }}</td>
                         <td>
                             <div class="fw-semibold">{{ $category->label }}</div>
@@ -40,7 +42,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-collection"></i></div>
                                 <p class="mb-0">Belum ada kategori ekskul.</p>

@@ -70,6 +70,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
 
     Route::resource('users', AdminUserController::class);
+    Route::get('/students/export', [AdminStudentController::class, 'export'])->name('students.export');
     Route::resource('students', AdminStudentController::class);
     Route::resource('coaches', AdminCoachController::class);
     Route::get('/extracurricular-categories', [AdminExtracurricularCategoryController::class, 'index'])->name('extracurricular-categories.index');

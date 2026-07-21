@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,7 @@ class ProfileController extends Controller
     {
         return view('profile.edit', [
             'user' => auth()->user()->loadMissing('student'),
+            'classOptions' => Student::registrationClassOptions(),
         ]);
     }
 
@@ -27,7 +29,7 @@ class ProfileController extends Controller
             'address' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->ignore($user->student?->id)],
-            'class_name' => ['nullable', 'string', 'max:100'],
+            'class_name' => ['nullable', Rule::in(array_keys(Student::registrationClassOptions()))],
             'gender' => ['nullable', Rule::in(['L', 'P'])],
             'date_of_birth' => ['nullable', 'date'],
             'parent_name' => ['nullable', 'string', 'max:255'],
@@ -49,7 +51,7 @@ class ProfileController extends Controller
         if ($user->hasRole(\App\Models\User::ROLE_STUDENT) && $user->student) {
             $user->student->update([
                 'nis' => filled($validated['nis'] ?? null) ? $validated['nis'] : null,
-                'class_name' => filled($validated['class_name'] ?? null) ? $validated['class_name'] : null,
+                'class_name' => filled($validated['class_name'] ?? null) ? Student::normalizeClassName($validated['class_name']) : null,
                 'gender' => $validated['gender'] ?? $user->student->gender,
                 'date_of_birth' => $validated['date_of_birth'] ?? null,
                 'address' => $validated['address'] ?? null,

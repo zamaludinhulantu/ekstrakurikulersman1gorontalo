@@ -42,7 +42,12 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Kelas</label>
-                        <input type="text" name="class_name" value="{{ old('class_name', $user->student->class_name) }}" class="form-control" placeholder="Contoh: X IPA 1">
+                        <select name="class_name" class="form-select">
+                            <option value="">Pilih kelas</option>
+                            @foreach(($classOptions ?? []) as $value => $label)
+                                <option value="{{ $value }}" @selected(old('class_name', $user->student->class_name) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Jenis Kelamin</label>
