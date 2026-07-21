@@ -64,17 +64,36 @@
                     <th>NIS</th>
                     <th>Kelas</th>
                     <th>Email</th>
+                    <th>Ekskul Diikuti</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
                 </thead>
                 <tbody>
                 @forelse($students as $student)
+                    @php
+                        $studentActivities = $student->registrations
+                            ->map(fn ($registration) => $registration->extracurricular)
+                            ->filter()
+                            ->unique('id')
+                            ->values();
+                    @endphp
                     <tr>
                         <td>{{ $student->user->name }}</td>
                         <td>{{ $student->nis }}</td>
                         <td>{{ $student->class_name }}</td>
                         <td>{{ $student->user->email }}</td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                @forelse($studentActivities as $activity)
+                                    <a href="{{ route('admin.extracurriculars.show', $activity) }}" class="btn btn-outline-primary btn-sm action-button-compact">
+                                        {{ $activity->name }}
+                                    </a>
+                                @empty
+                                    <span class="text-muted small">Belum mengikuti kegiatan</span>
+                                @endforelse
+                            </div>
+                        </td>
                         <td><span class="badge" data-status="{{ $student->user->is_active ? 'active' : 'inactive' }}">{{ $student->user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span></td>
                         <td class="d-flex flex-wrap gap-1">
                             <a href="{{ route('admin.students.show', $student) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
@@ -99,16 +118,35 @@
             </table>
         </div>
         <div class="mobile-stack-table p-3">
-            @forelse($students as $student)
-                <div class="mobile-data-card">
-                    <div class="mobile-data-card-header">
-                        <h3 class="mobile-data-card-title">{{ $student->user->name }}</h3>
-                        <span class="badge" data-status="{{ $student->user->is_active ? 'active' : 'inactive' }}">{{ $student->user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
-                    </div>
+                @forelse($students as $student)
+                    @php
+                        $studentActivities = $student->registrations
+                            ->map(fn ($registration) => $registration->extracurricular)
+                            ->filter()
+                            ->unique('id')
+                            ->values();
+                    @endphp
+                    <div class="mobile-data-card">
+                        <div class="mobile-data-card-header">
+                            <h3 class="mobile-data-card-title">{{ $student->user->name }}</h3>
+                            <span class="badge" data-status="{{ $student->user->is_active ? 'active' : 'inactive' }}">{{ $student->user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
+                        </div>
                     <div class="mobile-data-list">
                         <div><span class="mobile-data-item-label">NIS</span><p class="mobile-data-item-value">{{ $student->nis }}</p></div>
                         <div><span class="mobile-data-item-label">Kelas</span><p class="mobile-data-item-value">{{ $student->class_name }}</p></div>
                         <div><span class="mobile-data-item-label">Email</span><p class="mobile-data-item-value">{{ $student->user->email }}</p></div>
+                        <div>
+                            <span class="mobile-data-item-label">Ekskul Diikuti</span>
+                            <div class="d-flex flex-wrap gap-1">
+                                @forelse($studentActivities as $activity)
+                                    <a href="{{ route('admin.extracurriculars.show', $activity) }}" class="btn btn-outline-primary btn-sm action-button-compact">
+                                        {{ $activity->name }}
+                                    </a>
+                                @empty
+                                    <p class="mobile-data-item-value mb-0">Belum mengikuti kegiatan</p>
+                                @endforelse
+                            </div>
+                        </div>
                     </div>
                     <div class="mobile-data-card-actions">
                         <a href="{{ route('admin.students.show', $student) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
