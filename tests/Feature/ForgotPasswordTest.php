@@ -37,7 +37,8 @@ class ForgotPasswordTest extends TestCase
 
         $this->post(route('password.email'), [
             'email' => $user->email,
-        ])->assertRedirect();
+        ])
+            ->assertRedirect();
 
         $this->assertGuest();
 
@@ -71,6 +72,6 @@ class ForgotPasswordTest extends TestCase
                 'email' => 'tidak.ada@example.com',
             ])
             ->assertRedirect(route('password.request'))
-            ->assertSessionHasErrors('email');
+            ->assertSessionHas('success', 'Jika email terdaftar, tautan reset password akan dikirim ke email tersebut.');
     }
 }

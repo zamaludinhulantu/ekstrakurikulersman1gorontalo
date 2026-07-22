@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\EnsureAuthenticatedSessionIsActive;
+use App\Http\Middleware\EnsureSystemMaintenanceIsHandled;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'idle.auth' => EnsureAuthenticatedSessionIsActive::class,
             'role' => RoleMiddleware::class,
+            'system.maintenance' => EnsureSystemMaintenanceIsHandled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

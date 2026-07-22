@@ -31,7 +31,7 @@
                     <label class="form-label" for="user_role">Role</label>
                     <select id="user_role" name="role" class="form-select" required>
                         @foreach($roles as $role)
-                            <option value="{{ $role }}" @selected(old('role', $user->role ?? '') === $role)>{{ strtoupper($role) }}</option>
+                            <option value="{{ $role }}" @selected(old('role', $user->role ?? '') === $role)>{{ $roleLabels[$role] ?? strtoupper($role) }}</option>
                         @endforeach
                     </select>
                     @error('role')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
@@ -51,6 +51,17 @@
                     </div>
                     @error('is_active')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
+                @if(isset($user) && $user->hasRole(\App\Models\User::ROLE_SUPER_ADMIN))
+                    <div class="col-12">
+                        <div class="alert alert-info app-alert mb-0">
+                            <i class="bi bi-shield-lock app-alert__icon"></i>
+                            <div class="flex-grow-1">
+                                <strong>Akun super admin dilindungi.</strong>
+                                Jika ini adalah super admin aktif terakhir, role tidak bisa diubah dan akun tidak bisa dinonaktifkan.
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 <div class="col-12">
                     <label class="form-label" for="user_address">Alamat</label>
                     <textarea id="user_address" name="address" class="form-control" rows="3" placeholder="Alamat pengguna">{{ old('address', $user->address ?? '') }}</textarea>

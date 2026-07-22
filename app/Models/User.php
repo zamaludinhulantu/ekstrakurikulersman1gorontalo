@@ -17,6 +17,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+
     public const ROLE_ADMIN = 'admin';
 
     public const ROLE_COACH = 'coach';
@@ -26,10 +28,27 @@ class User extends Authenticatable
     public const ROLE_PRINCIPAL = 'principal';
 
     public const ROLES = [
+        self::ROLE_SUPER_ADMIN,
         self::ROLE_ADMIN,
         self::ROLE_COACH,
         self::ROLE_STUDENT,
         self::ROLE_PRINCIPAL,
+    ];
+
+    public const MANAGEABLE_ROLES = [
+        self::ROLE_SUPER_ADMIN,
+        self::ROLE_ADMIN,
+        self::ROLE_COACH,
+        self::ROLE_STUDENT,
+        self::ROLE_PRINCIPAL,
+    ];
+
+    public const ROLE_LABELS = [
+        self::ROLE_SUPER_ADMIN => 'Super Admin',
+        self::ROLE_ADMIN => 'Admin / Kesiswaan',
+        self::ROLE_COACH => 'Pembina',
+        self::ROLE_STUDENT => 'Siswa',
+        self::ROLE_PRINCIPAL => 'Kepala Sekolah',
     ];
 
     /**
@@ -104,6 +123,21 @@ class User extends Authenticatable
     public function hasRole(string ...$roles): bool
     {
         return in_array($this->role, $roles, true);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    public function canManageSystem(): bool
+    {
+        return $this->hasRole(self::ROLE_SUPER_ADMIN);
+    }
+
+    public function roleLabel(): string
+    {
+        return self::ROLE_LABELS[$this->role] ?? 'Pengguna';
     }
 
     public function sendPasswordResetNotification($token): void

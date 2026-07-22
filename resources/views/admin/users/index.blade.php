@@ -11,7 +11,7 @@
                     <h2 class="h5 mb-1">Filter Pengguna</h2>
                     <p class="toolbar-hint mb-0">Cari akun berdasarkan nama, email, telepon, atau peran pengguna.</p>
                 </div>
-                <a href="{{ route('admin.users.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i>Tambah Pengguna</a>
+                <a href="{{ route($routePrefix.'.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i>Tambah Pengguna</a>
             </div>
 
             <form class="toolbar-grid">
@@ -24,7 +24,7 @@
                     <select name="role" class="form-select">
                         <option value="">Semua Role</option>
                         @foreach($roles as $roleOption)
-                            <option value="{{ $roleOption }}" @selected($role === $roleOption)>{{ strtoupper($roleOption) }}</option>
+                            <option value="{{ $roleOption }}" @selected($role === $roleOption)>{{ $roleLabels[$roleOption] ?? strtoupper($roleOption) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -40,7 +40,7 @@
                     <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-funnel"></i>Filter</button>
                 </div>
                 <div class="toolbar-col-1">
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i></a>
+                    <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i></a>
                 </div>
             </form>
         </div>
@@ -73,14 +73,14 @@
                             <div class="small text-muted">{{ $user->address ?? 'Alamat belum diisi' }}</div>
                         </td>
                         <td>{{ $user->email }}</td>
-                        <td><span class="badge badge-status-secondary">{{ strtoupper($user->role) }}</span></td>
+                        <td><span class="badge badge-status-secondary">{{ $user->roleLabel() }}</span></td>
                         <td>{{ $user->phone ?? '-' }}</td>
                         <td><span class="badge" data-status="{{ $user->is_active ? 'active' : 'inactive' }}">{{ $user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span></td>
                         <td>
                             <div class="row-actions">
-                                <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
-                                <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
-                                <form method="post" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
+                                <a href="{{ route($routePrefix.'.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
+                                <a href="{{ route($routePrefix.'.edit', $user) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
+                                <form method="post" action="{{ route($routePrefix.'.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
                                     @csrf
                                     @method('delete')
                                     <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i>Hapus</button>
@@ -109,15 +109,15 @@
                         <span class="badge" data-status="{{ $user->is_active ? 'active' : 'inactive' }}">{{ $user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span>
                     </div>
                     <div class="mobile-data-list">
-                        <div><span class="mobile-data-item-label">Role</span><p class="mobile-data-item-value">{{ strtoupper($user->role) }}</p></div>
+                        <div><span class="mobile-data-item-label">Role</span><p class="mobile-data-item-value">{{ $user->roleLabel() }}</p></div>
                         <div><span class="mobile-data-item-label">Email</span><p class="mobile-data-item-value">{{ $user->email }}</p></div>
                         <div><span class="mobile-data-item-label">Telepon</span><p class="mobile-data-item-value">{{ $user->phone ?? '-' }}</p></div>
                         <div><span class="mobile-data-item-label">Alamat</span><p class="mobile-data-item-value">{{ $user->address ?? 'Alamat belum diisi' }}</p></div>
                     </div>
                     <div class="mobile-data-card-actions">
-                        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
-                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
-                        <form method="post" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
+                        <a href="{{ route($routePrefix.'.show', $user) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
+                        <a href="{{ route($routePrefix.'.edit', $user) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
+                        <form method="post" action="{{ route($routePrefix.'.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
                             @csrf
                             @method('delete')
                             <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash"></i>Hapus</button>

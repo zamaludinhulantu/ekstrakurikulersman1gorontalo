@@ -19,6 +19,7 @@
 @php
     $authUser = auth()->user();
     $roleLabel = match($authUser->role ?? '') {
+        \App\Models\User::ROLE_SUPER_ADMIN => 'Super Admin',
         \App\Models\User::ROLE_ADMIN => 'Admin / Kesiswaan',
         \App\Models\User::ROLE_STUDENT => 'Siswa',
         \App\Models\User::ROLE_COACH => 'Pembina',
@@ -27,13 +28,46 @@
     };
 
     $menuGroups = [];
-    if ($authUser?->role === \App\Models\User::ROLE_ADMIN) {
+    if ($authUser?->role === \App\Models\User::ROLE_SUPER_ADMIN) {
+        $menuGroups = [
+            [
+                'label' => 'Kontrol Sistem',
+                'items' => [
+                    ['label' => 'Dashboard', 'route' => route('super-admin.dashboard'), 'active' => 'super-admin.dashboard', 'icon' => 'bi-speedometer2', 'caption' => 'Ringkasan menyeluruh'],
+                    ['label' => 'Manajemen Pengguna', 'route' => route('super-admin.users.index'), 'active' => 'super-admin.users.*', 'icon' => 'bi-shield-lock', 'caption' => 'Akun, role, dan status'],
+                    ['label' => 'Pengaturan Sistem', 'route' => route('super-admin.system.index'), 'active' => 'super-admin.system.*', 'icon' => 'bi-sliders2', 'caption' => 'Konfigurasi inti'],
+                    ['label' => 'Maintenance', 'route' => route('super-admin.maintenance.index'), 'active' => 'super-admin.maintenance.*', 'icon' => 'bi-tools', 'caption' => 'Kontrol pemeliharaan'],
+                    ['label' => 'Audit Log', 'route' => route('super-admin.audit-logs.index'), 'active' => 'super-admin.audit-logs.*', 'icon' => 'bi-journal-text', 'caption' => 'Riwayat aksi sensitif'],
+                ],
+            ],
+            [
+                'label' => 'Operasional',
+                'items' => [
+                    ['label' => 'Data Ekskul', 'route' => route('admin.extracurriculars.index'), 'active' => 'admin.extracurriculars.*', 'icon' => 'bi-grid-1x2', 'caption' => 'Unit kegiatan'],
+                    ['label' => 'Kategori Ekskul', 'route' => route('admin.extracurricular-categories.index'), 'active' => 'admin.extracurricular-categories.*', 'icon' => 'bi-collection', 'caption' => 'Kartu kategori publik'],
+                    ['label' => 'Pendaftar', 'route' => route('admin.registrations.index'), 'active' => 'admin.registrations.*', 'icon' => 'bi-clipboard-check', 'caption' => 'Verifikasi siswa'],
+                    ['label' => 'Anggota', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Data peserta'],
+                    ['label' => 'Pembina', 'route' => route('admin.coaches.index'), 'active' => 'admin.coaches.*', 'icon' => 'bi-person-workspace', 'caption' => 'Data pembina'],
+                    ['label' => 'Pengumuman', 'route' => route('admin.announcements.index'), 'active' => 'admin.announcements.*', 'icon' => 'bi-megaphone', 'caption' => 'Info untuk siswa'],
+                ],
+            ],
+            [
+                'label' => 'Kegiatan & Laporan',
+                'items' => [
+                    ['label' => 'Tes Bakat', 'route' => route('admin.talent-tests.index'), 'active' => 'admin.talent-tests.*', 'icon' => 'bi-clipboard2-pulse', 'caption' => 'Monitoring tes'],
+                    ['label' => 'Jadwal', 'route' => route('admin.schedules.index'), 'active' => 'admin.schedules.*', 'icon' => 'bi-calendar3', 'caption' => 'Agenda kegiatan'],
+                    ['label' => 'Prestasi', 'route' => route('admin.assessments.index'), 'active' => 'admin.assessments.*', 'icon' => 'bi-award', 'caption' => 'Prestasi dan nilai'],
+                    ['label' => 'Laporan Peserta', 'route' => route('admin.participants.index'), 'active' => 'admin.participants.*', 'icon' => 'bi-card-checklist', 'caption' => 'Rekap peserta'],
+                    ['label' => 'Laporan Presensi', 'route' => route('admin.attendances.index'), 'active' => 'admin.attendances.*', 'icon' => 'bi-check2-square', 'caption' => 'Kehadiran peserta'],
+                ],
+            ],
+        ];
+    } elseif ($authUser?->role === \App\Models\User::ROLE_ADMIN) {
         $menuGroups = [
             [
                 'label' => 'Utama',
                 'items' => [
                     ['label' => 'Dashboard', 'route' => route('admin.dashboard'), 'active' => 'admin.dashboard', 'icon' => 'bi-speedometer2', 'caption' => 'Ringkasan sistem'],
-                    ['label' => 'Pengguna', 'route' => route('admin.users.index'), 'active' => 'admin.users.*', 'icon' => 'bi-people', 'caption' => 'Akun semua role'],
                 ],
             ],
             [
@@ -110,8 +144,12 @@
     }
 
     $routeTitleMap = [
+        'super-admin.dashboard' => 'Dashboard Super Admin',
+        'super-admin.users.*' => 'Manajemen Pengguna',
+        'super-admin.system.*' => 'Pengaturan Sistem',
+        'super-admin.maintenance.*' => 'Maintenance Sistem',
+        'super-admin.audit-logs.*' => 'Audit Log Sistem',
         'admin.dashboard' => 'Dashboard Admin',
-        'admin.users.*' => 'Manajemen Pengguna',
         'admin.students.*' => 'Manajemen Siswa',
         'admin.coaches.*' => 'Manajemen Pembina',
         'admin.extracurriculars.*' => 'Manajemen Ekstrakurikuler',
@@ -158,7 +196,9 @@
     $breadcrumbItems = [
         ['label' => 'Dashboard', 'route' => route('dashboard')],
     ];
-    if ($authUser?->role === \App\Models\User::ROLE_ADMIN) {
+    if ($authUser?->role === \App\Models\User::ROLE_SUPER_ADMIN) {
+        $breadcrumbItems[0]['route'] = route('super-admin.dashboard');
+    } elseif ($authUser?->role === \App\Models\User::ROLE_ADMIN) {
         $breadcrumbItems[0]['route'] = route('admin.dashboard');
     } elseif ($authUser?->role === \App\Models\User::ROLE_COACH) {
         $breadcrumbItems[0]['route'] = route('coach.dashboard');

@@ -32,20 +32,23 @@ use App\Http\Controllers\Student\RegistrationController as StudentRegistrationCo
 use App\Http\Controllers\Student\ScheduleController as StudentScheduleController;
 use App\Http\Controllers\Student\TalentTestController as StudentTalentTestController;
 use App\Http\Controllers\Coach\TalentTestController as CoachTalentTestController;
+use App\Http\Controllers\SuperAdmin\SystemController as SuperAdminSystemController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [PublicLandingController::class, 'index'])->name('landing');
 Route::get('/sitemap.xml', [PublicLandingController::class, 'sitemap'])->name('public.sitemap');
 Route::get('/robots.txt', [PublicLandingController::class, 'robots'])->name('public.robots');
-Route::get('/kegiatan', [PublicLandingController::class, 'activities'])->name('public.activities.index');
-Route::get('/kegiatan/semua', [PublicLandingController::class, 'catalog'])->name('public.activities.all');
-Route::get('/kegiatan/{slug}', [PublicLandingController::class, 'categoryCatalog'])->name('public.activities.category');
-Route::get('/informasi-sistem', [PublicLandingController::class, 'information'])->name('public.information');
-Route::get('/pengumuman', [PublicLandingController::class, 'announcements'])->name('public.announcements');
-Route::get('/extracurriculars/{extracurricular}/daftar', [PublicLandingController::class, 'beginRegistration'])->name('public.extracurriculars.register');
-Route::get('/extracurriculars/{extracurricular}', [PublicLandingController::class, 'show'])->name('public.extracurriculars.show');
+Route::middleware('system.maintenance')->group(function (): void {
+    Route::get('/kegiatan', [PublicLandingController::class, 'activities'])->name('public.activities.index');
+    Route::get('/kegiatan/semua', [PublicLandingController::class, 'catalog'])->name('public.activities.all');
+    Route::get('/kegiatan/{slug}', [PublicLandingController::class, 'categoryCatalog'])->name('public.activities.category');
+    Route::get('/informasi-sistem', [PublicLandingController::class, 'information'])->name('public.information');
+    Route::get('/pengumuman', [PublicLandingController::class, 'announcements'])->name('public.announcements');
+    Route::get('/extracurriculars/{extracurricular}/daftar', [PublicLandingController::class, 'beginRegistration'])->name('public.extracurriculars.register');
+    Route::get('/extracurriculars/{extracurricular}', [PublicLandingController::class, 'show'])->name('public.extracurriculars.show');
+    Route::get('/', [PublicLandingController::class, 'index'])->name('landing');
+});
 
-Route::middleware('guest')->group(function (): void {
+Route::middleware(['guest', 'system.maintenance'])->group(function (): void {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
@@ -56,7 +59,7 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
 
-Route::middleware(['auth', 'idle.auth', 'role:admin,coach,student,principal'])->group(function (): void {
+Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,admin,coach,student,principal'])->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('/session/keep-alive', static function () {
         session()->put('last_activity_ping', now()->timestamp);
@@ -73,10 +76,19 @@ Route::middleware(['auth', 'idle.auth', 'role:admin,coach,student,principal'])->
         ->name('registrations.achievement-proof');
 });
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function (): void {
-    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
-
+Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin'])->prefix('super-admin')->name('super-admin.')->group(function (): void {
+    Route::get('/dashboard', [DashboardController::class, 'superAdmin'])->name('dashboard');
     Route::resource('users', AdminUserController::class);
+    Route::get('/system', [SuperAdminSystemController::class, 'index'])->name('system.index');
+    Route::put('/system/email', [SuperAdminSystemController::class, 'updateEmail'])->name('system.email.update');
+    Route::post('/system/email/test', [SuperAdminSystemController::class, 'sendTestEmail'])->name('system.email.test');
+    Route::get('/maintenance', [SuperAdminSystemController::class, 'maintenance'])->name('maintenance.index');
+    Route::put('/maintenance', [SuperAdminSystemController::class, 'updateMaintenance'])->name('maintenance.update');
+    Route::get('/audit-logs', [SuperAdminSystemController::class, 'auditLogs'])->name('audit-logs.index');
+});
+
+Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,admin'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
     Route::get('/students/export', [AdminStudentController::class, 'export'])->name('students.export');
     Route::resource('students', AdminStudentController::class);
     Route::resource('coaches', AdminCoachController::class);
@@ -110,7 +122,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/reports/export/{type}', [AdminReportController::class, 'export'])->name('reports.export');
 });
 
-Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function (): void {
+Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:student'])->prefix('student')->name('student.')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'student'])->name('dashboard');
 
     Route::get('/extracurriculars', [StudentExtracurricularController::class, 'index'])->name('extracurriculars.index');
@@ -128,7 +140,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::get('/talent-tests', [StudentTalentTestController::class, 'index'])->name('talent-tests.index');
 });
 
-Route::middleware(['auth', 'role:coach'])->prefix('coach')->name('coach.')->group(function (): void {
+Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:coach'])->prefix('coach')->name('coach.')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'coach'])->name('dashboard');
 
     Route::get('/extracurriculars', [CoachExtracurricularController::class, 'index'])->name('extracurriculars.index');
@@ -173,7 +185,7 @@ Route::middleware(['auth', 'role:coach'])->prefix('coach')->name('coach.')->grou
     Route::delete('/assessments/{assessment}', [CoachAssessmentController::class, 'destroy'])->name('assessments.destroy');
 });
 
-Route::middleware(['auth', 'role:principal'])->prefix('principal')->name('principal.')->group(function (): void {
+Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:principal'])->prefix('principal')->name('principal.')->group(function (): void {
     Route::get('/dashboard', [PrincipalDashboardController::class, 'index'])->name('dashboard');
     Route::get('/attendances', [PrincipalAttendanceController::class, 'index'])->name('attendances.index');
     Route::get('/attendances/export', [PrincipalAttendanceController::class, 'export'])->name('attendances.export');

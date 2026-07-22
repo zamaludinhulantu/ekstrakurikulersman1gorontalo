@@ -5,13 +5,17 @@ namespace Tests\Feature;
 use App\Models\Assessment;
 use App\Models\Attendance;
 use App\Models\Announcement;
+use App\Models\AuditLog;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Report;
 use App\Models\Schedule;
+use App\Models\SystemSetting;
 use App\Models\User;
+use App\Mail\SystemTestMail;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class FullRegressionTest extends TestCase
@@ -91,6 +95,7 @@ class FullRegressionTest extends TestCase
         $this->assertAuthenticated();
 
         $dashboardMap = [
+            'superadmin@gmail.com' => route('super-admin.dashboard'),
             'admin@gmail.com' => route('admin.dashboard'),
             'pembina1@gmail.com' => route('coach.dashboard'),
             'siswa1@gmail.com' => route('student.dashboard'),
@@ -116,9 +121,12 @@ class FullRegressionTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_admin_core_pages_and_actions_work(): void
+    public function test_super_admin_can_manage_users_and_operational_admin_stays_working(): void
     {
+        Mail::fake();
+
         $admin = $this->userByEmail('admin@gmail.com');
+        $superAdmin = $this->userByEmail('superadmin@gmail.com');
         $pendingRegistration = Registration::query()
             ->where('status', Registration::STATUS_PENDING)
             ->firstOrFail();
@@ -127,12 +135,23 @@ class FullRegressionTest extends TestCase
         $existingCoach = $this->userByEmail('pembina1@gmail.com')->coach;
         $existingExtracurricular = Extracurricular::query()->firstOrFail();
 
-        $pages = [
+        $superAdminPages = [
+            route('super-admin.dashboard'),
+            route('super-admin.users.index'),
+            route('super-admin.users.create'),
+            route('super-admin.users.show', $existingUser),
+            route('super-admin.users.edit', $existingUser),
+            route('super-admin.system.index'),
+            route('super-admin.maintenance.index'),
+            route('super-admin.audit-logs.index'),
+        ];
+
+        foreach ($superAdminPages as $page) {
+            $this->actingAs($superAdmin)->get($page)->assertOk();
+        }
+
+        $adminPages = [
             route('admin.dashboard'),
-            route('admin.users.index'),
-            route('admin.users.create'),
-            route('admin.users.show', $existingUser),
-            route('admin.users.edit', $existingUser),
             route('admin.students.index'),
             route('admin.students.create'),
             route('admin.students.show', $existingStudent),
@@ -153,12 +172,16 @@ class FullRegressionTest extends TestCase
             route('admin.announcements.index'),
         ];
 
-        foreach ($pages as $page) {
+        foreach ($adminPages as $page) {
             $this->actingAs($admin)->get($page)->assertOk();
         }
 
         $this->actingAs($admin)
-            ->post(route('admin.users.store'), [
+            ->get(route('super-admin.users.index'))
+            ->assertForbidden();
+
+        $this->actingAs($superAdmin)
+            ->post(route('super-admin.users.store'), [
                 'name' => 'User Regression',
                 'email' => 'user.regression@example.com',
                 'role' => User::ROLE_PRINCIPAL,
@@ -168,12 +191,12 @@ class FullRegressionTest extends TestCase
                 'password_confirmation' => '11111111',
                 'is_active' => '1',
             ])
-            ->assertRedirect(route('admin.users.index'));
+            ->assertRedirect(route('super-admin.users.index'));
 
         $createdUser = $this->userByEmail('user.regression@example.com');
 
-        $this->actingAs($admin)
-            ->put(route('admin.users.update', $createdUser), [
+        $this->actingAs($superAdmin)
+            ->put(route('super-admin.users.update', $createdUser), [
                 'name' => 'User Regression Update',
                 'email' => 'user.regression@example.com',
                 'role' => User::ROLE_PRINCIPAL,
@@ -183,10 +206,94 @@ class FullRegressionTest extends TestCase
                 'password_confirmation' => '',
                 'is_active' => '1',
             ])
-            ->assertRedirect(route('admin.users.index'));
+            ->assertRedirect(route('super-admin.users.index'));
 
         $createdUser->refresh();
         $this->assertSame('User Regression Update', $createdUser->name);
+
+        $onlySuperAdmin = $this->userByEmail('superadmin@gmail.com');
+
+        $this->actingAs($superAdmin)
+            ->put(route('super-admin.users.update', $onlySuperAdmin), [
+                'name' => 'Super Admin',
+                'email' => 'superadmin@gmail.com',
+                'role' => User::ROLE_ADMIN,
+                'phone' => '0800000000',
+                'address' => 'Ruang Server Sekolah',
+                'password' => '',
+                'password_confirmation' => '',
+                'is_active' => '1',
+            ])
+            ->assertSessionHas('error', 'Super admin terakhir tidak dapat diubah rolenya atau dinonaktifkan.');
+
+        $this->actingAs($superAdmin)
+            ->delete(route('super-admin.users.destroy', $onlySuperAdmin))
+            ->assertSessionHas('error', 'Anda tidak dapat menghapus akun sendiri.');
+
+        $this->actingAs($superAdmin)
+            ->put(route('super-admin.system.email.update'), [
+                'mail_mailer' => 'smtp',
+                'mail_smtp_host' => 'smtp.example.com',
+                'mail_smtp_port' => 587,
+                'mail_smtp_username' => 'noreply@example.com',
+                'mail_smtp_password' => 'secret123',
+                'mail_smtp_encryption' => 'tls',
+                'mail_from_address' => 'noreply@example.com',
+                'mail_from_name' => 'Ekstrakurikuler SMAN 1',
+            ])
+            ->assertSessionHas('success', 'Konfigurasi email berhasil diperbarui.');
+
+        $this->assertSame('smtp.example.com', SystemSetting::getValue('mail_smtp_host'));
+        $this->assertSame('secret123', SystemSetting::getValue('mail_smtp_password'));
+
+        $this->actingAs($superAdmin)
+            ->post(route('super-admin.system.email.test'), [
+                'test_email' => 'uji@example.com',
+            ])
+            ->assertSessionHas('success', 'Email uji berhasil dikirim.');
+
+        Mail::assertSent(SystemTestMail::class);
+
+        $this->actingAs($superAdmin)
+            ->put(route('super-admin.maintenance.update'), [
+                'maintenance_enabled' => '1',
+                'maintenance_message' => 'Sedang maintenance pengujian.',
+            ])
+            ->assertSessionHas('success', 'Mode maintenance berhasil diaktifkan.');
+
+        auth()->logout();
+
+        $this->get(route('landing'))
+            ->assertStatus(503)
+            ->assertSee('Sedang maintenance pengujian.');
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertStatus(503);
+
+        $this->actingAs($superAdmin)
+            ->get(route('super-admin.dashboard'))
+            ->assertOk();
+
+        $this->actingAs($superAdmin)
+            ->put(route('super-admin.maintenance.update'), [
+                'maintenance_message' => 'Maintenance selesai.',
+            ])
+            ->assertSessionHas('success', 'Mode maintenance berhasil dinonaktifkan.');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'system.email.updated',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'system.email.test_sent',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'system.maintenance.enabled',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'system.maintenance.disabled',
+        ]);
+        $this->assertGreaterThanOrEqual(3, AuditLog::query()->count());
 
         $this->actingAs($admin)
             ->post(route('admin.students.store'), [
@@ -325,9 +432,9 @@ class FullRegressionTest extends TestCase
             ->delete(route('admin.students.destroy', $createdStudent))
             ->assertRedirect(route('admin.students.index'));
 
-        $this->actingAs($admin)
-            ->delete(route('admin.users.destroy', $createdUser))
-            ->assertRedirect(route('admin.users.index'));
+        $this->actingAs($superAdmin)
+            ->delete(route('super-admin.users.destroy', $createdUser))
+            ->assertRedirect(route('super-admin.users.index'));
 
         $this->assertDatabaseMissing('announcements', ['id' => $announcement->id]);
         $this->assertDatabaseMissing('extracurriculars', ['id' => $createdExtracurricular->id]);

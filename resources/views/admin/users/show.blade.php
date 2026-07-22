@@ -28,7 +28,7 @@
                         <div class="col-md-6">
                             <div class="data-point h-100">
                                 <div class="data-point-label">Role</div>
-                                <p class="data-point-value"><span class="badge badge-status-secondary">{{ strtoupper($user->role) }}</span></p>
+                                <p class="data-point-value"><span class="badge badge-status-secondary">{{ $user->roleLabel() }}</span></p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -47,8 +47,8 @@
                 </div>
                 <div class="card-footer">
                     <div class="form-actions">
-                        <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-primary"><i class="bi bi-pencil-square"></i>Edit Pengguna</a>
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali</a>
+                        <a href="{{ route($routePrefix.'.edit', $user) }}" class="btn btn-primary"><i class="bi bi-pencil-square"></i>Edit Pengguna</a>
+                        <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali</a>
                     </div>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                         </div>
                         <div class="info-item">
                             <div class="title">Peran Pengguna</div>
-                            <div class="small text-muted mt-1">Role <strong>{{ strtoupper($user->role) }}</strong> menentukan akses dashboard dan menu sistem.</div>
+                            <div class="small text-muted mt-1">Role <strong>{{ $user->roleLabel() }}</strong> menentukan akses dashboard dan menu sistem.</div>
                         </div>
                         <div class="info-item">
                             <div class="title">Kontak</div>

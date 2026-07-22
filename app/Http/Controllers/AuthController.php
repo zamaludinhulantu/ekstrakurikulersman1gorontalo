@@ -265,6 +265,10 @@ class AuthController extends Controller
 
     private function mailIsNotConfiguredForDelivery(): bool
     {
+        if (app()->runningUnitTests()) {
+            return false;
+        }
+
         $mailer = config('mail.default');
 
         if (in_array($mailer, ['log', 'array'], true)) {

@@ -27,7 +27,7 @@ class RegistrationAchievementProofController extends Controller
                 && $registration->extracurricular->coaches->contains('id', $user->coach->id),
                 403
             );
-        } elseif (! $user->hasRole(User::ROLE_ADMIN, User::ROLE_PRINCIPAL)) {
+        } elseif (! $user->hasRole(User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN, User::ROLE_PRINCIPAL)) {
             abort(403);
         }
 

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('page_title', 'Dashboard Admin/Kesiswaan')
-@section('page_subtitle', 'Pantau pendaftaran, data ekskul, dan aktivitas utama dari satu dashboard')
+@section('page_title', $dashboardTitle ?? 'Dashboard Admin/Kesiswaan')
+@section('page_subtitle', $dashboardSubtitle ?? 'Pantau pendaftaran, data ekskul, dan aktivitas utama dari satu dashboard')
 
 @section('content')
     <div class="row g-3 mb-3">

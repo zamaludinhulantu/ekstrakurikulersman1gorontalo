@@ -23,7 +23,7 @@ class RegistrationProfilePreviewController extends Controller
                 $user->coach && $registration->extracurricular->coaches()->whereKey($user->coach->id)->exists(),
                 403
             );
-        } elseif (! $user->hasRole(User::ROLE_ADMIN, User::ROLE_PRINCIPAL)) {
+        } elseif (! $user->hasRole(User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN, User::ROLE_PRINCIPAL)) {
             abort(403);
         }
 

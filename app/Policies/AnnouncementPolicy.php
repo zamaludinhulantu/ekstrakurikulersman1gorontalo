@@ -9,7 +9,7 @@ class AnnouncementPolicy
 {
     public function manageByCoach(User $user, Announcement $announcement): bool
     {
-        if ($user->hasRole(User::ROLE_ADMIN)) {
+        if ($user->hasRole(User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN)) {
             return true;
         }
 

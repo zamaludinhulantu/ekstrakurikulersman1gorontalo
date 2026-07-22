@@ -9,7 +9,7 @@ class SchedulePolicy
 {
     public function manageByCoach(User $user, Schedule $schedule): bool
     {
-        if ($user->hasRole(User::ROLE_ADMIN)) {
+        if ($user->hasRole(User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN)) {
             return true;
         }
 

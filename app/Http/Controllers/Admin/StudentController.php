@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Extracurricular;
+use App\Models\Registration;
 use App\Models\Student;
 use App\Models\User;
 use Dompdf\Dompdf;
@@ -204,6 +205,7 @@ class StudentController extends Controller
     public function studentActivityNames(Student $student, ?int $extracurricularId = null): string
     {
         $names = $student->registrations
+            ->where('status', Registration::STATUS_APPROVED)
             ->when($extracurricularId, fn ($items) => $items->where('extracurricular_id', $extracurricularId))
             ->map(fn ($registration) => $registration->extracurricular?->name)
             ->filter()
@@ -278,7 +280,16 @@ class StudentController extends Controller
     {
         $classComparable = Student::normalizedClassComparable($filters['class_name'] ?? null);
 
-        return Student::with(['user', 'registrations.extracurricular'])
+        return Student::with([
+            'user',
+            'registrations' => function ($query): void {
+                $query->where('status', Registration::STATUS_APPROVED)
+                    ->with('extracurricular');
+            },
+        ])
+            ->whereHas('registrations', function ($query): void {
+                $query->where('status', Registration::STATUS_APPROVED);
+            })
             ->when($classComparable, function ($query, $value): void {
                 $query->whereRaw(Student::normalizedClassExpression('class_name').' = ?', [$value]);
             })
@@ -287,7 +298,11 @@ class StudentController extends Controller
                 $query->whereHas('user', fn ($userQuery) => $userQuery->where('is_active', ($filters['status'] ?? '') === 'active'));
             })
             ->when(($filters['extracurricular_id'] ?? null), function ($query, $extracurricularId): void {
-                $query->whereHas('registrations', fn ($registrationQuery) => $registrationQuery->where('extracurricular_id', $extracurricularId));
+                $query->whereHas('registrations', function ($registrationQuery) use ($extracurricularId): void {
+                    $registrationQuery
+                        ->where('status', Registration::STATUS_APPROVED)
+                        ->where('extracurricular_id', $extracurricularId);
+                });
             })
             ->when(($filters['category'] ?? 'all') !== 'all', function ($query) use ($filters): void {
                 $ids = Extracurricular::idsForCategory($filters['category']);
@@ -298,7 +313,11 @@ class StudentController extends Controller
                     return;
                 }
 
-                $query->whereHas('registrations', fn ($registrationQuery) => $registrationQuery->whereIn('extracurricular_id', $ids));
+                $query->whereHas('registrations', function ($registrationQuery) use ($ids): void {
+                    $registrationQuery
+                        ->where('status', Registration::STATUS_APPROVED)
+                        ->whereIn('extracurricular_id', $ids);
+                });
             })
             ->when($filters['search'] ?? null, function ($query, $searchValue) {
                 $query->where(function ($studentQuery) use ($searchValue): void {
@@ -307,6 +326,10 @@ class StudentController extends Controller
                         ->orWhereHas('user', function ($userQuery) use ($searchValue): void {
                             $userQuery->where('name', 'like', "%{$searchValue}%")
                                 ->orWhere('email', 'like', "%{$searchValue}%");
+                        })
+                        ->orWhereHas('registrations', function ($registrationQuery) use ($searchValue): void {
+                            $registrationQuery->where('status', Registration::STATUS_APPROVED)
+                                ->whereHas('extracurricular', fn ($activityQuery) => $activityQuery->where('name', 'like', "%{$searchValue}%"));
                         });
                 });
             });

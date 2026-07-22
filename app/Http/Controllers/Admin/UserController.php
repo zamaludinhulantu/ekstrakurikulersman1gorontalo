@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,14 +37,18 @@ class UserController extends Controller
             'search' => $search,
             'role' => $role,
             'status' => $status,
-            'roles' => User::ROLES,
+            'roles' => User::MANAGEABLE_ROLES,
+            'roleLabels' => User::ROLE_LABELS,
+            'routePrefix' => $this->routePrefix(),
         ]);
     }
 
     public function create(): View
     {
         return view('admin.users.create', [
-            'roles' => User::ROLES,
+            'roles' => User::MANAGEABLE_ROLES,
+            'roleLabels' => User::ROLE_LABELS,
+            'routePrefix' => $this->routePrefix(),
         ]);
     }
 
@@ -52,7 +57,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', Rule::in(User::ROLES)],
+            'role' => ['required', Rule::in(User::MANAGEABLE_ROLES)],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -61,15 +66,18 @@ class UserController extends Controller
 
         $validated['is_active'] = $request->boolean('is_active');
 
-        User::create($validated);
+        $createdUser = User::create($validated);
 
-        return redirect()->route('admin.users.index')->with('success', 'Data pengguna berhasil ditambahkan.');
+        $this->recordAudit('user.created', 'Super admin menambahkan pengguna baru.', $createdUser);
+
+        return redirect()->route($this->routePrefix().'.index')->with('success', 'Data pengguna berhasil ditambahkan.');
     }
 
     public function show(User $user): View
     {
         return view('admin.users.show', [
             'user' => $user,
+            'routePrefix' => $this->routePrefix(),
         ]);
     }
 
@@ -77,7 +85,9 @@ class UserController extends Controller
     {
         return view('admin.users.edit', [
             'user' => $user,
-            'roles' => User::ROLES,
+            'roles' => User::MANAGEABLE_ROLES,
+            'roleLabels' => User::ROLE_LABELS,
+            'routePrefix' => $this->routePrefix(),
         ]);
     }
 
@@ -86,7 +96,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => ['required', Rule::in(User::ROLES)],
+            'role' => ['required', Rule::in(User::MANAGEABLE_ROLES)],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
@@ -99,9 +109,17 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
+        if ($this->isProtectedLastSuperAdmin($user, $validated['role'], $validated['is_active'])) {
+            return back()
+                ->withInput()
+                ->with('error', 'Super admin terakhir tidak dapat diubah rolenya atau dinonaktifkan.');
+        }
+
         $user->update($validated);
 
-        return redirect()->route('admin.users.index')->with('success', 'Data pengguna berhasil diperbarui.');
+        $this->recordAudit('user.updated', 'Super admin memperbarui data pengguna.', $user);
+
+        return redirect()->route($this->routePrefix().'.index')->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
     public function destroy(User $user): RedirectResponse
@@ -110,8 +128,82 @@ class UserController extends Controller
             return back()->with('error', 'Anda tidak dapat menghapus akun sendiri.');
         }
 
+        if ($this->isLastSuperAdmin($user)) {
+            return back()->with('error', 'Super admin terakhir tidak dapat dihapus.');
+        }
+
+        $deletedUserId = $user->id;
+        $deletedUserName = $user->name;
+        $deletedUserRole = $user->role;
         $user->delete();
 
-        return redirect()->route('admin.users.index')->with('success', 'Data pengguna berhasil dihapus.');
+        if (auth()->user()?->hasRole(User::ROLE_SUPER_ADMIN)) {
+            AuditLog::query()->create([
+                'user_id' => auth()->id(),
+                'action' => 'user.deleted',
+                'subject_type' => User::class,
+                'subject_id' => $deletedUserId,
+                'description' => 'Super admin menghapus pengguna.',
+                'metadata' => [
+                    'name' => $deletedUserName,
+                    'role' => $deletedUserRole,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        }
+
+        return redirect()->route($this->routePrefix().'.index')->with('success', 'Data pengguna berhasil dihapus.');
+    }
+
+    private function routePrefix(): string
+    {
+        return auth()->user()?->hasRole(User::ROLE_SUPER_ADMIN)
+            ? 'super-admin.users'
+            : 'admin.users';
+    }
+
+    private function isProtectedLastSuperAdmin(User $user, string $targetRole, bool $targetActive): bool
+    {
+        if (! $this->isLastSuperAdmin($user)) {
+            return false;
+        }
+
+        return $targetRole !== User::ROLE_SUPER_ADMIN || ! $targetActive;
+    }
+
+    private function isLastSuperAdmin(User $user): bool
+    {
+        if (! $user->hasRole(User::ROLE_SUPER_ADMIN)) {
+            return false;
+        }
+
+        return User::query()
+            ->where('role', User::ROLE_SUPER_ADMIN)
+            ->where('is_active', true)
+            ->count() <= 1;
+    }
+
+    private function recordAudit(string $action, string $description, User $subject): void
+    {
+        if (! auth()->user()?->hasRole(User::ROLE_SUPER_ADMIN)) {
+            return;
+        }
+
+        AuditLog::query()->create([
+            'user_id' => auth()->id(),
+            'action' => $action,
+            'subject_type' => User::class,
+            'subject_id' => $subject->id,
+            'description' => $description,
+            'metadata' => [
+                'name' => $subject->name,
+                'email' => $subject->email,
+                'role' => $subject->role,
+                'is_active' => $subject->is_active,
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
     }
 }

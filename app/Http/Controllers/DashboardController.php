@@ -25,6 +25,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         return match ($user->role) {
+            User::ROLE_SUPER_ADMIN => redirect()->route('super-admin.dashboard'),
             User::ROLE_ADMIN => redirect()->route('admin.dashboard'),
             User::ROLE_COACH => redirect()->route('coach.dashboard'),
             User::ROLE_STUDENT => redirect()->route('student.dashboard'),
@@ -33,7 +34,23 @@ class DashboardController extends Controller
         };
     }
 
+    public function superAdmin(): View
+    {
+        return $this->buildAdminDashboardView(
+            title: 'Dashboard Super Admin',
+            subtitle: 'Pantau operasional harian dan kontrol akses sistem dari satu dashboard.',
+        );
+    }
+
     public function admin(): View
+    {
+        return $this->buildAdminDashboardView(
+            title: 'Dashboard Admin/Kesiswaan',
+            subtitle: 'Pantau pendaftaran, data ekskul, dan aktivitas utama dari satu dashboard.',
+        );
+    }
+
+    private function buildAdminDashboardView(string $title, string $subtitle): View
     {
         $summary = DB::table('users')
             ->selectRaw('COUNT(*) as total_users')
@@ -46,6 +63,8 @@ class DashboardController extends Controller
             ->first();
 
         return view('dashboard.admin', [
+            'dashboardTitle' => $title,
+            'dashboardSubtitle' => $subtitle,
             'totalUsers' => (int) ($summary->total_users ?? 0),
             'totalStudents' => Student::count(),
             'totalCoaches' => Coach::count(),
