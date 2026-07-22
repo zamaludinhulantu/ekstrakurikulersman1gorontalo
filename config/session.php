@@ -32,7 +32,20 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 15),
+    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authenticated Idle Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Timeout ini hanya dipakai untuk pengguna yang sudah login. Jika tidak
+    | ada aktivitas selama durasi ini, pengguna akan dipaksa logout oleh
+    | middleware dan pengingat di frontend.
+    |
+    */
+
+    'idle_timeout' => (int) env('IDLE_TIMEOUT_MINUTES', 15),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

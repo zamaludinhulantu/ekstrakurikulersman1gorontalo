@@ -44,6 +44,14 @@
                                 <p>Gunakan email dan password akun kamu untuk masuk ke dashboard dan melanjutkan pendaftaran.</p>
                             </div>
 
+                            @if(request()->query('reason') === 'idle')
+                                <div class="alert alert-warning alert-dismissible fade show app-alert" role="alert">
+                                    <i class="bi bi-clock-history app-alert__icon"></i>
+                                    <div class="flex-grow-1">Sesi Anda berakhir karena tidak ada aktivitas. Silakan login kembali untuk melanjutkan.</div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            @endif
+
                             @include('partials.alerts')
 
                             <form method="post" action="{{ route('login.attempt') }}" class="auth-form auth-form-compact">

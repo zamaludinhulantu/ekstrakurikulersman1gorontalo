@@ -56,8 +56,13 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
 
-Route::middleware(['auth', 'role:admin,coach,student,principal'])->group(function (): void {
+Route::middleware(['auth', 'idle.auth', 'role:admin,coach,student,principal'])->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/session/keep-alive', static function () {
+        session()->put('last_activity_ping', now()->timestamp);
+
+        return response()->noContent();
+    })->name('session.keep-alive');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

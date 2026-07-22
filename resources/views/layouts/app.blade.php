@@ -11,9 +11,10 @@
 </head>
 <body
     data-idle-logout="true"
-    data-idle-timeout-ms="{{ 15 * 60 * 1000 }}"
+    data-idle-timeout-ms="{{ config('session.idle_timeout') * 60 * 1000 }}"
     data-idle-logout-url="{{ route('logout') }}"
     data-idle-redirect-url="{{ route('login') }}"
+    data-idle-keep-alive-url="{{ route('session.keep-alive') }}"
 >
 @php
     $authUser = auth()->user();
@@ -305,6 +306,26 @@
         </div>
     </div>
 @endif
+
+<div class="idle-warning-overlay" id="idleLogoutWarningModal" hidden>
+    <div class="idle-warning-modal" role="dialog" aria-modal="true" aria-labelledby="idleLogoutWarningModalLabel">
+        <div class="idle-warning-modal__body text-center p-4 p-md-5">
+            <div class="idle-warning-modal__icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <h2 class="idle-warning-modal__title" id="idleLogoutWarningModalLabel">Sesi akan berakhir</h2>
+            <p class="idle-warning-modal__message mb-3">
+                Tidak ada aktivitas terdeteksi. Anda akan logout otomatis dalam
+                <strong id="idleLogoutCountdown">0 detik</strong>.
+            </p>
+            <p class="text-muted small mb-0">Klik tombol di bawah untuk tetap masuk dan melanjutkan pekerjaan Anda.</p>
+        </div>
+        <div class="idle-warning-modal__actions">
+            <button type="button" class="btn btn-outline-secondary" id="idleLogoutDismiss">Tutup</button>
+            <button type="button" class="btn btn-primary px-4" id="idleLogoutStaySignedIn">Tetap Masuk</button>
+        </div>
+    </div>
+</div>
 
 @stack('scripts')
 <script>

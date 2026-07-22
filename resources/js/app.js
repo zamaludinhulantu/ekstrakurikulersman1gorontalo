@@ -10,7 +10,14 @@ const bindIdleLogout = () => {
     const timeoutMs = Number(root.dataset.idleTimeoutMs || 0);
     const logoutUrl = root.dataset.idleLogoutUrl;
     const redirectUrl = root.dataset.idleRedirectUrl || '/login';
+    const keepAliveUrl = root.dataset.idleKeepAliveUrl;
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const warningModal = document.getElementById('idleLogoutWarningModal');
+    const countdownLabel = document.getElementById('idleLogoutCountdown');
+    const staySignedInButton = document.getElementById('idleLogoutStaySignedIn');
+    const dismissWarningButton = document.getElementById('idleLogoutDismiss');
+    const warningLeadMs = Math.min(60000, Math.max(15000, Math.floor(timeoutMs / 4)));
+    const warningAtMs = Math.max(0, timeoutMs - warningLeadMs);
 
     if (!timeoutMs || !logoutUrl || !csrfToken) {
         return;
@@ -18,7 +25,51 @@ const bindIdleLogout = () => {
 
     let logoutTriggered = false;
     let idleTimer = null;
+    let warningTimer = null;
+    let countdownTimer = null;
     let lastResetAt = 0;
+    let logoutDeadline = Date.now() + timeoutMs;
+
+    const buildIdleRedirectUrl = () => {
+        try {
+            const url = new URL(redirectUrl, window.location.origin);
+            url.searchParams.set('reason', 'idle');
+
+            return url.toString();
+        } catch (error) {
+            const separator = redirectUrl.includes('?') ? '&' : '?';
+
+            return `${redirectUrl}${separator}reason=idle`;
+        }
+    };
+
+    const hideWarning = () => {
+        window.clearInterval(countdownTimer);
+        countdownTimer = null;
+        if (warningModal) {
+            warningModal.hidden = true;
+        }
+    };
+
+    const renderCountdown = () => {
+        if (!countdownLabel) {
+            return;
+        }
+
+        const remainingSeconds = Math.max(0, Math.ceil((logoutDeadline - Date.now()) / 1000));
+        countdownLabel.textContent = `${remainingSeconds} detik`;
+    };
+
+    const showWarning = () => {
+        if (!warningModal || logoutTriggered) {
+            return;
+        }
+
+        renderCountdown();
+        warningModal.hidden = false;
+        window.clearInterval(countdownTimer);
+        countdownTimer = window.setInterval(renderCountdown, 1000);
+    };
 
     const triggerLogout = async () => {
         if (logoutTriggered) {
@@ -26,6 +77,7 @@ const bindIdleLogout = () => {
         }
 
         logoutTriggered = true;
+        hideWarning();
 
         try {
             await fetch(logoutUrl, {
@@ -42,12 +94,19 @@ const bindIdleLogout = () => {
         } catch (error) {
             // Ignore transport failures and continue redirecting to the login page.
         } finally {
-            window.location.href = redirectUrl;
+            window.location.href = buildIdleRedirectUrl();
         }
     };
 
     const scheduleLogout = () => {
         window.clearTimeout(idleTimer);
+        window.clearTimeout(warningTimer);
+        logoutDeadline = Date.now() + timeoutMs;
+
+        if (warningAtMs > 0) {
+            warningTimer = window.setTimeout(showWarning, warningAtMs);
+        }
+
         idleTimer = window.setTimeout(triggerLogout, timeoutMs);
     };
 
@@ -62,10 +121,40 @@ const bindIdleLogout = () => {
         }
 
         lastResetAt = now;
+        hideWarning();
         scheduleLogout();
     };
 
-    ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach((eventName) => {
+    const keepAlive = async () => {
+        if (!keepAliveUrl) {
+            resetIdleTimer();
+
+            return;
+        }
+
+        staySignedInButton?.setAttribute('disabled', 'disabled');
+
+        try {
+            await fetch(keepAliveUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ keep_alive: true }),
+            });
+        } catch (error) {
+            // Ignore network errors and still restart the local timer.
+        } finally {
+            staySignedInButton?.removeAttribute('disabled');
+            resetIdleTimer();
+        }
+    };
+
+    ['click', 'keydown', 'scroll', 'touchstart'].forEach((eventName) => {
         window.addEventListener(eventName, resetIdleTimer, { passive: true });
     });
 
@@ -74,6 +163,9 @@ const bindIdleLogout = () => {
             resetIdleTimer();
         }
     });
+
+    staySignedInButton?.addEventListener('click', keepAlive);
+    dismissWarningButton?.addEventListener('click', hideWarning);
 
     scheduleLogout();
 };
