@@ -3,12 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('page_title', 'Dashboard') | {{ config('app.name') }}</title>
     <link rel="icon" type="image/jpeg" href="{{ asset('images/brand/sman1-gorontalo-logo.jpg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body>
+<body
+    data-idle-logout="true"
+    data-idle-timeout-ms="{{ 15 * 60 * 1000 }}"
+    data-idle-logout-url="{{ route('logout') }}"
+    data-idle-redirect-url="{{ route('login') }}"
+>
 @php
     $authUser = auth()->user();
     $roleLabel = match($authUser->role ?? '') {

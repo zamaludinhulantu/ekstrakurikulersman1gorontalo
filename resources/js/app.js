@@ -1,6 +1,83 @@
 import './bootstrap';
 import 'bootstrap';
 
+const bindIdleLogout = () => {
+    const root = document.body;
+    if (!root || root.dataset.idleLogout !== 'true') {
+        return;
+    }
+
+    const timeoutMs = Number(root.dataset.idleTimeoutMs || 0);
+    const logoutUrl = root.dataset.idleLogoutUrl;
+    const redirectUrl = root.dataset.idleRedirectUrl || '/login';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    if (!timeoutMs || !logoutUrl || !csrfToken) {
+        return;
+    }
+
+    let logoutTriggered = false;
+    let idleTimer = null;
+    let lastResetAt = 0;
+
+    const triggerLogout = async () => {
+        if (logoutTriggered) {
+            return;
+        }
+
+        logoutTriggered = true;
+
+        try {
+            await fetch(logoutUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ idle_logout: true }),
+            });
+        } catch (error) {
+            // Ignore transport failures and continue redirecting to the login page.
+        } finally {
+            window.location.href = redirectUrl;
+        }
+    };
+
+    const scheduleLogout = () => {
+        window.clearTimeout(idleTimer);
+        idleTimer = window.setTimeout(triggerLogout, timeoutMs);
+    };
+
+    const resetIdleTimer = () => {
+        if (logoutTriggered) {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastResetAt < 1000) {
+            return;
+        }
+
+        lastResetAt = now;
+        scheduleLogout();
+    };
+
+    ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach((eventName) => {
+        window.addEventListener(eventName, resetIdleTimer, { passive: true });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            resetIdleTimer();
+        }
+    });
+
+    scheduleLogout();
+};
+
 const bindParticipantProfilePreview = () => {
     const spotlight = document.getElementById('participantSpotlight');
     if (!spotlight) {
@@ -877,6 +954,7 @@ const bindCounters = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    bindIdleLogout();
     bindParticipantProfilePreview();
     bindTalentTestParticipantSelector();
     bindTalentReviewPanels();
