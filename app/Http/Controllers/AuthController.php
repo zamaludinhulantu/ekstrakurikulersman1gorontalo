@@ -43,6 +43,27 @@ class AuthController extends Controller
             'email.email' => 'Format email tidak valid.',
         ]);
 
+        $user = User::query()->where('email', $validated['email'])->first();
+
+        if (! $user) {
+            return back()->with('success', 'Jika email terdaftar, tautan reset password akan dikirim ke email tersebut.');
+        }
+
+        if ($this->shouldExposeResetLinkPreview()) {
+            $token = Password::broker()->createToken($user);
+
+            return back()
+                ->with('success', 'Tautan reset berhasil dibuat untuk pengujian lokal.')
+                ->with('reset_link_preview', route('password.reset', [
+                    'token' => $token,
+                    'email' => $user->email,
+                ]));
+        }
+
+        if ($this->mailIsNotConfiguredForDelivery()) {
+            return back()->with('error', 'Fitur reset password belum aktif karena email server belum dikonfigurasi. Hubungi admin untuk mengaktifkan pengiriman email.');
+        }
+
         $status = Password::sendResetLink([
             'email' => $validated['email'],
         ]);
@@ -235,5 +256,27 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')->with('success', 'Logout berhasil.');
+    }
+
+    private function shouldExposeResetLinkPreview(): bool
+    {
+        return app()->environment('local') && in_array(config('mail.default'), ['log', 'array'], true);
+    }
+
+    private function mailIsNotConfiguredForDelivery(): bool
+    {
+        $mailer = config('mail.default');
+
+        if (in_array($mailer, ['log', 'array'], true)) {
+            return true;
+        }
+
+        if ($mailer !== 'smtp') {
+            return false;
+        }
+
+        return blank(config('mail.mailers.smtp.host'))
+            || blank(config('mail.from.address'))
+            || config('mail.from.address') === 'hello@example.com';
     }
 }

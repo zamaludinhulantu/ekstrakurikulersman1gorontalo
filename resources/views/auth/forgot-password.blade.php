@@ -34,6 +34,18 @@
 
                             @include('partials.alerts')
 
+                            @if(session('reset_link_preview'))
+                                <div class="alert alert-info app-alert" role="alert">
+                                    <i class="bi bi-link-45deg app-alert__icon"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>Tautan reset untuk pengujian lokal:</strong>
+                                        <div class="small mt-1">
+                                            <a href="{{ session('reset_link_preview') }}" class="auth-inline-link text-break">{{ session('reset_link_preview') }}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <form method="post" action="{{ route('password.email') }}" class="auth-form auth-form-compact">
                                 @csrf
                                 <div class="auth-input-group">
