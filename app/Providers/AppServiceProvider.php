@@ -3,16 +3,20 @@
 namespace App\Providers;
 
 use App\Models\Announcement;
+use App\Models\Article;
 use App\Models\SystemSetting;
 use App\Models\Assessment;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
 use App\Policies\AnnouncementPolicy;
+use App\Policies\ArticlePolicy;
 use App\Policies\AssessmentPolicy;
 use App\Policies\ExtracurricularPolicy;
 use App\Policies\RegistrationPolicy;
 use App\Policies\SchedulePolicy;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
@@ -49,6 +53,17 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Schedule::class, SchedulePolicy::class);
         Gate::policy(Assessment::class, AssessmentPolicy::class);
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
+        Gate::policy(Article::class, ArticlePolicy::class);
+        VerifyEmail::toMailUsing(function (object $notifiable, string $url): MailMessage {
+            return (new MailMessage)
+                ->subject('Verifikasi Email Akun Siswa')
+                ->greeting('Halo '.$notifiable->name.',')
+                ->line('Terima kasih telah mendaftar di Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo.')
+                ->line('Gunakan email aktif Anda dan klik tombol di bawah ini untuk memverifikasi akun siswa sebelum login.')
+                ->action('Verifikasi Email', $url)
+                ->line('Tautan verifikasi ini memiliki masa berlaku terbatas demi keamanan akun.')
+                ->line('Jika Anda tidak merasa membuat akun ini, abaikan email ini.');
+        });
 
         $hasSystemSettingsTable ??= Schema::hasTable('system_settings');
 

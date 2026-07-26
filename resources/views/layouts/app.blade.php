@@ -49,6 +49,7 @@
                     ['label' => 'Anggota', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Data peserta'],
                     ['label' => 'Pembina', 'route' => route('admin.coaches.index'), 'active' => 'admin.coaches.*', 'icon' => 'bi-person-workspace', 'caption' => 'Data pembina'],
                     ['label' => 'Pengumuman', 'route' => route('admin.announcements.index'), 'active' => 'admin.announcements.*', 'icon' => 'bi-megaphone', 'caption' => 'Info untuk siswa'],
+                    ['label' => 'Berita / Artikel', 'route' => route('admin.articles.index'), 'active' => 'admin.articles.*', 'icon' => 'bi-newspaper', 'caption' => 'Konten publikasi'],
                 ],
             ],
             [
@@ -79,6 +80,7 @@
                     ['label' => 'Anggota', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Data peserta'],
                     ['label' => 'Pembina', 'route' => route('admin.coaches.index'), 'active' => 'admin.coaches.*', 'icon' => 'bi-person-workspace', 'caption' => 'Data pembina'],
                     ['label' => 'Pengumuman', 'route' => route('admin.announcements.index'), 'active' => 'admin.announcements.*', 'icon' => 'bi-megaphone', 'caption' => 'Info untuk siswa'],
+                    ['label' => 'Berita / Artikel', 'route' => route('admin.articles.index'), 'active' => 'admin.articles.*', 'icon' => 'bi-newspaper', 'caption' => 'Konten publikasi'],
                 ],
             ],
             [
@@ -130,15 +132,17 @@
                     ['label' => 'Presensi', 'route' => route('coach.attendances.index'), 'active' => 'coach.attendances.*', 'icon' => 'bi-check2-square', 'caption' => 'Kelola hadir'],
                     ['label' => 'Penilaian', 'route' => route('coach.assessments.index'), 'active' => 'coach.assessments.*', 'icon' => 'bi-award', 'caption' => 'Catatan siswa'],
                     ['label' => 'Pengumuman', 'route' => route('coach.announcements.index'), 'active' => 'coach.announcements.*', 'icon' => 'bi-megaphone', 'caption' => 'Info untuk siswa'],
+                    ['label' => 'Berita / Artikel', 'route' => route('coach.articles.index'), 'active' => 'coach.articles.*', 'icon' => 'bi-newspaper', 'caption' => 'Publikasi kegiatan'],
                 ],
             ],
         ];
     } elseif ($authUser?->role === \App\Models\User::ROLE_PRINCIPAL) {
         $menuGroups = [[
-            'label' => 'Utama',
+            'label' => 'Monitoring',
             'items' => [
                 ['label' => 'Dashboard', 'route' => route('principal.dashboard'), 'active' => 'principal.dashboard', 'icon' => 'bi-speedometer2', 'caption' => 'Ringkasan sekolah'],
                 ['label' => 'Presensi', 'route' => route('principal.attendances.index'), 'active' => 'principal.attendances.*', 'icon' => 'bi-check2-square', 'caption' => 'Rekap kehadiran'],
+                ['label' => 'Pusat Laporan', 'route' => route('principal.reports.index'), 'active' => 'principal.reports.*', 'icon' => 'bi-file-earmark-bar-graph', 'caption' => 'Unduh dan cetak laporan'],
             ],
         ]];
     }
@@ -161,6 +165,7 @@
         'admin.attendances.*' => 'Laporan Presensi',
         'admin.assessments.*' => 'Kelola Prestasi dan Penilaian',
         'admin.announcements.*' => 'Pengumuman Admin',
+        'admin.articles.*' => 'Berita dan Artikel Admin',
         'student.dashboard' => 'Dashboard Siswa',
         'student.extracurriculars.*' => 'Informasi Ekstrakurikuler',
         'student.registrations.*' => 'Status Pendaftaran',
@@ -170,6 +175,7 @@
         'student.assessments.*' => 'Prestasi dan Penilaian',
         'coach.dashboard' => 'Dashboard Pembina',
         'coach.announcements.*' => 'Pengumuman Pembina',
+        'coach.articles.*' => 'Berita dan Artikel Pembina',
         'coach.extracurriculars.*' => 'Ekstrakurikuler Binaan',
         'coach.registrations.*' => 'Pendaftar Ekstrakurikuler',
         'coach.talent-tests.*' => 'Kelola Tes Bakat',
@@ -179,6 +185,7 @@
         'coach.assessments.*' => 'Kelola Prestasi dan Penilaian',
         'principal.dashboard' => 'Dashboard Kepala Sekolah',
         'principal.attendances.*' => 'Presensi Kepala Sekolah',
+        'principal.reports.*' => 'Pusat Laporan Kepala Sekolah',
         'profile.*' => 'Profil Pengguna',
     ];
 
@@ -264,7 +271,7 @@
                     </div>
                 </div>
             </div>
-            <div class="topbar-mobile-account dropdown d-md-none">
+            <div class="topbar-mobile-account dropdown d-lg-none">
                 <button class="btn btn-outline-primary btn-sm topbar-mobile-account__toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu akun">
                     <span class="profile-chip-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($authUser->name ?? 'U', 0, 1)) }}</span>
                 </button>
@@ -272,7 +279,7 @@
                     <div class="topbar-account-menu__header">
                         <strong>{{ $authUser->name ?? 'Pengguna' }}</strong>
                         <span>{{ $roleLabel }}</span>
-                        <small>{{ now()->translatedFormat('d F Y') }} · {{ now()->translatedFormat('l') }}</small>
+                        <small>{{ now()->translatedFormat('d F Y') }} | {{ now()->translatedFormat('l') }}</small>
                     </div>
                     <a href="{{ route('profile.edit') }}" class="dropdown-item">
                         <i class="bi bi-person-circle"></i>Profil

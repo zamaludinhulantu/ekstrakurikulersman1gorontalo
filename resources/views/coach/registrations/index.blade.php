@@ -12,75 +12,86 @@
             'approved' => 'Diterima',
             'rejected' => 'Ditolak',
         ];
+        $hasAdvancedFilters = ($category ?? 'all') !== 'all' || filled($extracurricularId ?? null) || filled($gender ?? null);
+        $activeFilters = [
+            ['label' => 'Cari', 'value' => $search ?: null],
+            ['label' => 'Kelas', 'value' => $className ?: null],
+            ['label' => 'Status', 'value' => $status ? ($statusMap[$status] ?? null) : null],
+            ['label' => 'Ekskul', 'value' => data_get($extracurriculars->firstWhere('id', $extracurricularId), 'name')],
+            ['label' => 'Kategori', 'value' => ($category ?? 'all') !== 'all' ? data_get(collect($categories)->firstWhere('key', $category), 'label', $category) : null],
+            ['label' => 'JK', 'value' => $gender === 'L' ? 'Laki-laki' : ($gender === 'P' ? 'Perempuan' : null)],
+        ];
     @endphp
 
-    <div class="card mb-3">
-        <div class="card-body toolbar-card">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                <div>
-                    <h2 class="h5 mb-1">Filter Data Pendaftar</h2>
-                    <p class="toolbar-hint mb-0">Cari berdasarkan nama, NIS, kelas, atau kegiatan, lalu saring per kategori, kegiatan yang diikuti, jenis kelamin, dan status agar verifikasi lebih cepat.</p>
+    <x-filter.card
+        class="mb-3"
+        title="Filter Data Pendaftar"
+        description="Gunakan filter utama untuk memantau pendaftar binaan, lalu buka filter lanjutan bila perlu."
+    >
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('coach.registrations.index')" />
+        </x-slot:active>
+        <form class="toolbar-grid" method="get">
+            <x-filter.field label="Cari siswa" for="coach_registration_search" col="toolbar-col-4">
+                <input type="text" id="coach_registration_search" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama atau NIS">
+            </x-filter.field>
+            <x-filter.field label="Kelas" for="coach_registration_class_name" col="toolbar-col-2">
+                <select id="coach_registration_class_name" name="class_name" class="form-select">
+                    <option value="">Semua kelas</option>
+                    @foreach($classOptions as $item)
+                        <option value="{{ $item }}" @selected($className === $item)>{{ $item }}</option>
+                    @endforeach
+                </select>
+            </x-filter.field>
+            <x-filter.field label="Status" for="coach_registration_status" col="toolbar-col-3">
+                <select id="coach_registration_status" name="status" class="form-select">
+                    <option value="">Semua status</option>
+                    <option value="pending" @selected($status === 'pending')>Menunggu</option>
+                    <option value="waiting_test" @selected($status === 'waiting_test')>Menunggu Tes</option>
+                    <option value="approved" @selected($status === 'approved')>Diterima</option>
+                    <option value="rejected" @selected($status === 'rejected')>Ditolak</option>
+                </select>
+            </x-filter.field>
+            <x-filter.actions col="toolbar-col-3">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                <a href="{{ route('coach.registrations.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+            </x-filter.actions>
+            <div class="toolbar-col-12">
+                <div class="filter-advanced-toggle">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#coachRegistrationAdvancedFilters" aria-expanded="{{ $hasAdvancedFilters ? 'true' : 'false' }}" aria-controls="coachRegistrationAdvancedFilters">
+                        <i class="bi bi-sliders"></i>Filter Lanjutan
+                    </button>
                 </div>
             </div>
-            <form class="toolbar-grid">
-                <div class="toolbar-col-4">
-                    <label class="form-label" for="search">Cari siswa</label>
-                    <input type="text" id="search" name="search" value="{{ $search }}" class="form-control" placeholder="Masukkan nama siswa, NIS, kelas, atau kegiatan">
+            <div id="coachRegistrationAdvancedFilters" class="toolbar-col-12 filter-advanced collapse {{ $hasAdvancedFilters ? 'show' : '' }}">
+                <div class="toolbar-grid">
+                    <x-filter.field label="Ekstrakurikuler" for="coach_registration_extracurricular_id" col="toolbar-col-4">
+                        <select id="coach_registration_extracurricular_id" name="extracurricular_id" class="form-select">
+                            <option value="">Semua ekskul binaan</option>
+                            @foreach($extracurriculars as $item)
+                                <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </x-filter.field>
+                    <x-filter.field label="Kategori" for="coach_registration_category" col="toolbar-col-4">
+                        <select id="coach_registration_category" name="category" class="form-select">
+                            <option value="all">Semua kategori</option>
+                            @foreach($categories as $item)
+                                <option value="{{ $item['key'] }}" @selected($category === $item['key'])>{{ $item['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </x-filter.field>
+                    <x-filter.field label="Jenis kelamin" for="coach_registration_gender" col="toolbar-col-4">
+                        <select id="coach_registration_gender" name="gender" class="form-select">
+                            <option value="">Semua</option>
+                            <option value="L" @selected($gender === 'L')>Laki-laki</option>
+                            <option value="P" @selected($gender === 'P')>Perempuan</option>
+                        </select>
+                    </x-filter.field>
                 </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="extracurricular_id">Kegiatan yang Diikuti</label>
-                    <select id="extracurricular_id" name="extracurricular_id" class="form-select">
-                        <option value="">Semua kegiatan binaan</option>
-                        @foreach($extracurriculars as $item)
-                            <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="category">Kategori</label>
-                    <select id="category" name="category" class="form-select">
-                        <option value="all">Semua kategori</option>
-                        @foreach($categories as $item)
-                            <option value="{{ $item['key'] }}" @selected($category === $item['key'])>{{ $item['label'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="class_name">Kelas</label>
-                    <select id="class_name" name="class_name" class="form-select">
-                        <option value="">Semua kelas</option>
-                        @foreach($classOptions as $item)
-                            <option value="{{ $item }}" @selected($className === $item)>{{ $item }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="gender">Jenis kelamin</label>
-                    <select id="gender" name="gender" class="form-select">
-                        <option value="">Semua</option>
-                        <option value="L" @selected($gender === 'L')>Laki-laki</option>
-                        <option value="P" @selected($gender === 'P')>Perempuan</option>
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="status">Status</label>
-                    <select id="status" name="status" class="form-select">
-                        <option value="">Semua status</option>
-                        <option value="pending" @selected($status === 'pending')>Menunggu</option>
-                        <option value="waiting_test" @selected($status === 'waiting_test')>Menunggu Tes</option>
-                        <option value="approved" @selected($status === 'approved')>Diterima</option>
-                        <option value="rejected" @selected($status === 'rejected')>Ditolak</option>
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-funnel"></i>Terapkan</button>
-                </div>
-                <div class="toolbar-col-2">
-                    <a href="{{ route('coach.registrations.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a>
-                </div>
-            </form>
-        </div>
-    </div>
+            </div>
+        </form>
+    </x-filter.card>
 
     <div class="card">
         <div class="card-header">Daftar Pendaftar</div>
@@ -248,15 +259,68 @@
                                 </div>
                             </div>
                             <div><span class="mobile-data-item-label">Tanggal daftar terakhir</span><p class="mobile-data-item-value">{{ optional($latestRegistration?->registration_date)->format('d-m-Y') ?: '-' }}</p></div>
+                            <div>
+                                <span class="mobile-data-item-label">Status Pendaftaran</span>
+                                <div class="d-flex flex-column gap-1">
+                                    @foreach($studentRegistrations as $registration)
+                                        @php
+                                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
+                                            $latestTalentParticipant = $registration->talentTestParticipants
+                                                ->sortByDesc(fn ($item) => optional($item->schedule)->activity_date?->timestamp ?? 0)
+                                                ->first();
+                                            $hasScheduledTest = (bool) $latestTalentParticipant;
+                                            $displayStatus = $registration->status;
+                                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
+                                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
+                                            }
+                                            $displayStatusLabel = $statusMap[$displayStatus] ?? ucfirst($displayStatus);
+                                        @endphp
+                                        <span class="badge align-self-start" data-status="{{ $displayStatusLabel }}">{{ ($registration->extracurricular->name ?? '-') . ': ' . $displayStatusLabel }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
                         <div class="mobile-data-card-actions">
                             <button type="button" class="btn btn-outline-secondary profile-preview-trigger" data-profile-url="{{ route('registrations.profile-preview', $latestRegistration) }}">
                                 <i class="bi bi-person-badge"></i>Profil
                             </button>
                             @foreach($studentRegistrations as $registration)
+                                @php
+                                    $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
+                                    $latestTalentParticipant = $registration->talentTestParticipants
+                                        ->sortByDesc(fn ($item) => optional($item->schedule)->activity_date?->timestamp ?? 0)
+                                        ->first();
+                                    $hasScheduledTest = (bool) $latestTalentParticipant;
+                                    $displayStatus = $registration->status;
+                                    if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
+                                        $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
+                                    }
+                                @endphp
                                 <a href="{{ route('coach.registrations.show', $registration) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-eye"></i>{{ $registration->extracurricular->catalog_item_name ?? 'Detail' }}
                                 </a>
+                                @if($displayStatus === 'pending' || in_array($displayStatus, ['approved', 'rejected'], true))
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary registration-verify-trigger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#registrationVerificationModal"
+                                        data-action="{{ route('coach.registrations.update-status', $registration) }}"
+                                        data-student="{{ $registration->student->user->name ?? '-' }}"
+                                        data-nis="{{ $registration->student->nis ?? '-' }}"
+                                        data-class-name="{{ $registration->student->class_name ?? '-' }}"
+                                        data-extracurricular="{{ $registration->extracurricular->name ?? '-' }}"
+                                        data-primary-talent="{{ $registration->primary_talent ?: '-' }}"
+                                        data-prior-experience="{{ $registration->prior_experience ?: '-' }}"
+                                        data-current-skills="{{ $registration->current_skills ?: '-' }}"
+                                        data-achievement-history="{{ $registration->achievement_history ?: '-' }}"
+                                        data-notes="{{ $registration->notes ?? '' }}"
+                                        data-default-decision="{{ $displayStatus === 'pending' ? ($registration->willing_to_take_test ? 'schedule_test' : 'approve') : ($displayStatus === 'rejected' ? 'approve' : ($registration->willing_to_take_test ? 'schedule_test' : 'approve')) }}"
+                                        data-modal-title="{{ $displayStatus === 'pending' ? 'Verifikasi Pendaftar' : ($displayStatus === 'rejected' ? 'Tinjau Kembali Pendaftaran' : 'Ubah Keputusan Pendaftaran') }}"
+                                    >
+                                        <i class="bi bi-check2-square"></i>Verifikasi {{ $registration->extracurricular->catalog_item_name ?? 'Pendaftaran' }}
+                                    </button>
+                                @endif
                             @endforeach
                         </div>
                     </div>

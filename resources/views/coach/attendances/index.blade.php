@@ -494,46 +494,54 @@
 @endpush
 
 @section('content')
-    <div class="attendance-page">
-        <div class="card">
-            <div class="card-body toolbar-card">
-                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                    <div>
-                        <h2 class="h5 mb-1">Pilih Jadwal Presensi</h2>
-                        <p class="toolbar-hint mb-0">Pilih jadwal, lalu data peserta akan dimuat otomatis tanpa perlu membuka halaman lain.</p>
-                    </div>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-download"></i>Ekspor
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ route('coach.attendances.export', array_merge(request()->query(), ['format' => 'csv'])) }}">Unduh CSV</a></li>
-                            <li><a class="dropdown-item" href="{{ route('coach.attendances.export', array_merge(request()->query(), ['format' => 'xls'])) }}">Unduh Excel</a></li>
-                        </ul>
-                    </div>
-                </div>
+    @php
+        $selectedScheduleOption = $schedules->firstWhere('id', (int) request('schedule_id'));
+        $activeFilters = [
+            ['label' => 'Jadwal', 'value' => $selectedScheduleOption
+                ? trim(sprintf(
+                    '%s | %s | %s',
+                    optional($selectedScheduleOption->activity_date)->format('d-m-Y') ?: '-',
+                    $selectedScheduleOption->extracurricular->name ?? '-',
+                    $selectedScheduleOption->title ?? '-'
+                ))
+                : null],
+        ];
+    @endphp
 
-                <form class="toolbar-grid" method="get" action="{{ route('coach.attendances.index') }}" id="attendanceSchedulePicker">
-                    <div class="toolbar-col-8">
-                        <label class="form-label" for="schedule_id">Jadwal kegiatan</label>
-                        <select name="schedule_id" id="schedule_id" class="form-select" onchange="this.form.submit()">
-                            <option value="">Pilih jadwal kegiatan</option>
-                            @foreach($schedules as $schedule)
-                                <option value="{{ $schedule->id }}" @selected((string) request('schedule_id') === (string) $schedule->id)>
-                                    {{ optional($schedule->activity_date)->format('d-m-Y') }} | {{ $schedule->extracurricular->name ?? '-' }} | {{ $schedule->title }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="toolbar-col-2">
-                        <a href="{{ route('coach.attendances.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a>
-                    </div>
-                    <div class="toolbar-col-2">
-                        <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Muat</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <div class="attendance-page">
+        <x-filter.card class="mb-0" title="Pilih Jadwal Presensi" description="Pilih jadwal, lalu data peserta akan dimuat otomatis tanpa perlu membuka halaman lain.">
+            <x-slot:actions>
+                <x-filter.export-dropdown
+                    label="Unduh Laporan"
+                    buttonClass="btn btn-outline-success"
+                    :items="[
+                        ['label' => 'Unduh CSV', 'href' => route('coach.attendances.export', array_merge(request()->query(), ['format' => 'csv'])), 'icon' => 'bi-filetype-csv'],
+                        ['label' => 'Unduh Excel', 'href' => route('coach.attendances.export', array_merge(request()->query(), ['format' => 'xls'])), 'icon' => 'bi-file-earmark-spreadsheet'],
+                    ]"
+                />
+            </x-slot:actions>
+
+            <x-slot:active>
+                <x-filter.active-filters :items="$activeFilters" :reset-url="route('coach.attendances.index')" />
+            </x-slot:active>
+
+            <form class="toolbar-grid" method="get" action="{{ route('coach.attendances.index') }}" id="attendanceSchedulePicker">
+                <x-filter.field label="Jadwal kegiatan" for="schedule_id" col="toolbar-col-8">
+                    <select name="schedule_id" id="schedule_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">Pilih jadwal kegiatan</option>
+                        @foreach($schedules as $schedule)
+                            <option value="{{ $schedule->id }}" @selected((string) request('schedule_id') === (string) $schedule->id)>
+                                {{ optional($schedule->activity_date)->format('d-m-Y') }} | {{ $schedule->extracurricular->name ?? '-' }} | {{ $schedule->title }}
+                            </option>
+                        @endforeach
+                    </select>
+                </x-filter.field>
+                <x-filter.actions col="toolbar-col-4">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i>Muat Jadwal</button>
+                    <a href="{{ route('coach.attendances.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+                </x-filter.actions>
+            </form>
+        </x-filter.card>
 
         @if($selectedSchedule)
             <div class="attendance-schedule-panel">

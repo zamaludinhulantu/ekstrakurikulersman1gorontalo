@@ -48,6 +48,7 @@
                 </div>
             </div>
             <a class="public-nav-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}">Pengumuman</a>
+            <a class="public-nav-link {{ request()->routeIs('public.articles.*') ? 'active' : '' }}" href="{{ route('public.articles.index') }}">Berita</a>
             <a class="public-nav-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">Alur Pendaftaran</a>
         </div>
         <div class="d-none d-lg-flex align-items-center gap-2 public-nav-actions">
@@ -93,6 +94,7 @@
                     <li><a href="{{ route('public.activities.index') }}">Semua Kategori</a></li>
                     <li><a href="{{ route('public.activities.all') }}">Semua Pilihan</a></li>
                     <li><a href="{{ route('public.announcements') }}">Pengumuman</a></li>
+                    <li><a href="{{ route('public.articles.index') }}">Berita</a></li>
                     <li><a href="{{ route('public.information') }}">Alur Pendaftaran</a></li>
                 </ul>
             </div>
@@ -151,6 +153,10 @@
                 <a class="public-mobile-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}">
                     <span class="public-mobile-link-icon"><i class="bi bi-megaphone"></i></span>
                     <span>Pengumuman</span>
+                </a>
+                <a class="public-mobile-link {{ request()->routeIs('public.articles.*') ? 'active' : '' }}" href="{{ route('public.articles.index') }}">
+                    <span class="public-mobile-link-icon"><i class="bi bi-newspaper"></i></span>
+                    <span>Berita</span>
                 </a>
                 <a class="public-mobile-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">
                     <span class="public-mobile-link-icon"><i class="bi bi-signpost-2"></i></span>

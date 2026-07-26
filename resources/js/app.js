@@ -191,12 +191,17 @@ const bindParticipantProfilePreview = () => {
         recommendation: document.getElementById('participantSpotlightRecommendation'),
     };
 
+    let previousScrollY = 0;
+
     const close = () => {
         spotlight.hidden = true;
+        document.body.style.removeProperty('--spotlight-scroll-y');
         document.body.classList.remove('spotlight-open');
+        window.scrollTo(0, previousScrollY);
     };
 
     const open = (payload) => {
+        previousScrollY = window.scrollY || window.pageYOffset || 0;
         fields.avatar.textContent = payload.initial || 'S';
         fields.title.textContent = payload.name || '-';
         fields.className.textContent = payload.class_name || '-';
@@ -209,6 +214,7 @@ const bindParticipantProfilePreview = () => {
         fields.experience.textContent = payload.experience || '-';
         fields.achievements.textContent = payload.achievements || '-';
         fields.recommendation.textContent = payload.recommendation || '-';
+        document.body.style.setProperty('--spotlight-scroll-y', `-${previousScrollY}px`);
         spotlight.hidden = false;
         document.body.classList.add('spotlight-open');
     };

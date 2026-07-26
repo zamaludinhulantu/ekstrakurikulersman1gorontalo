@@ -4,56 +4,61 @@
 @section('page_subtitle', 'Pantau agenda kegiatan ekstrakurikuler berdasarkan pembina dan periode')
 
 @section('content')
-    <div class="card mb-3">
-        <div class="card-body toolbar-card">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                <div>
-                    <h2 class="h5 mb-1">Filter Jadwal</h2>
-                    <p class="toolbar-hint mb-0">Saring jadwal kegiatan agar pencarian agenda lebih cepat.</p>
-                </div>
-                <div class="quick-actions">
-                    <a href="{{ route('admin.reports.export', array_merge(request()->query(), ['type' => 'schedules', 'format' => 'csv'])) }}" class="btn btn-outline-success"><i class="bi bi-download"></i>Unduh CSV</a>
-                    <a href="{{ route('admin.reports.export', array_merge(request()->query(), ['type' => 'schedules', 'format' => 'xls'])) }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-excel"></i>Unduh Excel</a>
-                </div>
-            </div>
-            <form class="toolbar-grid">
-                <div class="toolbar-col-4">
-                    <label class="form-label" for="extracurricular_id">Ekstrakurikuler</label>
-                    <select id="extracurricular_id" name="extracurricular_id" class="form-select">
-                        <option value="">Semua ekstrakurikuler</option>
-                        @foreach($extracurriculars as $item)
-                            <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="toolbar-col-4">
-                    <label class="form-label" for="coach_id">Pembina</label>
-                    <select id="coach_id" name="coach_id" class="form-select">
-                        <option value="">Semua pembina</option>
-                        @foreach($coaches as $item)
-                            <option value="{{ $item->id }}" @selected((string) $coachId === (string) $item->id)>{{ $item->user->name ?? '-' }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="date_from">Dari</label>
-                    <input id="date_from" name="date_from" type="date" value="{{ $dateFrom }}" class="form-control">
-                </div>
-                <div class="toolbar-col-2">
-                    <label class="form-label" for="date_to">Sampai</label>
-                    <input id="date_to" name="date_to" type="date" value="{{ $dateTo }}" class="form-control">
-                </div>
-                <div class="toolbar-col-12">
-                    <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    @php
+        $activeFilters = [
+            ['label' => 'Ekskul', 'value' => data_get($extracurriculars->firstWhere('id', $extracurricularId), 'name')],
+            ['label' => 'Pembina', 'value' => data_get($coaches->firstWhere('id', $coachId), 'user.name')],
+            ['label' => 'Mulai', 'value' => $dateFrom ?: null],
+            ['label' => 'Selesai', 'value' => $dateTo ?: null],
+        ];
+    @endphp
+
+    <x-filter.card class="mb-3" title="Filter Jadwal" description="Saring jadwal kegiatan agar pencarian agenda lebih cepat.">
+        <x-slot:actions>
+            <x-filter.export-dropdown
+                :items="[
+                    ['label' => 'Unduh CSV', 'href' => route('admin.reports.export', array_merge(request()->query(), ['type' => 'schedules', 'format' => 'csv'])), 'icon' => 'bi-download'],
+                    ['label' => 'Unduh Excel', 'href' => route('admin.reports.export', array_merge(request()->query(), ['type' => 'schedules', 'format' => 'xls'])), 'icon' => 'bi-file-earmark-excel'],
+                ]"
+            />
+        </x-slot:actions>
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('admin.schedules.index')" />
+        </x-slot:active>
+        <form class="toolbar-grid" method="get">
+            <x-filter.field label="Ekstrakurikuler" for="schedule_report_extracurricular" col="toolbar-col-4">
+                <select id="schedule_report_extracurricular" name="extracurricular_id" class="form-select">
+                    <option value="">Semua ekskul</option>
+                    @foreach($extracurriculars as $item)
+                        <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
+                    @endforeach
+                </select>
+            </x-filter.field>
+            <x-filter.field label="Pembina" for="schedule_report_coach" col="toolbar-col-4">
+                <select id="schedule_report_coach" name="coach_id" class="form-select">
+                    <option value="">Semua pembina</option>
+                    @foreach($coaches as $item)
+                        <option value="{{ $item->id }}" @selected((string) $coachId === (string) $item->id)>{{ $item->user->name ?? '-' }}</option>
+                    @endforeach
+                </select>
+            </x-filter.field>
+            <x-filter.field label="Tanggal mulai" for="schedule_report_date_from" col="toolbar-col-2">
+                <input id="schedule_report_date_from" name="date_from" type="date" value="{{ $dateFrom }}" class="form-control">
+            </x-filter.field>
+            <x-filter.field label="Tanggal selesai" for="schedule_report_date_to" col="toolbar-col-2">
+                <input id="schedule_report_date_to" name="date_to" type="date" value="{{ $dateTo }}" class="form-control">
+            </x-filter.field>
+            <x-filter.actions col="toolbar-col-12">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                <a href="{{ route('admin.schedules.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+            </x-filter.actions>
+        </form>
+    </x-filter.card>
 
     <div class="card">
         <div class="card-header">Daftar Jadwal</div>
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="desktop-table table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
                     <tr>
@@ -82,6 +87,25 @@
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="mobile-stack-table p-3">
+                @forelse($schedules as $schedule)
+                    <div class="mobile-data-card">
+                        <div class="mobile-data-card-header">
+                            <div>
+                                <h3 class="mobile-data-card-title">{{ $schedule->title }}</h3>
+                                <div class="small text-muted">{{ $schedule->extracurricular->name ?? '-' }}</div>
+                            </div>
+                        </div>
+                        <div class="mobile-data-list">
+                            <div><span class="mobile-data-item-label">Pembina</span><p class="mobile-data-item-value">{{ $schedule->extracurricular->coach_names }}</p></div>
+                            <div><span class="mobile-data-item-label">Tanggal</span><p class="mobile-data-item-value">{{ optional($schedule->activity_date)->format('d-m-Y') }}</p></div>
+                            <div><span class="mobile-data-item-label">Lokasi</span><p class="mobile-data-item-value">{{ $schedule->location ?: '-' }}</p></div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state"><div class="icon"><i class="bi bi-calendar-event"></i></div><p class="mb-0">Belum ada data jadwal.</p></div>
+                @endforelse
             </div>
         </div>
         <div class="card-body">{{ $schedules->links() }}</div>

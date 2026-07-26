@@ -8,6 +8,81 @@
             margin-top: 1.5rem;
         }
 
+        .editorial-section-shell {
+            padding: 1.25rem;
+            border-radius: 30px;
+            border: 1px solid rgba(219, 229, 240, 0.9);
+            background:
+                radial-gradient(circle at top right, rgba(184, 220, 255, 0.18) 0%, rgba(184, 220, 255, 0) 30%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.95));
+            box-shadow: 0 20px 36px rgba(16, 35, 63, 0.07);
+        }
+
+        .editorial-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .editorial-section-copy {
+            max-width: 42rem;
+        }
+
+        .editorial-section-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-bottom: 0.7rem;
+            padding: 0.42rem 0.8rem;
+            border-radius: 999px;
+            background: #edf4ff;
+            color: #1849cb;
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .editorial-section-title {
+            margin: 0;
+            color: #12305b;
+            font-size: clamp(1.5rem, 2.4vw, 2.15rem);
+            line-height: 1.1;
+            letter-spacing: -0.04em;
+            font-weight: 900;
+        }
+
+        .editorial-section-subtitle {
+            margin: 0.55rem 0 0;
+            max-width: 38rem;
+            color: #63768d;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .editorial-section-cta {
+            flex-shrink: 0;
+            align-self: flex-end;
+        }
+
+        .editorial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .editorial-grid.is-two-items {
+            grid-template-columns: repeat(2, minmax(0, 22rem));
+            justify-content: center;
+        }
+
+        .editorial-grid.is-one-item {
+            grid-template-columns: minmax(0, 28rem);
+            justify-content: center;
+        }
+
         .hero-premium {
             position: relative;
             overflow: hidden;
@@ -280,6 +355,13 @@
             .premium-step-grid {
                 grid-template-columns: 1fr;
             }
+
+            .editorial-grid,
+            .editorial-grid.is-two-items,
+            .editorial-grid.is-one-item {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                justify-content: stretch;
+            }
         }
 
         @media (max-width: 767.98px) {
@@ -297,11 +379,42 @@
                 align-items: flex-start;
                 flex-direction: column;
             }
+
+            .editorial-section-shell {
+                padding: 1rem;
+                border-radius: 24px;
+            }
+
+            .editorial-section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .editorial-section-cta {
+                align-self: stretch;
+            }
+
+            .editorial-section-cta .btn {
+                width: 100%;
+            }
+
+            .editorial-grid,
+            .editorial-grid.is-two-items,
+            .editorial-grid.is-one-item {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 @endpush
 
 @section('content')
+    @php
+        $recentArticleCount = $recentArticles->count();
+        $editorialGridClass = $recentArticleCount === 1
+            ? 'is-one-item'
+            : ($recentArticleCount === 2 ? 'is-two-items' : '');
+    @endphp
+
     <div class="container py-3 py-md-4 landing-shell">
         <section class="hero-premium" data-reveal>
             <div class="row">
@@ -403,6 +516,39 @@
                     </div>
                 @endforelse
             </div>
+        </section>
+
+        <section class="editorial-section-shell">
+            <div class="editorial-section-header">
+                <div class="editorial-section-copy" data-reveal style="--reveal-delay: 0ms;">
+                    <span class="editorial-section-eyebrow" data-reveal style="--reveal-delay: 20ms;"><i class="bi bi-newspaper"></i>Berita & Artikel</span>
+                    <h2 class="editorial-section-title" data-reveal style="--reveal-delay: 80ms;">Cerita terbaru dari kegiatan siswa</h2>
+                    <p class="editorial-section-subtitle" data-reveal style="--reveal-delay: 130ms;">Dokumentasi prestasi, agenda penting, dan publikasi pembinaan terbaru tampil ringkas di beranda.</p>
+                </div>
+                <div class="editorial-section-cta" data-reveal style="--reveal-delay: 170ms;">
+                    <a href="{{ route('public.articles.index') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Semua</a>
+                </div>
+            </div>
+
+            @if($recentArticles->isNotEmpty())
+                <div class="editorial-grid {{ $editorialGridClass }}">
+                    @foreach($recentArticles as $article)
+                        @include('public._article-card', ['article' => $article, 'revealDelay' => 200 + (($loop->index % 3) * 60)])
+                    @endforeach
+                </div>
+            @else
+                <div class="card border-0 bg-transparent shadow-none" data-reveal style="--reveal-delay: 200ms;">
+                    <div class="empty-state py-4">
+                        <div class="icon"><i class="bi bi-newspaper"></i></div>
+                        <h3 class="h5 fw-bold text-dark mb-2">Belum ada artikel terbaru</h3>
+                        <p class="mb-3">Publikasi terbaru dari sekolah dan pembina akan muncul di sini begitu konten dipublikasikan.</p>
+                        <div class="empty-state-actions">
+                            <a href="{{ route('public.announcements') }}" class="btn btn-outline-primary"><i class="bi bi-megaphone"></i>Lihat Pengumuman</a>
+                            <a href="{{ route('public.activities.index') }}" class="btn btn-outline-secondary"><i class="bi bi-grid-3x3-gap"></i>Lihat Kegiatan</a>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </section>
 
         <section class="premium-cta" data-reveal>

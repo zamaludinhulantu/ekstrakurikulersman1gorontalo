@@ -254,6 +254,27 @@
 @endpush
 
 @section('content')
+    @php
+        $activeFilters = [
+            ['label' => 'Cari', 'value' => $search ?: null],
+            ['label' => 'Ekstrakurikuler', 'value' => data_get($extracurriculars->firstWhere('id', (int) $extracurricularId), 'name')],
+            ['label' => 'Status', 'value' => match ($status) {
+                'draft' => 'Draft',
+                'scheduled' => 'Dijadwalkan',
+                'ongoing' => 'Sedang Berlangsung',
+                'completed' => 'Selesai',
+                'cancelled' => 'Dibatalkan',
+                default => null,
+            }],
+            ['label' => 'Periode', 'value' => match ($period) {
+                'today' => 'Hari ini',
+                'week' => 'Minggu ini',
+                'month' => 'Bulan ini',
+                default => null,
+            }],
+        ];
+    @endphp
+
     <div class="talent-index-grid">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div class="form-actions">
@@ -285,51 +306,47 @@
             </div>
         </div>
 
-        <div class="talent-filter-card card">
-            <div class="card-body">
-                <form class="toolbar-grid talent-filter-form" method="get" action="{{ route('coach.talent-tests.index') }}">
-                    <div class="toolbar-col-3">
-                        <label class="form-label" for="talent_search">Cari nama tes</label>
-                        <input id="talent_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama tes bakat">
-                    </div>
-                    <div class="toolbar-col-3">
-                        <label class="form-label" for="talent_extracurricular_filter">Ekstrakurikuler</label>
-                        <select id="talent_extracurricular_filter" name="extracurricular_id" class="form-select">
-                            <option value="">Semua ekstrakurikuler</option>
-                            @foreach($extracurriculars as $item)
-                                <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="toolbar-col-2">
-                        <label class="form-label" for="talent_status_filter">Status</label>
-                        <select id="talent_status_filter" name="status" class="form-select">
-                            <option value="">Semua status</option>
-                            <option value="draft" @selected($status === 'draft')>Draft</option>
-                            <option value="scheduled" @selected($status === 'scheduled')>Dijadwalkan</option>
-                            <option value="ongoing" @selected($status === 'ongoing')>Sedang Berlangsung</option>
-                            <option value="completed" @selected($status === 'completed')>Selesai</option>
-                            <option value="cancelled" @selected($status === 'cancelled')>Dibatalkan</option>
-                        </select>
-                    </div>
-                    <div class="toolbar-col-2">
-                        <label class="form-label" for="talent_period_filter">Periode</label>
-                        <select id="talent_period_filter" name="period" class="form-select">
-                            <option value="">Semua periode</option>
-                            <option value="today" @selected($period === 'today')>Hari ini</option>
-                            <option value="week" @selected($period === 'week')>Minggu ini</option>
-                            <option value="month" @selected($period === 'month')>Bulan ini</option>
-                        </select>
-                    </div>
-                    <div class="toolbar-col-2">
-                        <div class="talent-filter-actions">
-                            <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan</button>
-                            <a href="{{ route('coach.talent-tests.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <x-filter.card class="talent-filter-card" title="Filter Tes Bakat" description="Saring daftar tes bakat berdasarkan nama tes, ekstrakurikuler, status, dan periode.">
+            <x-slot:active>
+                <x-filter.active-filters :items="$activeFilters" :reset-url="route('coach.talent-tests.index')" />
+            </x-slot:active>
+
+            <form class="toolbar-grid talent-filter-form" method="get" action="{{ route('coach.talent-tests.index') }}">
+                <x-filter.field label="Cari nama tes" for="talent_search" col="toolbar-col-3">
+                    <input id="talent_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama tes bakat">
+                </x-filter.field>
+                <x-filter.field label="Ekstrakurikuler" for="talent_extracurricular_filter" col="toolbar-col-3">
+                    <select id="talent_extracurricular_filter" name="extracurricular_id" class="form-select">
+                        <option value="">Semua ekstrakurikuler</option>
+                        @foreach($extracurriculars as $item)
+                            <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
+                        @endforeach
+                    </select>
+                </x-filter.field>
+                <x-filter.field label="Status" for="talent_status_filter" col="toolbar-col-2">
+                    <select id="talent_status_filter" name="status" class="form-select">
+                        <option value="">Semua status</option>
+                        <option value="draft" @selected($status === 'draft')>Draft</option>
+                        <option value="scheduled" @selected($status === 'scheduled')>Dijadwalkan</option>
+                        <option value="ongoing" @selected($status === 'ongoing')>Sedang Berlangsung</option>
+                        <option value="completed" @selected($status === 'completed')>Selesai</option>
+                        <option value="cancelled" @selected($status === 'cancelled')>Dibatalkan</option>
+                    </select>
+                </x-filter.field>
+                <x-filter.field label="Periode" for="talent_period_filter" col="toolbar-col-2">
+                    <select id="talent_period_filter" name="period" class="form-select">
+                        <option value="">Semua periode</option>
+                        <option value="today" @selected($period === 'today')>Hari ini</option>
+                        <option value="week" @selected($period === 'week')>Minggu ini</option>
+                        <option value="month" @selected($period === 'month')>Bulan ini</option>
+                    </select>
+                </x-filter.field>
+                <x-filter.actions col="toolbar-col-2">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan</button>
+                    <a href="{{ route('coach.talent-tests.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+                </x-filter.actions>
+            </form>
+        </x-filter.card>
 
         <div class="talent-list-card card">
             <div class="card-header d-flex justify-content-between align-items-start gap-2">

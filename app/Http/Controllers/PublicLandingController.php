@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\Article;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\User;
@@ -32,6 +33,12 @@ class PublicLandingController extends Controller
             'recentAnnouncements' => Announcement::with(['publisher', 'extracurricular'])
                 ->visibleToStudents()
                 ->latest()
+                ->limit(3)
+                ->get(),
+            'recentArticles' => Article::with(['publisher', 'extracurricular'])
+                ->visibleToPublic()
+                ->orderByDesc('is_featured')
+                ->latest('publish_at')
                 ->limit(3)
                 ->get(),
         ]);
@@ -102,6 +109,90 @@ class PublicLandingController extends Controller
         ]);
     }
 
+    public function articles(Request $request): View
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'content_category' => ['nullable', 'string', 'max:50'],
+            'extracurricular_id' => ['nullable', 'integer'],
+            'published_from' => ['nullable', 'date'],
+            'published_until' => ['nullable', 'date'],
+        ]);
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        $contentCategory = (string) ($filters['content_category'] ?? '');
+        $extracurricularId = isset($filters['extracurricular_id']) ? (int) $filters['extracurricular_id'] : null;
+        $publishedFrom = $filters['published_from'] ?? '';
+        $publishedUntil = $filters['published_until'] ?? '';
+
+        if ($contentCategory !== '' && ! array_key_exists($contentCategory, Article::contentCategories())) {
+            $contentCategory = '';
+        }
+
+        $baseQuery = Article::query()
+            ->with(['publisher:id,name', 'extracurricular:id,name'])
+            ->visibleToPublic()
+            ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
+            ->when($contentCategory !== '', fn ($query) => $query->where('content_category', $contentCategory))
+            ->when($extracurricularId, fn ($query) => $query->where('extracurricular_id', $extracurricularId))
+            ->when($publishedFrom !== '', fn ($query) => $query->whereDate('publish_at', '>=', $publishedFrom))
+            ->when($publishedUntil !== '', fn ($query) => $query->whereDate('publish_at', '<=', $publishedUntil));
+
+        $featuredArticle = (clone $baseQuery)
+            ->where('is_featured', true)
+            ->orderByDesc('publish_at')
+            ->first();
+
+        if (! $featuredArticle && $search === '' && $contentCategory === '' && ! $extracurricularId && $publishedFrom === '' && $publishedUntil === '') {
+            $featuredArticle = (clone $baseQuery)
+                ->orderByDesc('publish_at')
+                ->first();
+        }
+
+        $articles = (clone $baseQuery)
+            ->orderByDesc('is_featured')
+            ->latest('publish_at')
+            ->paginate(9)
+            ->withQueryString();
+
+        return view('public.articles', [
+            'featuredArticle' => $featuredArticle,
+            'articles' => $articles,
+            'search' => $search,
+            'contentCategory' => $contentCategory,
+            'extracurricularId' => $extracurricularId,
+            'publishedFrom' => $publishedFrom,
+            'publishedUntil' => $publishedUntil,
+            'contentCategories' => Article::contentCategories(),
+            'extracurriculars' => Extracurricular::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+        ]);
+    }
+
+    public function articleShow(string $slug): View
+    {
+        $article = Article::with(['publisher', 'extracurricular'])
+            ->visibleToPublic()
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        return view('public.article-detail', [
+            'article' => $article,
+            'relatedArticles' => Article::with(['publisher', 'extracurricular'])
+                ->visibleToPublic()
+                ->whereKeyNot($article->id)
+                ->when($article->content_category, fn ($query) => $query->where('content_category', $article->content_category))
+                ->when($article->extracurricular_id, fn ($query) => $query->where('extracurricular_id', $article->extracurricular_id))
+                ->orderByDesc('is_featured')
+                ->latest('publish_at')
+                ->limit(3)
+                ->get(),
+            'backToArticlesUrl' => route('public.articles.index'),
+        ]);
+    }
+
     public function sitemap(): Response
     {
         $staticPages = collect([
@@ -126,6 +217,12 @@ class PublicLandingController extends Controller
             [
                 'loc' => route('public.announcements'),
                 'lastmod' => Announcement::query()->visibleToStudents()->max('updated_at')?->toDateString() ?? now()->toDateString(),
+                'changefreq' => 'daily',
+                'priority' => '0.8',
+            ],
+            [
+                'loc' => route('public.articles.index'),
+                'lastmod' => Article::query()->visibleToPublic()->max('updated_at')?->toDateString() ?? now()->toDateString(),
                 'changefreq' => 'daily',
                 'priority' => '0.8',
             ],
@@ -160,9 +257,21 @@ class PublicLandingController extends Controller
                 'priority' => '0.7',
             ]);
 
+        $articlePages = Article::query()
+            ->visibleToPublic()
+            ->orderByDesc('publish_at')
+            ->get(['slug', 'updated_at'])
+            ->map(fn (Article $article) => [
+                'loc' => route('public.articles.show', $article->slug),
+                'lastmod' => optional($article->updated_at)->toDateString() ?? now()->toDateString(),
+                'changefreq' => 'weekly',
+                'priority' => '0.7',
+            ]);
+
         $pages = $staticPages
             ->concat($categoryPages)
             ->concat($activityPages)
+            ->concat($articlePages)
             ->unique('loc')
             ->values();
 

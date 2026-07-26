@@ -99,6 +99,11 @@ class Extracurricular extends Model
         return $this->hasMany(Announcement::class);
     }
 
+    public function articles(): HasMany
+    {
+        return $this->hasMany(Article::class);
+    }
+
     public function getCoachNamesAttribute(): string
     {
         $coaches = $this->relationLoaded('coaches')

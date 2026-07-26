@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="card">
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
@@ -52,6 +52,36 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($categories as $category)
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <div>
+                            <h3 class="mobile-data-card-title">{{ $category->label }}</h3>
+                            <div class="small text-muted">{{ \Illuminate\Support\Str::limit($category->description, 90) }}</div>
+                        </div>
+                        <span class="badge" data-status="{{ $category->is_active ? 'active' : 'inactive' }}">
+                            {{ $category->is_active ? 'Aktif' : 'Nonaktif' }}
+                        </span>
+                    </div>
+                    <div class="mobile-data-list mb-3">
+                        <div><span class="mobile-data-item-label">Urutan</span><p class="mobile-data-item-value">{{ $category->sort_order }}</p></div>
+                        <div><span class="mobile-data-item-label">Slug</span><p class="mobile-data-item-value">{{ $category->slug }}</p></div>
+                        <div><span class="mobile-data-item-label">Tone</span><p class="mobile-data-item-value">{{ $category->tone }}</p></div>
+                    </div>
+                    <div class="mobile-data-card-actions">
+                        <a href="{{ route('admin.extracurricular-categories.edit', $category) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil-square"></i>Edit
+                        </a>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-collection"></i></div>
+                    <p class="mb-0">Belum ada kategori ekskul.</p>
+                </div>
+            @endforelse
         </div>
     </div>
 @endsection

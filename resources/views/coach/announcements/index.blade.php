@@ -5,6 +5,31 @@
 
 @php
     $activeTab = $activeTab ?? 'list';
+    $activeFilters = [
+        ['label' => 'Cari', 'value' => $search ?: null],
+        ['label' => 'Ekstrakurikuler', 'value' => $extracurricularId === 'all_managed'
+            ? 'Semua ekstrakurikuler binaan'
+            : data_get($extracurriculars->firstWhere('id', (int) $extracurricularId), 'name')],
+        ['label' => 'Status', 'value' => match ($status) {
+            'draft' => 'Draft',
+            'scheduled' => 'Terjadwal',
+            'published' => 'Dipublikasikan',
+            'expired' => 'Berakhir',
+            'inactive' => 'Dinonaktifkan',
+            default => null,
+        }],
+        ['label' => 'Prioritas', 'value' => match ($priority) {
+            'normal' => 'Biasa',
+            'important' => 'Penting',
+            'urgent' => 'Mendesak',
+            default => null,
+        }],
+        ['label' => 'Periode', 'value' => match ($period) {
+            'today' => 'Hari ini',
+            'week' => '7 hari terakhir',
+            default => null,
+        }],
+    ];
 @endphp
 
 @push('styles')
@@ -159,57 +184,56 @@
 
                     <div class="coach-announcement-list__body">
                         <div class="collapse @if($hasFilters) show @endif" id="coachAnnouncementFilterPanel">
-                            <form class="toolbar-grid mb-3" method="get" action="{{ route('coach.announcements.index') }}">
-                                <input type="hidden" name="tab" value="list">
-                                <div class="toolbar-col-4">
-                                    <label class="form-label" for="announcement_search">Cari judul</label>
-                                    <input id="announcement_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari judul pengumuman">
-                                </div>
-                                <div class="toolbar-col-3">
-                                    <label class="form-label" for="announcement_extracurricular_id">Ekstrakurikuler</label>
-                                    <select id="announcement_extracurricular_id" name="extracurricular_id" class="form-select">
-                                        <option value="">Semua ekstrakurikuler</option>
-                                        <option value="all_managed" @selected($extracurricularId === 'all_managed')>Semua ekstrakurikuler binaan</option>
-                                        @foreach($extracurriculars as $item)
-                                            <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <label class="form-label" for="announcement_status">Status</label>
-                                    <select id="announcement_status" name="status" class="form-select">
-                                        <option value="">Semua status</option>
-                                        <option value="draft" @selected($status === 'draft')>Draft</option>
-                                        <option value="scheduled" @selected($status === 'scheduled')>Terjadwal</option>
-                                        <option value="published" @selected($status === 'published')>Dipublikasikan</option>
-                                        <option value="expired" @selected($status === 'expired')>Berakhir</option>
-                                        <option value="inactive" @selected($status === 'inactive')>Dinonaktifkan</option>
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <label class="form-label" for="announcement_priority">Prioritas</label>
-                                    <select id="announcement_priority" name="priority" class="form-select">
-                                        <option value="">Semua prioritas</option>
-                                        <option value="normal" @selected($priority === 'normal')>Biasa</option>
-                                        <option value="important" @selected($priority === 'important')>Penting</option>
-                                        <option value="urgent" @selected($priority === 'urgent')>Mendesak</option>
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <label class="form-label" for="announcement_period">Periode</label>
-                                    <select id="announcement_period" name="period" class="form-select">
-                                        <option value="">Semua periode</option>
-                                        <option value="today" @selected($period === 'today')>Hari ini</option>
-                                        <option value="week" @selected($period === 'week')>7 hari terakhir</option>
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-funnel"></i>Terapkan</button>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <a href="{{ route('coach.announcements.index', ['tab' => 'list']) }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a>
-                                </div>
-                            </form>
+                            <x-filter.card class="mb-3" title="Filter Pengumuman" description="Saring pengumuman berdasarkan judul, ekstrakurikuler, status, prioritas, dan periode tayang.">
+                                <x-slot:active>
+                                    <x-filter.active-filters :items="$activeFilters" :reset-url="route('coach.announcements.index', ['tab' => 'list'])" />
+                                </x-slot:active>
+
+                                <form class="toolbar-grid" method="get" action="{{ route('coach.announcements.index') }}">
+                                    <input type="hidden" name="tab" value="list">
+                                    <x-filter.field label="Cari judul" for="announcement_search" col="toolbar-col-4">
+                                        <input id="announcement_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari judul pengumuman">
+                                    </x-filter.field>
+                                    <x-filter.field label="Ekstrakurikuler" for="announcement_extracurricular_id" col="toolbar-col-3">
+                                        <select id="announcement_extracurricular_id" name="extracurricular_id" class="form-select">
+                                            <option value="">Semua ekstrakurikuler</option>
+                                            <option value="all_managed" @selected($extracurricularId === 'all_managed')>Semua ekstrakurikuler binaan</option>
+                                            @foreach($extracurriculars as $item)
+                                                <option value="{{ $item->id }}" @selected((string) $extracurricularId === (string) $item->id)>{{ $item->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Status" for="announcement_status" col="toolbar-col-2">
+                                        <select id="announcement_status" name="status" class="form-select">
+                                            <option value="">Semua status</option>
+                                            <option value="draft" @selected($status === 'draft')>Draft</option>
+                                            <option value="scheduled" @selected($status === 'scheduled')>Terjadwal</option>
+                                            <option value="published" @selected($status === 'published')>Dipublikasikan</option>
+                                            <option value="expired" @selected($status === 'expired')>Berakhir</option>
+                                            <option value="inactive" @selected($status === 'inactive')>Dinonaktifkan</option>
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Prioritas" for="announcement_priority" col="toolbar-col-2">
+                                        <select id="announcement_priority" name="priority" class="form-select">
+                                            <option value="">Semua prioritas</option>
+                                            <option value="normal" @selected($priority === 'normal')>Biasa</option>
+                                            <option value="important" @selected($priority === 'important')>Penting</option>
+                                            <option value="urgent" @selected($priority === 'urgent')>Mendesak</option>
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Periode" for="announcement_period" col="toolbar-col-2">
+                                        <select id="announcement_period" name="period" class="form-select">
+                                            <option value="">Semua periode</option>
+                                            <option value="today" @selected($period === 'today')>Hari ini</option>
+                                            <option value="week" @selected($period === 'week')>7 hari terakhir</option>
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.actions col="toolbar-col-12">
+                                        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                                        <a href="{{ route('coach.announcements.index', ['tab' => 'list']) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+                                    </x-filter.actions>
+                                </form>
+                            </x-filter.card>
                         </div>
 
                         <div class="desktop-table table-responsive">

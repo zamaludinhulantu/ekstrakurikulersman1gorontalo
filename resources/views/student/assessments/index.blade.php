@@ -142,6 +142,22 @@
 
 @section('content')
     @php
+        $activeFilters = [
+            ['label' => 'Periode', 'value' => match ($period) {
+                'latest' => 'Terbaru',
+                'month' => 'Bulan ini',
+                'semester' => 'Semester ini',
+                'all' => 'Semua',
+                default => null,
+            }],
+            ['label' => 'Ekstrakurikuler', 'value' => data_get($extracurriculars->firstWhere('id', (int) $extracurricularId), 'name')],
+            ['label' => 'Jenis penilaian', 'value' => $title ?: null],
+            ['label' => 'Bulan', 'value' => $month ? \Carbon\Carbon::create()->month((int) $month)->translatedFormat('F') : null],
+            ['label' => 'Tahun', 'value' => $year ?: null],
+        ];
+    @endphp
+
+    @php
         $summaryCount = $assessmentSummary['count'] ?? 0;
         $summaryAverage = $assessmentSummary['average'];
         $summaryHighest = $assessmentSummary['highest'];
@@ -202,11 +218,11 @@
         </div>
     @endif
 
-    <div class="student-assessment-panel mb-3">
-        <div class="student-assessment-panel-header">
-            <h2>Filter Penilaian</h2>
-            <p>Saring penilaian berdasarkan ekstrakurikuler, jenis, dan periode.</p>
-        </div>
+    <x-filter.card class="student-assessment-panel mb-3" title="Filter Penilaian" description="Saring penilaian berdasarkan ekstrakurikuler, jenis, dan periode.">
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('student.assessments.index')" />
+        </x-slot:active>
+
         <div class="student-assessment-panel-body">
             @if($summaryCount > 0)
                 <div class="student-assessment-quick-filters">
@@ -263,7 +279,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </x-filter.card>
 
     <div class="card">
         <div class="card-header">Daftar Penilaian</div>

@@ -76,34 +76,47 @@ class AttendanceController extends Controller
         $filters['category'] = $filters['category'] ?? 'all';
 
         $format = $filters['format'] ?? 'csv';
-        $delimiter = $format === 'xls' ? "\t" : ',';
-        $extension = $format === 'xls' ? 'xls' : 'csv';
-        $filename = $this->buildFilename($filters).'-'.Carbon::now()->format('YmdHis').'.'.$extension;
+        $timestamp = Carbon::now()->format('YmdHis');
+        $filenameBase = $this->buildFilename($filters);
+        $rows = $this->buildAttendanceQuery($filters)
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('id')
+            ->get();
 
-        return response()->streamDownload(function () use ($filters, $delimiter): void {
+        if ($format === 'xls') {
+            $html = view('principal.attendances.export-xls', [
+                'attendances' => $rows,
+                'filterSummary' => $this->filterSummary($filters),
+                'controller' => $this,
+            ])->render();
+
+            return response()->streamDownload(function () use ($html): void {
+                echo "\xEF\xBB\xBF";
+                echo $html;
+            }, $filenameBase.'-'.$timestamp.'.xls', [
+                'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            ]);
+        }
+
+        return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Siswa', 'Ekstrakurikuler', 'Pembina', 'Jadwal', 'Tanggal', 'Status', 'Catatan'], $delimiter);
+            fputcsv($handle, ['Siswa', 'Ekstrakurikuler', 'Pembina', 'Jadwal', 'Tanggal', 'Status', 'Catatan']);
 
-            $this->buildAttendanceQuery($filters)
-                ->orderByDesc('recorded_at')
-                ->orderByDesc('id')
-                ->each(function (Attendance $row) use ($handle, $delimiter): void {
-                    fputcsv($handle, $this->sanitizeExportRow([
-                        $row->student->user->name ?? '-',
-                        $row->extracurricular->name ?? '-',
-                        $row->schedule->coach->user->name ?? $row->extracurricular->coach_names,
-                        $row->schedule->title ?? '-',
-                        optional($row->schedule->activity_date)->format('Y-m-d'),
-                        $this->mapStatusLabel($row->status),
-                        $row->notes ?? '-',
-                    ]), $delimiter);
-                });
+            $rows->each(function (Attendance $row) use ($handle): void {
+                fputcsv($handle, $this->sanitizeExportRow([
+                    $row->student->user->name ?? '-',
+                    $row->extracurricular->name ?? '-',
+                    $row->schedule->coach->user->name ?? $row->extracurricular->coach_names,
+                    $row->schedule->title ?? '-',
+                    optional($row->schedule->activity_date)->format('Y-m-d'),
+                    $this->mapStatusLabel($row->status),
+                    $row->notes ?? '-',
+                ]));
+            });
 
             fclose($handle);
-        }, $filename, [
-            'Content-Type' => $format === 'xls'
-                ? 'application/vnd.ms-excel; charset=UTF-8'
-                : 'text/csv; charset=UTF-8',
+        }, $filenameBase.'-'.$timestamp.'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
@@ -164,7 +177,7 @@ class AttendanceController extends Controller
             });
     }
 
-    private function mapStatusLabel(string $status): string
+    public function mapStatusLabel(string $status): string
     {
         return match ($status) {
             'present' => 'Hadir',
@@ -211,5 +224,36 @@ class AttendanceController extends Controller
         }
 
         return Str::slug(implode('-', array_filter($segments)));
+    }
+
+    public function exportValue(mixed $value): string
+    {
+        return (string) ($value ?? '-');
+    }
+
+    private function filterSummary(array $filters): array
+    {
+        $categoryLabel = 'Semua kategori';
+        if (($filters['category'] ?? 'all') !== 'all') {
+            $definition = collect(Extracurricular::categoryDefinitions())->firstWhere('key', $filters['category']);
+            $categoryLabel = $definition['label'] ?? $filters['category'];
+        }
+
+        return [
+            'search' => $filters['search'] ?? 'Semua data',
+            'extracurricular' => ! empty($filters['extracurricular_id'])
+                ? (Extracurricular::query()->find($filters['extracurricular_id'])?->name ?? 'Tidak ditemukan')
+                : 'Semua ekstrakurikuler',
+            'coach' => ! empty($filters['coach_id'])
+                ? (Coach::with('user')->find($filters['coach_id'])?->user?->name ?? 'Tidak ditemukan')
+                : 'Semua pembina',
+            'class_name' => $filters['class_name'] ?? 'Semua kelas',
+            'status' => ! empty($filters['status']) ? $this->mapStatusLabel($filters['status']) : 'Semua status',
+            'category' => $categoryLabel,
+            'period' => trim(implode(' s.d. ', array_filter([
+                ! empty($filters['date_from']) ? Carbon::parse($filters['date_from'])->format('d-m-Y') : null,
+                ! empty($filters['date_to']) ? Carbon::parse($filters['date_to'])->format('d-m-Y') : null,
+            ]))) ?: 'Semua tanggal',
+        ];
     }
 }

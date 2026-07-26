@@ -218,6 +218,22 @@
 
 @section('content')
     @php
+        $dateFilterChips = [
+            ['label' => 'Tanggal', 'value' => $date ? \Carbon\Carbon::parse($date)->translatedFormat('d F Y') : null],
+        ];
+        $historyFilterChips = [
+            ['label' => 'Ekstrakurikuler', 'value' => data_get($extracurriculars->firstWhere('id', (int) $historyExtracurricular), 'name')],
+            ['label' => 'Jenis kegiatan', 'value' => match ($historyType) {
+                'activity' => 'Kegiatan Ekskul',
+                'talent_test' => 'Tes Bakat',
+                default => null,
+            }],
+            ['label' => 'Bulan', 'value' => $historyMonth ? \Carbon\Carbon::create()->month((int) $historyMonth)->translatedFormat('F') : null],
+            ['label' => 'Tahun', 'value' => $historyYear ?: null],
+        ];
+    @endphp
+
+    @php
         $upcomingQuery = array_merge(request()->except(['tab', 'upcoming_page', 'history_page']), ['tab' => 'upcoming']);
         $historyQuery = array_merge(request()->except(['tab', 'upcoming_page', 'history_page']), ['tab' => 'history']);
     @endphp
@@ -264,11 +280,11 @@
         </div>
     </div>
 
-    <div class="schedule-filter-card mb-3">
-        <div class="schedule-section-heading">
-            <h2>Filter Tanggal</h2>
-            <p>Pilih tanggal tertentu untuk menampilkan jadwal yang sesuai.</p>
-        </div>
+    <x-filter.card class="schedule-filter-card mb-3" title="Filter Tanggal" description="Pilih tanggal tertentu untuk menampilkan jadwal yang sesuai.">
+        <x-slot:active>
+            <x-filter.active-filters :items="$dateFilterChips" :reset-url="route('student.schedules.index', ['tab' => $tab])" />
+        </x-slot:active>
+
         <div class="schedule-filter-body">
             <form class="toolbar-grid" method="get" action="{{ route('student.schedules.index') }}">
                 <input type="hidden" name="tab" value="{{ $tab }}">
@@ -290,7 +306,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </x-filter.card>
 
     <div class="card mb-3">
         <div class="card-body">
@@ -302,11 +318,11 @@
     </div>
 
     @if($tab === 'history')
-        <div class="schedule-filter-card mb-3" id="riwayat-kegiatan">
-            <div class="schedule-section-heading">
-                <h2>Filter Riwayat</h2>
-                <p>Saring kegiatan yang sudah selesai atau dibatalkan.</p>
-            </div>
+        <x-filter.card class="schedule-filter-card mb-3" id="riwayat-kegiatan" title="Filter Riwayat" description="Saring kegiatan yang sudah selesai atau dibatalkan.">
+            <x-slot:active>
+                <x-filter.active-filters :items="$historyFilterChips" :reset-url="route('student.schedules.index', ['tab' => 'history']) . '#riwayat-kegiatan'" />
+            </x-slot:active>
+
             <div class="schedule-filter-body">
                 <form class="schedule-history-filter-grid" method="get" action="{{ route('student.schedules.index') }}">
                     <input type="hidden" name="tab" value="history">
@@ -356,7 +372,7 @@
                     </div>
                 </form>
             </div>
-        </div>
+        </x-filter.card>
     @endif
 
     <div class="card">

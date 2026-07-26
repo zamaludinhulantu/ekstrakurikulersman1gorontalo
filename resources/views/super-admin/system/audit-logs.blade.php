@@ -4,22 +4,27 @@
 @section('page_subtitle', 'Pantau jejak aksi sensitif yang dilakukan oleh super admin.')
 
 @section('content')
-    <div class="card mb-3">
-        <div class="card-body toolbar-card">
-            <form class="toolbar-grid">
-                <div class="toolbar-col-6">
-                    <label class="form-label">Pencarian</label>
-                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari aksi, deskripsi, atau nama pengguna">
-                </div>
-                <div class="toolbar-col-2">
-                    <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Cari</button>
-                </div>
-                <div class="toolbar-col-2">
-                    <a href="{{ route('super-admin.audit-logs.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a>
-                </div>
-            </form>
-        </div>
-    </div>
+    @php
+        $activeFilters = [
+            ['label' => 'Cari', 'value' => $search ?: null],
+        ];
+    @endphp
+
+    <x-filter.card class="mb-3" title="Filter Audit Log" description="Cari aksi sensitif berdasarkan kata kunci pengguna, aksi, atau deskripsi.">
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('super-admin.audit-logs.index')" />
+        </x-slot:active>
+
+        <form class="toolbar-grid">
+            <x-filter.field label="Pencarian" for="audit_log_search" col="toolbar-col-8">
+                <input id="audit_log_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari aksi, deskripsi, atau nama pengguna">
+            </x-filter.field>
+            <x-filter.actions col="toolbar-col-4">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i>Cari Data</button>
+                <a href="{{ route('super-admin.audit-logs.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+            </x-filter.actions>
+        </form>
+    </x-filter.card>
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center gap-2">

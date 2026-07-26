@@ -94,8 +94,9 @@
         .talent-participant-list {
             display: grid;
             gap: 0.7rem;
-            max-height: calc(100vh - 310px);
+            max-height: calc(100dvh - 310px);
             overflow-y: auto;
+            overscroll-behavior-y: contain;
             padding-right: 0.2rem;
         }
 

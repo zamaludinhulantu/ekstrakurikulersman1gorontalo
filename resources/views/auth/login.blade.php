@@ -41,7 +41,7 @@
                             <div class="auth-form-header">
                                 <span class="auth-section-kicker">Login</span>
                                 <h2>Masuk ke Sistem</h2>
-                                <p>Gunakan email dan password akun kamu untuk masuk ke dashboard dan melanjutkan pendaftaran.</p>
+                                <p>Gunakan email dan password akun kamu untuk masuk ke dashboard dan melanjutkan pendaftaran. Khusus akun siswa, login hanya bisa dilakukan setelah email aktif diverifikasi.</p>
                             </div>
 
                             @if(request()->query('reason') === 'idle')
@@ -59,10 +59,15 @@
                                 <div class="auth-input-group">
                                     <label for="email" class="form-label">Email</label>
                                     <input type="email" id="email" name="email" value="{{ old('email') }}" class="form-control" placeholder="contoh: siswa@sekolah.sch.id" required autofocus>
+                                    <div class="form-text">Gunakan email aktif. Akun baru dapat digunakan setelah email berhasil diverifikasi.</div>
                                 </div>
                                 <div class="auth-input-group">
                                     <label for="password" class="form-label">Password</label>
                                     <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan password akun kamu" required>
+                                </div>
+                                <div class="alert alert-info app-alert mb-0" role="alert">
+                                    <i class="bi bi-info-circle-fill app-alert__icon"></i>
+                                    <div class="flex-grow-1">Gunakan email aktif. Akun baru dapat digunakan setelah email berhasil diverifikasi.</div>
                                 </div>
                                 <div class="auth-form-row">
                                     <div class="form-check auth-remember">

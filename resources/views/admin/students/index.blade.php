@@ -4,73 +4,96 @@
 @section('page_subtitle', 'Kelola data siswa peserta ekstrakurikuler')
 
 @section('content')
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <a href="{{ route('admin.students.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i>Tambah Siswa</a>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('admin.students.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="btn btn-outline-danger">
-                <i class="bi bi-file-earmark-pdf"></i>Unduh PDF
-            </a>
-            <a href="{{ route('admin.students.export', array_merge(request()->query(), ['format' => 'xls'])) }}" class="btn btn-outline-success">
-                <i class="bi bi-file-earmark-excel"></i>Unduh Excel
-            </a>
-        </div>
-    </div>
+    @php
+        $hasAdvancedFilters = ($category ?? 'all') !== 'all' || filled($gender ?? null) || filled($extracurricularId ?? null);
+        $activeFilters = [
+            ['label' => 'Cari', 'value' => $search ?: null],
+            ['label' => 'Kelas', 'value' => $className ?: null],
+            ['label' => 'Ekskul', 'value' => data_get($extracurricularOptions->firstWhere('id', $extracurricularId), 'name')],
+            ['label' => 'Kategori', 'value' => ($category ?? 'all') !== 'all' ? data_get(collect($categories)->firstWhere('key', $category), 'label', $category) : null],
+            ['label' => 'JK', 'value' => $gender === 'L' ? 'Laki-laki' : ($gender === 'P' ? 'Perempuan' : null)],
+            ['label' => 'Status', 'value' => $status === 'active' ? 'Aktif' : ($status === 'inactive' ? 'Tidak aktif' : null)],
+        ];
+    @endphp
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <form class="row g-2 align-items-end">
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Pencarian</label>
-                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama, email, NIS, atau kelas">
+    <x-filter.card
+        class="mb-3"
+        title="Filter Data Siswa"
+        description="Cari siswa dengan filter utama yang ringkas, lalu buka filter lanjutan bila perlu."
+    >
+        <x-slot:actions>
+            <a href="{{ route('admin.students.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i>Tambah Siswa</a>
+            <x-filter.export-dropdown
+                :items="[
+                    ['label' => 'Unduh Excel', 'href' => route('admin.students.export', array_merge(request()->query(), ['format' => 'xls'])), 'icon' => 'bi-file-earmark-excel'],
+                    ['label' => 'Unduh PDF', 'href' => route('admin.students.export', array_merge(request()->query(), ['format' => 'pdf'])), 'icon' => 'bi-file-earmark-pdf'],
+                ]"
+            />
+        </x-slot:actions>
+
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('admin.students.index')" />
+        </x-slot:active>
+
+        <form class="toolbar-grid" method="get">
+            <x-filter.field label="Pencarian" for="student_search" col="toolbar-col-4">
+                <input id="student_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama atau NIS">
+            </x-filter.field>
+            <x-filter.field label="Kelas" for="student_class_name" col="toolbar-col-2">
+                <select id="student_class_name" name="class_name" class="form-select">
+                    <option value="">Semua kelas</option>
+                    @foreach($classOptions as $option)
+                        <option value="{{ $option }}" @selected($className === $option)>{{ $option }}</option>
+                    @endforeach
+                </select>
+            </x-filter.field>
+            <x-filter.field label="Status" for="student_status" col="toolbar-col-2">
+                <select id="student_status" name="status" class="form-select">
+                    <option value="">Semua status</option>
+                    <option value="active" @selected($status === 'active')>Aktif</option>
+                    <option value="inactive" @selected($status === 'inactive')>Tidak aktif</option>
+                </select>
+            </x-filter.field>
+            <x-filter.actions col="toolbar-col-4">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                <a href="{{ route('admin.students.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+            </x-filter.actions>
+            <div class="toolbar-col-12">
+                <div class="filter-advanced-toggle">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#studentAdvancedFilters" aria-expanded="{{ $hasAdvancedFilters ? 'true' : 'false' }}" aria-controls="studentAdvancedFilters">
+                        <i class="bi bi-sliders"></i>Filter Lanjutan
+                    </button>
                 </div>
-                <div class="col-lg-2 col-md-3">
-                    <label class="form-label">Kelas</label>
-                    <select name="class_name" class="form-select">
-                        <option value="">Semua Kelas</option>
-                        @foreach($classOptions as $option)
-                            <option value="{{ $option }}" @selected($className === $option)>{{ $option }}</option>
-                        @endforeach
-                    </select>
+            </div>
+            <div id="studentAdvancedFilters" class="toolbar-col-12 filter-advanced collapse {{ $hasAdvancedFilters ? 'show' : '' }}">
+                <div class="toolbar-grid">
+                    <x-filter.field label="Ekstrakurikuler" for="student_extracurricular_id" col="toolbar-col-4">
+                        <select id="student_extracurricular_id" name="extracurricular_id" class="form-select">
+                            <option value="">Semua ekskul</option>
+                            @foreach($extracurricularOptions as $activity)
+                                <option value="{{ $activity->id }}" @selected(($extracurricularId ?? null) === $activity->id)>{{ $activity->name }}</option>
+                            @endforeach
+                        </select>
+                    </x-filter.field>
+                    <x-filter.field label="Kategori" for="student_category" col="toolbar-col-4">
+                        <select id="student_category" name="category" class="form-select">
+                            <option value="all">Semua kategori</option>
+                            @foreach($categories as $item)
+                                <option value="{{ $item['key'] }}" @selected(($category ?? 'all') === $item['key'])>{{ $item['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </x-filter.field>
+                    <x-filter.field label="Jenis kelamin" for="student_gender" col="toolbar-col-4">
+                        <select id="student_gender" name="gender" class="form-select">
+                            <option value="">Semua</option>
+                            <option value="L" @selected($gender === 'L')>Laki-laki</option>
+                            <option value="P" @selected($gender === 'P')>Perempuan</option>
+                        </select>
+                    </x-filter.field>
                 </div>
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Kegiatan yang Diikuti</label>
-                    <select name="extracurricular_id" class="form-select">
-                        <option value="">Semua Kegiatan</option>
-                        @foreach($extracurricularOptions as $activity)
-                            <option value="{{ $activity->id }}" @selected(($extracurricularId ?? null) === $activity->id)>{{ $activity->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-2 col-md-3">
-                    <label class="form-label">Kategori</label>
-                    <select name="category" class="form-select">
-                        <option value="all">Semua kategori</option>
-                        @foreach($categories as $item)
-                            <option value="{{ $item['key'] }}" @selected(($category ?? 'all') === $item['key'])>{{ $item['label'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-2 col-md-3">
-                    <label class="form-label">Jenis Kelamin</label>
-                    <select name="gender" class="form-select">
-                        <option value="">Semua</option>
-                        <option value="L" @selected($gender === 'L')>Laki-laki</option>
-                        <option value="P" @selected($gender === 'P')>Perempuan</option>
-                    </select>
-                </div>
-                <div class="col-lg-2 col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">Semua</option>
-                        <option value="active" @selected($status === 'active')>Aktif</option>
-                        <option value="inactive" @selected($status === 'inactive')>Tidak Aktif</option>
-                    </select>
-                </div>
-                <div class="col-lg-1 col-md-2"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i>Cari</button></div>
-                <div class="col-lg-1 col-md-2"><a href="{{ route('admin.students.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a></div>
-            </form>
-        </div>
-    </div>
+            </div>
+        </form>
+    </x-filter.card>
 
     <div class="card">
         <div class="desktop-table table-responsive">

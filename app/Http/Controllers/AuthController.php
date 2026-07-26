@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -158,6 +160,12 @@ class AuthController extends Controller
 
     public function register(Request $request): RedirectResponse
     {
+        if ($this->mailIsNotConfiguredForDelivery() && ! $this->shouldExposeVerificationLinkPreview()) {
+            return back()
+                ->with('error', 'Registrasi belum dapat diproses karena pengiriman email verifikasi belum dikonfigurasi. Hubungi admin untuk mengaktifkan email sistem.')
+                ->withInput($request->except(['password', 'password_confirmation']));
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
@@ -225,10 +233,81 @@ class AuthController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
+        $verificationPreviewLink = $this->sendOrPreviewVerificationEmail($user);
 
-        $pendingExtracurricularId = $request->session()->pull('pending_extracurricular_id');
+        $redirect = redirect()
+            ->route('verification.notice', ['email' => $user->email])
+            ->with('success', 'Pendaftaran akun berhasil. Silakan cek email aktif Anda untuk verifikasi akun sebelum login.');
+
+        if ($verificationPreviewLink) {
+            $redirect->with('verification_link_preview', $verificationPreviewLink);
+        }
+
+        return $redirect;
+    }
+
+    public function showVerificationNotice(Request $request): View
+    {
+        return view('auth.verify-email', [
+            'email' => trim($request->string('email')->toString()),
+            'verificationLinkPreview' => session('verification_link_preview'),
+        ]);
+    }
+
+    public function sendVerificationEmail(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+        ]);
+
+        $user = User::query()
+            ->where('email', $validated['email'])
+            ->where('role', User::ROLE_STUDENT)
+            ->first();
+
+        if (! $user) {
+            return back()->with('success', 'Jika akun siswa ditemukan, tautan verifikasi akan dikirim ke email tersebut.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return redirect()
+                ->route('login')
+                ->with('success', 'Email akun ini sudah diverifikasi. Silakan login.');
+        }
+
+        if ($this->mailIsNotConfiguredForDelivery() && ! $this->shouldExposeVerificationLinkPreview()) {
+            return back()->with('error', 'Pengiriman email verifikasi belum aktif. Hubungi admin untuk mengaktifkan email sistem.');
+        }
+
+        $verificationPreviewLink = $this->sendOrPreviewVerificationEmail($user);
+
+        $redirect = back()->with('success', 'Tautan verifikasi berhasil dikirim. Silakan cek inbox email aktif Anda.');
+
+        if ($verificationPreviewLink) {
+            $redirect->with('verification_link_preview', $verificationPreviewLink);
+        }
+
+        return $redirect;
+    }
+
+    public function verifyEmail(Request $request, int $id, string $hash): RedirectResponse
+    {
+        $user = User::query()
+            ->whereKey($id)
+            ->where('role', User::ROLE_STUDENT)
+            ->firstOrFail();
+
+        abort_unless(hash_equals((string) $hash, sha1($user->getEmailForVerification())), 403);
+
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+            event(new Verified($user));
+        }
+
+        $pendingExtracurricularId = $request->session()->get('pending_extracurricular_id');
 
         if ($pendingExtracurricularId) {
             $extracurricular = Extracurricular::query()
@@ -238,14 +317,14 @@ class AuthController extends Controller
 
             if ($extracurricular) {
                 return redirect()
-                    ->route('student.extracurriculars.show', $extracurricular)
-                    ->with('success', 'Akun siswa berhasil dibuat. Silakan lanjutkan pendaftaran ekstrakurikuler.');
+                    ->route('login')
+                    ->with('success', 'Email berhasil diverifikasi. Silakan login untuk melanjutkan pendaftaran ekstrakurikuler.');
             }
         }
 
         return redirect()
-            ->route('student.dashboard')
-            ->with('success', 'Akun siswa berhasil dibuat dan Anda sudah masuk ke sistem.');
+            ->route('login')
+            ->with('success', 'Email berhasil diverifikasi. Silakan login menggunakan akun Anda.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -261,6 +340,29 @@ class AuthController extends Controller
     private function shouldExposeResetLinkPreview(): bool
     {
         return app()->environment('local') && in_array(config('mail.default'), ['log', 'array'], true);
+    }
+
+    private function shouldExposeVerificationLinkPreview(): bool
+    {
+        return $this->shouldExposeResetLinkPreview();
+    }
+
+    private function sendOrPreviewVerificationEmail(User $user): ?string
+    {
+        if ($this->shouldExposeVerificationLinkPreview()) {
+            return URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes((int) config('auth.verification.expire', 60)),
+                [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                ]
+            );
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return null;
     }
 
     private function mailIsNotConfiguredForDelivery(): bool

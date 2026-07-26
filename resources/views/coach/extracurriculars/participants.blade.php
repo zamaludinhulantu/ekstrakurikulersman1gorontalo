@@ -15,7 +15,7 @@
     </div>
 
     <div class="card">
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table table-striped mb-0">
                 <thead>
                     <tr>
@@ -52,6 +52,33 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($participants as $row)
+                @php $latestResult = $row->talentTestResults->sortByDesc('published_at')->first(); @endphp
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <div>
+                            <h3 class="mobile-data-card-title">{{ $row->student->user->name ?? '-' }}</h3>
+                            <div class="small text-muted">NIS: {{ $row->student->nis ?? '-' }} | {{ $row->student->class_name ?? '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="mobile-data-list mb-3">
+                        <div><span class="mobile-data-item-label">Kelompok</span><p class="mobile-data-item-value">{{ $latestResult?->training_group ?: '-' }}</p></div>
+                        <div><span class="mobile-data-item-label">Tanggal gabung</span><p class="mobile-data-item-value">{{ optional($row->registration_date)->format('d-m-Y') }}</p></div>
+                    </div>
+                    <div class="mobile-data-card-actions">
+                        <button type="button" class="btn btn-outline-primary profile-preview-trigger" data-profile-url="{{ route('registrations.profile-preview', $row) }}">
+                            <i class="bi bi-person-badge"></i>Lihat Profil
+                        </button>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-people"></i></div>
+                    <p class="mb-0">Belum ada peserta aktif.</p>
+                </div>
+            @endforelse
         </div>
         <div class="card-body">{{ $participants->links() }}</div>
     </div>

@@ -71,9 +71,9 @@ class FullRegressionTest extends TestCase
             'address' => 'Alamat registrasi mandiri',
             'parent_name' => 'Ibu Mandiri',
             'parent_phone' => '081299999002',
-        ])->assertRedirect(route('student.extracurriculars.show', $extracurricular->getKey()));
+        ])->assertRedirect(route('verification.notice', ['email' => 'siswa.mandiri@example.com']));
 
-        $this->assertAuthenticated();
+        $this->assertGuest();
         $this->assertDatabaseHas('users', [
             'email' => 'siswa.mandiri@example.com',
             'role' => User::ROLE_STUDENT,

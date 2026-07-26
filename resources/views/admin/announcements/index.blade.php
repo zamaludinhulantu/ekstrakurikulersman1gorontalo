@@ -43,7 +43,7 @@
     <div class="card">
         <div class="card-header">Daftar Pengumuman</div>
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="desktop-table table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
                     <tr>
@@ -84,6 +84,35 @@
                     @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="mobile-stack-table p-3">
+                @forelse($announcements as $announcement)
+                    <div class="mobile-data-card">
+                        <div class="mobile-data-card-header">
+                            <div>
+                                <h3 class="mobile-data-card-title">{{ $announcement->title }}</h3>
+                                <div class="small text-muted">{{ \Illuminate\Support\Str::limit($announcement->content, 90) }}</div>
+                            </div>
+                            <span class="badge" data-status="{{ $announcement->is_active ? 'active' : 'inactive' }}">{{ $announcement->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                        </div>
+                        <div class="mobile-data-list mb-3">
+                            <div><span class="mobile-data-item-label">Ekstrakurikuler</span><p class="mobile-data-item-value">{{ $announcement->extracurricular->name ?? 'Semua ekstrakurikuler' }}</p></div>
+                            <div><span class="mobile-data-item-label">Pembuat</span><p class="mobile-data-item-value">{{ $announcement->publisher->name ?? '-' }}</p></div>
+                        </div>
+                        <div class="mobile-data-card-actions">
+                            <form method="post" action="{{ route('admin.announcements.destroy', $announcement) }}" onsubmit="return confirm('Hapus pengumuman ini?')">
+                                @csrf
+                                @method('delete')
+                                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash"></i>Hapus</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state">
+                        <div class="icon"><i class="bi bi-megaphone"></i></div>
+                        <p class="mb-0">Belum ada pengumuman.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
         <div class="card-body">{{ $announcements->links() }}</div>

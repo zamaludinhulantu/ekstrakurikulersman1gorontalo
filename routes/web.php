@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CoachController as AdminCoachController;
 use App\Http\Controllers\Admin\ExtracurricularCategoryController as AdminExtracurricularCategoryController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\AssessmentController as AdminAssessmentController;
 use App\Http\Controllers\Admin\ExtracurricularController as AdminExtracurricularController;
 use App\Http\Controllers\Admin\ExtracurricularAchievementController as AdminExtracurricularAchievementController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Admin\TalentTestController as AdminTalentTestController
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Coach\AnnouncementController as CoachAnnouncementController;
+use App\Http\Controllers\Coach\ArticleController as CoachArticleController;
 use App\Http\Controllers\Coach\AssessmentController as CoachAssessmentController;
 use App\Http\Controllers\Coach\AttendanceController as CoachAttendanceController;
 use App\Http\Controllers\Coach\ExtracurricularController as CoachExtracurricularController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\Coach\ScheduleController as CoachScheduleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Principal\DashboardController as PrincipalDashboardController;
 use App\Http\Controllers\Principal\AttendanceController as PrincipalAttendanceController;
+use App\Http\Controllers\Principal\ReportController as PrincipalReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicLandingController;
 use App\Http\Controllers\RegistrationAchievementProofController;
@@ -43,6 +46,8 @@ Route::middleware('system.maintenance')->group(function (): void {
     Route::get('/kegiatan/{slug}', [PublicLandingController::class, 'categoryCatalog'])->name('public.activities.category');
     Route::get('/informasi-sistem', [PublicLandingController::class, 'information'])->name('public.information');
     Route::get('/pengumuman', [PublicLandingController::class, 'announcements'])->name('public.announcements');
+    Route::get('/berita', [PublicLandingController::class, 'articles'])->name('public.articles.index');
+    Route::get('/berita/{slug}', [PublicLandingController::class, 'articleShow'])->name('public.articles.show');
     Route::get('/extracurriculars/{extracurricular}/daftar', [PublicLandingController::class, 'beginRegistration'])->name('public.extracurriculars.register');
     Route::get('/extracurriculars/{extracurricular}', [PublicLandingController::class, 'show'])->name('public.extracurriculars.show');
     Route::get('/', [PublicLandingController::class, 'index'])->name('landing');
@@ -51,6 +56,9 @@ Route::middleware('system.maintenance')->group(function (): void {
 Route::middleware(['guest', 'system.maintenance'])->group(function (): void {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+    Route::get('/email/verify', [AuthController::class, 'showVerificationNotice'])->name('verification.notice');
+    Route::post('/email/verify/resend', [AuthController::class, 'sendVerificationEmail'])->middleware('throttle:3,1')->name('verification.send');
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
@@ -108,6 +116,12 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,
     Route::get('/announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
     Route::post('/announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
     Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    Route::get('/articles/{article}/preview', [AdminArticleController::class, 'preview'])->name('articles.preview');
+    Route::post('/articles/{article}/duplicate', [AdminArticleController::class, 'duplicate'])->name('articles.duplicate');
+    Route::patch('/articles/{article}/publish', [AdminArticleController::class, 'publish'])->name('articles.publish');
+    Route::patch('/articles/{article}/unpublish', [AdminArticleController::class, 'unpublish'])->name('articles.unpublish');
+    Route::patch('/articles/{article}/archive', [AdminArticleController::class, 'archive'])->name('articles.archive');
+    Route::resource('articles', AdminArticleController::class)->except(['create', 'show']);
 
     Route::get('/registrations', [AdminRegistrationController::class, 'index'])->name('registrations.index');
     Route::get('/registrations/export', [AdminRegistrationController::class, 'export'])->name('registrations.export');
@@ -157,6 +171,12 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:coach'])->pr
     Route::patch('/announcements/{announcement}/publish', [CoachAnnouncementController::class, 'publish'])->name('announcements.publish');
     Route::patch('/announcements/{announcement}/deactivate', [CoachAnnouncementController::class, 'deactivate'])->name('announcements.deactivate');
     Route::delete('/announcements/{announcement}', [CoachAnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    Route::get('/articles/{article}/preview', [CoachArticleController::class, 'preview'])->name('articles.preview');
+    Route::post('/articles/{article}/duplicate', [CoachArticleController::class, 'duplicate'])->name('articles.duplicate');
+    Route::patch('/articles/{article}/publish', [CoachArticleController::class, 'publish'])->name('articles.publish');
+    Route::patch('/articles/{article}/unpublish', [CoachArticleController::class, 'unpublish'])->name('articles.unpublish');
+    Route::patch('/articles/{article}/archive', [CoachArticleController::class, 'archive'])->name('articles.archive');
+    Route::resource('articles', CoachArticleController::class)->except(['create', 'show']);
 
     Route::resource('schedules', CoachScheduleController::class)->except(['show']);
     Route::get('/talent-test-aspects', [CoachTalentTestController::class, 'aspectIndex'])->name('talent-test-aspects.index');
@@ -189,4 +209,7 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:principal'])
     Route::get('/dashboard', [PrincipalDashboardController::class, 'index'])->name('dashboard');
     Route::get('/attendances', [PrincipalAttendanceController::class, 'index'])->name('attendances.index');
     Route::get('/attendances/export', [PrincipalAttendanceController::class, 'export'])->name('attendances.export');
+    Route::get('/reports', [PrincipalReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{type}/export', [PrincipalReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/print', [PrincipalReportController::class, 'print'])->name('reports.print');
 });

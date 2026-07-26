@@ -42,7 +42,7 @@
     </div>
 
     <div class="card">
-        <div class="table-responsive">
+        <div class="desktop-table table-responsive">
             <table class="table table-striped mb-0">
                 <thead>
                 <tr>
@@ -73,6 +73,27 @@
                 @endforelse
                 </tbody>
             </table>
+        </div>
+        <div class="mobile-stack-table p-3">
+            @forelse($tests as $test)
+                <div class="mobile-data-card">
+                    <div class="mobile-data-card-header">
+                        <div>
+                            <h3 class="mobile-data-card-title">{{ $test->title }}</h3>
+                            <div class="small text-muted">{{ $test->extracurricular->name ?? '-' }}</div>
+                        </div>
+                        <span class="badge" data-status="{{ $test->status }}">{{ $test->status }}</span>
+                    </div>
+                    <div class="mobile-data-list">
+                        <div><span class="mobile-data-item-label">Tanggal</span><p class="mobile-data-item-value">{{ optional($test->activity_date)->format('d-m-Y') }}</p></div>
+                        <div><span class="mobile-data-item-label">Peserta</span><p class="mobile-data-item-value">{{ $test->talent_test_participants_count }}</p></div>
+                    </div>
+                </div>
+            @empty
+                <div class="empty-state">
+                    <p class="mb-0">Belum ada data tes bakat.</p>
+                </div>
+            @endforelse
         </div>
         <div class="card-body">{{ $tests->links() }}</div>
     </div>

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -21,6 +23,7 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $user = auth()->user()->loadMissing('student');
+        $emailChanged = $user->email !== ($request->input('email') ?? $user->email);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -35,6 +38,10 @@ class ProfileController extends Controller
             'parent_name' => ['nullable', 'string', 'max:255'],
             'parent_phone' => ['nullable', 'string', 'max:30'],
         ]);
+
+        if ($emailChanged && $user->hasRole(User::ROLE_STUDENT) && $this->mailIsNotConfiguredForDelivery() && ! $this->shouldExposeVerificationLinkPreview()) {
+            return back()->with('error', 'Email tidak dapat diubah sekarang karena pengiriman email verifikasi belum dikonfigurasi. Hubungi admin untuk mengaktifkan email sistem.');
+        }
 
         if (blank($validated['password'] ?? null)) {
             unset($validated['password']);
@@ -60,6 +67,70 @@ class ProfileController extends Controller
             ]);
         }
 
+        if ($emailChanged && $user->hasRole(User::ROLE_STUDENT)) {
+            $user->markEmailAsUnverified();
+
+            $verificationPreviewLink = $this->sendOrPreviewVerificationEmail($user);
+
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            $redirect = redirect()
+                ->route('verification.notice', ['email' => $user->email])
+                ->with('success', 'Email berhasil diperbarui. Silakan verifikasi email baru sebelum login kembali.');
+
+            if ($verificationPreviewLink) {
+                $redirect->with('verification_link_preview', $verificationPreviewLink);
+            }
+
+            return $redirect;
+        }
+
         return back()->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    private function shouldExposeVerificationLinkPreview(): bool
+    {
+        return app()->environment('local') && in_array(config('mail.default'), ['log', 'array'], true);
+    }
+
+    private function sendOrPreviewVerificationEmail(User $user): ?string
+    {
+        if ($this->shouldExposeVerificationLinkPreview()) {
+            return URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes((int) config('auth.verification.expire', 60)),
+                [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                ]
+            );
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return null;
+    }
+
+    private function mailIsNotConfiguredForDelivery(): bool
+    {
+        if (app()->runningUnitTests()) {
+            return false;
+        }
+
+        $mailer = config('mail.default');
+
+        if (in_array($mailer, ['log', 'array'], true)) {
+            return true;
+        }
+
+        if ($mailer !== 'smtp') {
+            return false;
+        }
+
+        return blank(config('mail.mailers.smtp.host'))
+            || blank(config('mail.from.address'))
+            || config('mail.from.address') === 'hello@example.com';
     }
 }

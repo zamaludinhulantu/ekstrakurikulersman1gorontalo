@@ -16,17 +16,17 @@
 
                             <h1>Buat akun siswa untuk mulai mengikuti ekstrakurikuler.</h1>
 
-                            <p>Lengkapi data akun dan identitas siswa dengan benar. Setelah berhasil, kamu bisa masuk ke dashboard dan melanjutkan pendaftaran kegiatan.</p>
+                            <p>Lengkapi data akun dan identitas siswa dengan benar. Setelah berhasil, email aktif akan dipakai untuk verifikasi akun sebelum kamu bisa login dan melanjutkan pendaftaran kegiatan.</p>
 
                             <div class="auth-helper-list">
                                 <div class="auth-helper-item">
                                     <strong>Siapkan data penting</strong>
-                                    Isi nama, email, nomor telepon, dan data wali agar mudah diverifikasi.
+                                    Isi nama, email aktif, nomor telepon, dan data wali agar akun mudah diverifikasi.
                                 </div>
 
                                 <div class="auth-helper-item">
                                     <strong>Setelah akun jadi</strong>
-                                    Kamu bisa memilih kegiatan, mengirim pendaftaran, dan memantau statusnya.
+                                    Cek inbox email aktif untuk verifikasi, lalu login ke sistem untuk memilih kegiatan dan memantau statusnya.
                                 </div>
                             </div>
                         </div>
@@ -37,7 +37,7 @@
                             <div class="auth-form-header">
                                 <span class="auth-section-kicker">Registrasi</span>
                                 <h2>Registrasi Akun Siswa</h2>
-                                <p>Isi data berikut dengan benar agar akun siswa dapat digunakan untuk mendaftar ekstrakurikuler.</p>
+                                <p>Isi data berikut dengan benar agar akun siswa dapat digunakan untuk mendaftar ekstrakurikuler. Gunakan email aktif karena tautan verifikasi akan dikirim ke email tersebut.</p>
                             </div>
 
                             @include('partials.alerts')
@@ -60,6 +60,7 @@
                                         <div class="col-md-6">
                                             <label for="email" class="form-label">Email</label>
                                             <input type="email" id="email" name="email" value="{{ old('email') }}" class="form-control" placeholder="contoh: siswa@email.com" required>
+                                            <div class="form-text">Gunakan email aktif. Akun baru dapat digunakan setelah email berhasil diverifikasi.</div>
                                         </div>
 
                                         <div class="col-md-6">
@@ -125,6 +126,11 @@
                                             <textarea id="address" name="address" class="form-control" rows="1" placeholder="Alamat siswa">{{ old('address') }}</textarea>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div class="alert alert-info app-alert mt-3 mb-0" role="alert">
+                                    <i class="bi bi-envelope-check app-alert__icon"></i>
+                                    <div class="flex-grow-1">Gunakan email aktif. Akun baru dapat digunakan setelah email berhasil diverifikasi.</div>
                                 </div>
 
                                 <button class="btn btn-primary w-100 mt-3" type="submit" data-loading-text="Memproses registrasi...">

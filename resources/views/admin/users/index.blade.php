@@ -4,47 +4,48 @@
 @section('page_subtitle', 'Kelola akun admin, siswa, pembina, dan kepala sekolah')
 
 @section('content')
-    <div class="card mb-3">
-        <div class="card-body toolbar-card">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                <div>
-                    <h2 class="h5 mb-1">Filter Pengguna</h2>
-                    <p class="toolbar-hint mb-0">Cari akun berdasarkan nama, email, telepon, atau peran pengguna.</p>
-                </div>
-                <a href="{{ route($routePrefix.'.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i>Tambah Pengguna</a>
-            </div>
+    @php
+        $activeFilters = [
+            ['label' => 'Cari', 'value' => $search ?: null],
+            ['label' => 'Role', 'value' => $role ? ($roleLabels[$role] ?? strtoupper($role)) : null],
+            ['label' => 'Status', 'value' => ($status ?? '') === 'active' ? 'Aktif' : (($status ?? '') === 'inactive' ? 'Tidak aktif' : null)],
+        ];
+    @endphp
 
-            <form class="toolbar-grid">
-                <div class="toolbar-col-6">
-                    <label class="form-label">Pencarian</label>
-                    <input type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama, email, atau telepon">
-                </div>
-                <div class="toolbar-col-3">
-                    <label class="form-label">Role</label>
-                    <select name="role" class="form-select">
-                        <option value="">Semua Role</option>
-                        @foreach($roles as $roleOption)
-                            <option value="{{ $roleOption }}" @selected($role === $roleOption)>{{ $roleLabels[$roleOption] ?? strtoupper($roleOption) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="toolbar-col-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">Semua Status</option>
-                        <option value="active" @selected(($status ?? '') === 'active')>Aktif</option>
-                        <option value="inactive" @selected(($status ?? '') === 'inactive')>Tidak Aktif</option>
-                    </select>
-                </div>
-                <div class="toolbar-col-2">
-                    <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-funnel"></i>Filter</button>
-                </div>
-                <div class="toolbar-col-1">
-                    <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i></a>
-                </div>
-            </form>
-        </div>
-    </div>
+    <x-filter.card class="mb-3" title="Filter Pengguna" description="Cari akun berdasarkan nama, email, telepon, role, dan status.">
+        <x-slot:actions>
+            <a href="{{ route($routePrefix.'.create') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i>Tambah Pengguna</a>
+        </x-slot:actions>
+
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route($routePrefix.'.index')" />
+        </x-slot:active>
+
+        <form class="toolbar-grid" method="get">
+            <x-filter.field label="Pencarian" for="user_search" col="toolbar-col-6">
+                <input id="user_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari nama atau email">
+            </x-filter.field>
+            <x-filter.field label="Role" for="user_role" col="toolbar-col-3">
+                <select id="user_role" name="role" class="form-select">
+                    <option value="">Semua role</option>
+                    @foreach($roles as $roleOption)
+                        <option value="{{ $roleOption }}" @selected($role === $roleOption)>{{ $roleLabels[$roleOption] ?? strtoupper($roleOption) }}</option>
+                    @endforeach
+                </select>
+            </x-filter.field>
+            <x-filter.field label="Status" for="user_status" col="toolbar-col-3">
+                <select id="user_status" name="status" class="form-select">
+                    <option value="">Semua status</option>
+                    <option value="active" @selected(($status ?? '') === 'active')>Aktif</option>
+                    <option value="inactive" @selected(($status ?? '') === 'inactive')>Tidak aktif</option>
+                </select>
+            </x-filter.field>
+            <x-filter.actions col="toolbar-col-12">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                <a href="{{ route($routePrefix.'.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+            </x-filter.actions>
+        </form>
+    </x-filter.card>
 
     <div class="card">
         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">

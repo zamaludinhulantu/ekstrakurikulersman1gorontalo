@@ -302,6 +302,16 @@
         $currentCategory = $category ?? 'semua';
         $currentStatus = $status ?? 'all';
         $showCategoryFilter = $extracurriculars->isNotEmpty();
+        $activeFilters = [
+            ['label' => 'Cari', 'value' => $search ?: null],
+            ['label' => 'Status', 'value' => match ($currentStatus) {
+                'active' => 'Aktif',
+                'registered' => 'Sudah terdaftar',
+                'unregistered' => 'Belum terdaftar',
+                default => null,
+            }],
+            ['label' => 'Kategori', 'value' => $showCategoryFilter ? data_get(collect($filterCategories)->firstWhere('key', $currentCategory), 'label') : null],
+        ];
         $resolveIcon = function ($name, $category = null) {
             $haystack = \Illuminate\Support\Str::lower(trim(($category ? $category.' ' : '').$name));
 
@@ -318,17 +328,16 @@
         };
     @endphp
 
-    <div class="catalog-search-panel mb-3">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-            <div>
-                <div class="section-kicker"><i class="bi bi-search-heart"></i>Katalog Kegiatan</div>
-                <h2 class="h5 mb-1">Cari Kegiatan</h2>
-                <p class="toolbar-hint mb-0">Temukan ekstrakurikuler atau olimpiade yang sesuai untuk mengembangkan minat dan bakatmu.</p>
-            </div>
+    <x-filter.card class="catalog-search-panel mb-3" title="Cari Kegiatan" description="Temukan ekstrakurikuler atau olimpiade yang sesuai untuk mengembangkan minat dan bakatmu.">
+        <x-slot:actions>
             <div class="catalog-search-meta">
                 <span class="catalog-count-badge"><i class="bi bi-collection"></i>{{ $extracurriculars->total() }} kegiatan</span>
             </div>
-        </div>
+        </x-slot:actions>
+
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('student.extracurriculars.index')" />
+        </x-slot:active>
 
         <form method="get" action="{{ route('student.extracurriculars.index') }}" class="toolbar-grid" id="catalogSearchForm">
             <input type="hidden" name="category" id="selectedCategory" value="{{ $currentCategory }}">
@@ -365,7 +374,7 @@
                 </div>
             @endif
         </form>
-    </div>
+    </x-filter.card>
 
     <div class="row g-3 catalog-grid" id="extracurricularList">
         @forelse($extracurriculars as $item)

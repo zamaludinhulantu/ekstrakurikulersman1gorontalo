@@ -153,6 +153,21 @@
 
 @section('content')
     @php
+        $activeFilters = [
+            ['label' => 'Periode', 'value' => match ($period) {
+                'month' => 'Bulan ini',
+                'semester' => 'Semester ini',
+                'all' => 'Semua riwayat',
+                default => null,
+            }],
+            ['label' => 'Ekstrakurikuler', 'value' => data_get($extracurriculars->firstWhere('id', (int) $extracurricularId), 'name')],
+            ['label' => 'Bulan', 'value' => $month ? \Carbon\Carbon::create()->month((int) $month)->translatedFormat('F') : null],
+            ['label' => 'Tahun', 'value' => $year ?: null],
+            ['label' => 'Status', 'value' => $status ? ($statusLabels[$status] ?? $status) : null],
+        ];
+    @endphp
+
+    @php
         $statusBadgeMap = [
             'present' => 'badge-status-success',
             'late' => 'badge-status-warning',
@@ -224,11 +239,22 @@
         </div>
     </div>
 
-    <div class="attendance-filter-panel mb-3">
-        <div class="attendance-filter-header">
-            <h2>Filter Presensi</h2>
-            <p>Saring riwayat berdasarkan periode, ekstrakurikuler, dan status kehadiran.</p>
-        </div>
+    <x-filter.card class="attendance-filter-panel mb-3" title="Filter Presensi" description="Saring riwayat berdasarkan periode, ekstrakurikuler, dan status kehadiran.">
+        <x-slot:actions>
+            <x-filter.export-dropdown
+                label="Unduh Laporan"
+                buttonClass="btn btn-outline-success"
+                :items="[
+                    ['label' => 'Unduh CSV', 'href' => route('student.attendances.export', array_merge(request()->query(), ['format' => 'csv'])), 'icon' => 'bi-filetype-csv'],
+                    ['label' => 'Unduh Excel', 'href' => route('student.attendances.export', array_merge(request()->query(), ['format' => 'xls'])), 'icon' => 'bi-file-earmark-spreadsheet'],
+                ]"
+            />
+        </x-slot:actions>
+
+        <x-slot:active>
+            <x-filter.active-filters :items="$activeFilters" :reset-url="route('student.attendances.index')" />
+        </x-slot:active>
+
         <div class="attendance-filter-body">
             <div class="attendance-quick-filters">
                 <a href="{{ route('student.attendances.index', array_merge(request()->except(['period', 'page']), ['period' => 'month'])) }}" class="btn {{ $period === 'month' ? 'btn-primary' : 'btn-outline-secondary' }}">Bulan ini</a>
@@ -280,22 +306,9 @@
                 <div class="toolbar-col-1">
                     <a href="{{ route('student.attendances.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a>
                 </div>
-                <div class="toolbar-col-12 d-flex justify-content-end">
-                    <div class="dropdown">
-                        <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-download"></i>Ekspor
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end attendance-export-menu">
-                            <li><button type="button" class="dropdown-item" onclick="window.print()"><i class="bi bi-file-earmark-pdf me-2"></i>Unduh PDF</button></li>
-                            <li><a class="dropdown-item" href="{{ route('student.attendances.export', array_merge(request()->query(), ['format' => 'csv'])) }}"><i class="bi bi-filetype-csv me-2"></i>Unduh CSV</a></li>
-                            <li><a class="dropdown-item" href="{{ route('student.attendances.export', array_merge(request()->query(), ['format' => 'xls'])) }}"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Unduh Excel</a></li>
-                            <li><button type="button" class="dropdown-item" onclick="window.print()"><i class="bi bi-printer me-2"></i>Cetak riwayat</button></li>
-                        </ul>
-                    </div>
-                </div>
             </form>
         </div>
-    </div>
+    </x-filter.card>
 
     <div class="card">
         <div class="card-header">Riwayat Presensi</div>

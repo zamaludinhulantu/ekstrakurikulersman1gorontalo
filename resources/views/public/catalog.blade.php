@@ -33,6 +33,48 @@
             margin-bottom: 1rem;
         }
 
+        .catalog-toolbar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.9rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .catalog-toolbar-title {
+            margin: 0;
+            color: #18334f;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .catalog-toolbar-description {
+            margin: 0.2rem 0 0;
+            color: #667b93;
+            font-size: 0.84rem;
+        }
+
+        .catalog-toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .catalog-toolbar-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.42rem;
+            padding: 0.48rem 0.78rem;
+            border-radius: 999px;
+            border: 1px solid #d8e4f2;
+            background: #f7fbff;
+            color: #355987;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
         .catalog-toolbar.is-sticky {
             position: sticky;
             top: 5.3rem;
@@ -83,6 +125,11 @@
             color: #6a7e97;
             font-size: 0.8rem;
             font-weight: 800;
+            text-decoration: none;
+        }
+
+        .catalog-active-chip:hover,
+        .catalog-chip-clear:hover {
             text-decoration: none;
         }
 
@@ -143,6 +190,15 @@
             .catalog-page-hero,
             .catalog-toolbar {
                 padding: 1rem;
+            }
+
+            .catalog-toolbar-header {
+                flex-direction: column;
+            }
+
+            .catalog-toolbar-actions {
+                width: 100%;
+                justify-content: flex-start;
             }
 
             .catalog-toolbar.is-sticky {
@@ -232,6 +288,19 @@
         </section>
 
         <section class="catalog-toolbar is-sticky" data-reveal>
+            <div class="catalog-toolbar-header">
+                <div>
+                    <h2 class="catalog-toolbar-title">Filter Katalog</h2>
+                    <p class="catalog-toolbar-description">Gunakan pencarian, status, dan urutan untuk menemukan kegiatan yang paling relevan.</p>
+                </div>
+                <div class="catalog-toolbar-actions">
+                    <span class="catalog-toolbar-count"><i class="bi bi-collection"></i>{{ $extracurriculars->total() }} kegiatan</span>
+                    @if($hasActiveFilters)
+                        <a href="{{ $baseRoute }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-repeat"></i>Reset Filter</a>
+                    @endif
+                </div>
+            </div>
+
             <form method="get" action="{{ $baseRoute }}" class="catalog-toolbar-grid">
                 <div>
                     <label class="form-label" for="catalogSearch">Cari kegiatan</label>

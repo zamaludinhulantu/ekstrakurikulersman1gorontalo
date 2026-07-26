@@ -3,6 +3,7 @@
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\EnsureAuthenticatedSessionIsActive;
 use App\Http\Middleware\EnsureSystemMaintenanceIsHandled;
+use App\Http\Middleware\EnsureVerifiedStudentEmail;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'idle.auth' => EnsureAuthenticatedSessionIsActive::class,
             'role' => RoleMiddleware::class,
             'system.maintenance' => EnsureSystemMaintenanceIsHandled::class,
+            'verified.student' => EnsureVerifiedStudentEmail::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

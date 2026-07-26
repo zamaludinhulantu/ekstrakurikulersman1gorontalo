@@ -608,6 +608,28 @@
             </div>
 
             <div class="tab-pane fade @if($activeTab === 'history') show active @endif" id="coach-history-tab" role="tabpanel" tabindex="0">
+                @php
+                    $historyActiveFilters = [
+                        ['label' => 'Ekstrakurikuler', 'value' => data_get($extracurriculars->firstWhere('id', (int) $historyExtracurricularId), 'name')],
+                        ['label' => 'Jenis', 'value' => match ($historyType) {
+                            'achievement' => 'Prestasi',
+                            'assessment' => 'Penilaian',
+                            default => null,
+                        }],
+                        ['label' => 'Bulan', 'value' => $historyMonth ? \Carbon\Carbon::create()->month((int) $historyMonth)->translatedFormat('F') : null],
+                        ['label' => 'Periode', 'value' => match ($historyPeriod) {
+                            'recent' => '30 hari terakhir',
+                            'semester' => 'Semester ini',
+                            default => null,
+                        }],
+                        ['label' => 'Status', 'value' => match ($historyStatus) {
+                            'draft' => 'Draft',
+                            'published' => 'Dipublikasikan',
+                            default => null,
+                        }],
+                    ];
+                @endphp
+
                 <div class="coach-assessment-history">
                     <div class="coach-assessment-history__header">
                         <div>
@@ -638,57 +660,56 @@
                         </div>
 
                         <div class="collapse @if($historyHasFilters) show @endif" id="coachAssessmentHistoryFilter">
-                            <form class="toolbar-grid mb-3" method="get" action="{{ route('coach.assessments.index') }}">
-                                <input type="hidden" name="tab" value="history">
-                                <div class="toolbar-col-3">
-                                    <label class="form-label" for="history_extracurricular_id">Ekstrakurikuler</label>
-                                    <select id="history_extracurricular_id" name="history_extracurricular_id" class="form-select">
-                                        <option value="">Semua ekstrakurikuler</option>
-                                        @foreach($extracurriculars as $item)
-                                            <option value="{{ $item->id }}" @selected((string) $historyExtracurricularId === (string) $item->id)>{{ $item->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-3">
-                                    <label class="form-label" for="history_type">Jenis data</label>
-                                    <select id="history_type" name="history_type" class="form-select">
-                                        <option value="">Semua jenis</option>
-                                        <option value="achievement" @selected($historyType === 'achievement')>Prestasi</option>
-                                        <option value="assessment" @selected($historyType === 'assessment')>Penilaian</option>
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <label class="form-label" for="history_month">Bulan</label>
-                                    <select id="history_month" name="history_month" class="form-select">
-                                        <option value="">Semua bulan</option>
-                                        @foreach($historyMonthOptions as $monthOption)
-                                            <option value="{{ $monthOption }}" @selected($historyMonth === $monthOption)>{{ \Carbon\Carbon::create()->month((int) $monthOption)->translatedFormat('F') }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <label class="form-label" for="history_period">Periode</label>
-                                    <select id="history_period" name="history_period" class="form-select">
-                                        <option value="">Semua periode</option>
-                                        <option value="recent" @selected($historyPeriod === 'recent')>30 hari terakhir</option>
-                                        <option value="semester" @selected($historyPeriod === 'semester')>Semester ini</option>
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <label class="form-label" for="history_status">Status</label>
-                                    <select id="history_status" name="history_status" class="form-select">
-                                        <option value="">Semua status</option>
-                                        <option value="draft" @selected($historyStatus === 'draft')>Draft</option>
-                                        <option value="published" @selected($historyStatus === 'published')>Dipublikasikan</option>
-                                    </select>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-funnel"></i>Terapkan</button>
-                                </div>
-                                <div class="toolbar-col-2">
-                                    <a href="{{ route('coach.assessments.index', ['tab' => 'history']) }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-repeat"></i>Reset</a>
-                                </div>
-                            </form>
+                            <x-filter.card class="mb-3" title="Filter Riwayat Penilaian" description="Gunakan filter untuk mempersempit riwayat prestasi dan penilaian yang sudah tersimpan.">
+                                <x-slot:active>
+                                    <x-filter.active-filters :items="$historyActiveFilters" :reset-url="route('coach.assessments.index', ['tab' => 'history'])" />
+                                </x-slot:active>
+
+                                <form class="toolbar-grid" method="get" action="{{ route('coach.assessments.index') }}">
+                                    <input type="hidden" name="tab" value="history">
+                                    <x-filter.field label="Ekstrakurikuler" for="history_extracurricular_id" col="toolbar-col-3">
+                                        <select id="history_extracurricular_id" name="history_extracurricular_id" class="form-select">
+                                            <option value="">Semua ekstrakurikuler</option>
+                                            @foreach($extracurriculars as $item)
+                                                <option value="{{ $item->id }}" @selected((string) $historyExtracurricularId === (string) $item->id)>{{ $item->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Jenis data" for="history_type" col="toolbar-col-3">
+                                        <select id="history_type" name="history_type" class="form-select">
+                                            <option value="">Semua jenis</option>
+                                            <option value="achievement" @selected($historyType === 'achievement')>Prestasi</option>
+                                            <option value="assessment" @selected($historyType === 'assessment')>Penilaian</option>
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Bulan" for="history_month" col="toolbar-col-2">
+                                        <select id="history_month" name="history_month" class="form-select">
+                                            <option value="">Semua bulan</option>
+                                            @foreach($historyMonthOptions as $monthOption)
+                                                <option value="{{ $monthOption }}" @selected($historyMonth === $monthOption)>{{ \Carbon\Carbon::create()->month((int) $monthOption)->translatedFormat('F') }}</option>
+                                            @endforeach
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Periode" for="history_period" col="toolbar-col-2">
+                                        <select id="history_period" name="history_period" class="form-select">
+                                            <option value="">Semua periode</option>
+                                            <option value="recent" @selected($historyPeriod === 'recent')>30 hari terakhir</option>
+                                            <option value="semester" @selected($historyPeriod === 'semester')>Semester ini</option>
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.field label="Status" for="history_status" col="toolbar-col-2">
+                                        <select id="history_status" name="history_status" class="form-select">
+                                            <option value="">Semua status</option>
+                                            <option value="draft" @selected($historyStatus === 'draft')>Draft</option>
+                                            <option value="published" @selected($historyStatus === 'published')>Dipublikasikan</option>
+                                        </select>
+                                    </x-filter.field>
+                                    <x-filter.actions col="toolbar-col-12">
+                                        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i>Terapkan Filter</button>
+                                        <a href="{{ route('coach.assessments.index', ['tab' => 'history']) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset</a>
+                                    </x-filter.actions>
+                                </form>
+                            </x-filter.card>
                         </div>
 
                         <div class="desktop-table table-responsive">
