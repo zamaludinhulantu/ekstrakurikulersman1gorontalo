@@ -66,18 +66,38 @@
 @endpush
 
 @section('content')
+    @if($hasLegacyRegistrationOverflow ?? false)
+        <div class="alert alert-warning mb-3">
+            <strong class="d-block mb-1">Data lama melebihi batas pendaftaran</strong>
+            {{ $student->registrationLegacyOverflowMessage() }}
+        </div>
+    @endif
+
     <div class="card registration-edit-card">
         <div class="card-header">Pendaftaran {{ $registration->extracurricular->name }}</div>
         <div class="card-body">
-            <form method="post" action="{{ route('student.registrations.update', $registration) }}" enctype="multipart/form-data">
-                @csrf
-                @method('put')
-                @include('partials.registration-talent-fields', ['registration' => $registration, 'extracurricular' => $registration->extracurricular])
+            @if($limitReachedForReactivation ?? false)
+                <div class="info-banner mb-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>
+                        <strong class="d-block mb-1">Pendaftaran tidak dapat diaktifkan kembali</strong>
+                        {{ $student->registrationLimitReachedMessage() }}
+                    </div>
+                </div>
                 <div class="form-actions mt-3">
                     <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali</a>
-                    <button class="btn btn-primary" type="submit" data-loading-text="Menyimpan..."><i class="bi bi-save"></i>Simpan Perubahan</button>
                 </div>
-            </form>
+            @else
+                <form method="post" action="{{ route('student.registrations.update', $registration) }}" enctype="multipart/form-data">
+                    @csrf
+                    @method('put')
+                    @include('partials.registration-talent-fields', ['registration' => $registration, 'extracurricular' => $registration->extracurricular])
+                    <div class="form-actions mt-3">
+                        <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali</a>
+                        <button class="btn btn-primary" type="submit" data-loading-text="Menyimpan..."><i class="bi bi-save"></i>Simpan Perubahan</button>
+                    </div>
+                </form>
+            @endif
         </div>
     </div>
 @endsection

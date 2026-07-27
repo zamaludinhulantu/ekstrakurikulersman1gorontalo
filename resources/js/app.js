@@ -386,13 +386,89 @@ const bindRegistrationVerificationModal = () => {
         experience: document.getElementById('registrationVerificationExperience'),
         achievements: document.getElementById('registrationVerificationAchievements'),
         notes: document.getElementById('registrationVerificationNotes'),
-        status: document.getElementById('registrationVerificationStatus'),
+        scheduleFields: document.getElementById('registrationVerificationScheduleFields'),
+        scheduleManualFields: document.getElementById('registrationVerificationScheduleManualFields'),
+        scheduleError: document.getElementById('registrationVerificationScheduleError'),
+        existingSchedule: document.getElementById('registrationVerificationExistingSchedule'),
+        existingScheduleHelp: document.getElementById('registrationVerificationExistingScheduleHelp'),
+        scheduleTitle: document.getElementById('registrationVerificationScheduleTitle'),
+        scheduleDate: document.getElementById('registrationVerificationScheduleDate'),
+        scheduleStartTime: document.getElementById('registrationVerificationScheduleStartTime'),
+        scheduleEndTime: document.getElementById('registrationVerificationScheduleEndTime'),
+        scheduleLocation: document.getElementById('registrationVerificationScheduleLocation'),
+        scheduleDescription: document.getElementById('registrationVerificationScheduleDescription'),
     };
+    const scheduleOptionsByExtracurricular = (() => {
+        try {
+            return JSON.parse(form.dataset.scheduleOptions || '{}');
+        } catch {
+            return {};
+        }
+    })();
 
     const radios = Array.from(form.querySelectorAll('input[name="decision"]'));
+    const scheduleInputs = [
+        fields.scheduleTitle,
+        fields.scheduleDate,
+        fields.scheduleStartTime,
+        fields.scheduleEndTime,
+        fields.scheduleLocation,
+    ].filter(Boolean);
+
+    const populateExistingScheduleOptions = (extracurricularId, selectedScheduleId = '') => {
+        if (!fields.existingSchedule) {
+            return;
+        }
+
+        const options = scheduleOptionsByExtracurricular[String(extracurricularId || '')] || [];
+        fields.existingSchedule.innerHTML = '';
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Buat jadwal baru';
+        fields.existingSchedule.appendChild(defaultOption);
+
+        options.forEach((option) => {
+            const element = document.createElement('option');
+            element.value = String(option.id || '');
+            element.textContent = option.label || 'Jadwal tes';
+            fields.existingSchedule.appendChild(element);
+        });
+
+        fields.existingSchedule.disabled = options.length === 0;
+        fields.existingSchedule.value = options.some((option) => String(option.id) === String(selectedScheduleId || ''))
+            ? String(selectedScheduleId)
+            : '';
+
+        if (fields.existingScheduleHelp) {
+            fields.existingScheduleHelp.textContent = options.length > 0
+                ? 'Pilih jadwal yang sudah ada jika siswa ini ingin dimasukkan ke sesi tes yang sama.'
+                : 'Belum ada jadwal tes aktif untuk ekskul ini. Isi form di bawah untuk membuat jadwal baru.';
+        }
+    };
+
+    const resetScheduleValidation = () => {
+        fields.scheduleError?.classList.add('d-none');
+        if (fields.scheduleError) {
+            fields.scheduleError.textContent = '';
+        }
+        fields.existingSchedule?.classList.remove('is-invalid');
+        scheduleInputs.forEach((input) => {
+            input.classList.remove('is-invalid');
+        });
+    };
 
     const syncDecision = (value) => {
-        fields.status.value = value === 'reject' ? 'rejected' : 'approved';
+        const isSchedule = value === 'schedule_test';
+        const usingExistingSchedule = isSchedule && Boolean(fields.existingSchedule?.value);
+        fields.scheduleFields?.classList.toggle('d-none', !isSchedule);
+        fields.scheduleManualFields?.classList.toggle('d-none', !isSchedule || usingExistingSchedule);
+        scheduleInputs.forEach((input) => {
+            input.required = isSchedule && !usingExistingSchedule;
+        });
+        if (!isSchedule) {
+            resetScheduleValidation();
+        }
     };
 
     radios.forEach((radio) => {
@@ -410,24 +486,120 @@ const bindRegistrationVerificationModal = () => {
         }
 
         form.action = trigger.dataset.action || '#';
-        fields.title.textContent = trigger.dataset.modalTitle || 'Verifikasi Pendaftar';
-        fields.student.textContent = trigger.dataset.student || '-';
-        fields.meta.textContent = [trigger.dataset.nis ? `NIS: ${trigger.dataset.nis}` : null, trigger.dataset.className || null]
-            .filter(Boolean)
-            .join(' | ') || '-';
-        fields.extracurricular.textContent = trigger.dataset.extracurricular || '-';
-        fields.skillLevel.textContent = trigger.dataset.skillLevel || '-';
-        fields.primaryTalent.textContent = trigger.dataset.primaryTalent || '-';
-        fields.currentSkills.textContent = trigger.dataset.currentSkills || '-';
-        fields.experience.textContent = trigger.dataset.priorExperience || '-';
-        fields.achievements.textContent = trigger.dataset.achievementHistory || '-';
-        fields.notes.value = trigger.dataset.notes || '';
+        if (fields.title) {
+            fields.title.textContent = trigger.dataset.modalTitle || 'Verifikasi Pendaftar';
+        }
+        if (fields.student) {
+            fields.student.textContent = trigger.dataset.student || '-';
+        }
+        if (fields.meta) {
+            fields.meta.textContent = [trigger.dataset.nis ? `NIS: ${trigger.dataset.nis}` : null, trigger.dataset.className || null]
+                .filter(Boolean)
+                .join(' | ') || '-';
+        }
+        if (fields.extracurricular) {
+            fields.extracurricular.textContent = trigger.dataset.extracurricular || '-';
+        }
+        if (fields.skillLevel) {
+            fields.skillLevel.textContent = trigger.dataset.skillLevel || '-';
+        }
+        if (fields.primaryTalent) {
+            fields.primaryTalent.textContent = trigger.dataset.primaryTalent || '-';
+        }
+        if (fields.currentSkills) {
+            fields.currentSkills.textContent = trigger.dataset.currentSkills || '-';
+        }
+        if (fields.experience) {
+            fields.experience.textContent = trigger.dataset.priorExperience || '-';
+        }
+        if (fields.achievements) {
+            fields.achievements.textContent = trigger.dataset.achievementHistory || '-';
+        }
+        if (fields.notes) {
+            fields.notes.value = trigger.dataset.notes || '';
+        }
+        resetScheduleValidation();
+        populateExistingScheduleOptions(trigger.dataset.extracurricularId || '', trigger.dataset.currentScheduleId || '');
+        if (fields.scheduleTitle) {
+            const extracurricularName = trigger.dataset.extracurricular || 'Tes Bakat';
+            fields.scheduleTitle.value = trigger.dataset.currentScheduleId ? '' : `Tes Bakat ${extracurricularName}`;
+        }
+        if (fields.scheduleLocation) {
+            fields.scheduleLocation.value = '';
+        }
+        if (fields.scheduleDescription) {
+            fields.scheduleDescription.value = '';
+        }
+        if (fields.scheduleDate) {
+            fields.scheduleDate.value = '';
+        }
+        if (fields.scheduleStartTime) {
+            fields.scheduleStartTime.value = '';
+        }
+        if (fields.scheduleEndTime) {
+            fields.scheduleEndTime.value = '';
+        }
 
         const defaultDecision = trigger.dataset.defaultDecision || 'approve';
         radios.forEach((radio) => {
             radio.checked = radio.value === defaultDecision;
         });
         syncDecision(defaultDecision);
+    });
+
+    scheduleInputs.forEach((input) => {
+        input.addEventListener('input', resetScheduleValidation);
+        input.addEventListener('change', resetScheduleValidation);
+    });
+    fields.existingSchedule?.addEventListener('change', () => {
+        resetScheduleValidation();
+        syncDecision(radios.find((radio) => radio.checked)?.value || 'approve');
+    });
+
+    form.addEventListener('submit', (event) => {
+        const selectedDecision = radios.find((radio) => radio.checked)?.value || 'approve';
+        if (selectedDecision !== 'schedule_test') {
+            resetScheduleValidation();
+            return;
+        }
+
+        if (fields.existingSchedule?.value) {
+            resetScheduleValidation();
+            return;
+        }
+
+        const missingFields = [];
+        const requiredFields = [
+            [fields.scheduleTitle, 'Judul tes'],
+            [fields.scheduleDate, 'Tanggal tes'],
+            [fields.scheduleStartTime, 'Jam mulai tes'],
+            [fields.scheduleEndTime, 'Jam selesai tes'],
+            [fields.scheduleLocation, 'Lokasi tes'],
+        ];
+
+        requiredFields.forEach(([input, label]) => {
+            if (!input) {
+                return;
+            }
+
+            const value = String(input.value || '').trim();
+            if (value === '') {
+                input.classList.add('is-invalid');
+                missingFields.push(label);
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (missingFields.length > 0) {
+            event.preventDefault();
+            if (fields.scheduleError) {
+                fields.scheduleError.textContent = `Lengkapi field berikut terlebih dahulu: ${missingFields.join(', ')}.`;
+                fields.scheduleError.classList.remove('d-none');
+            }
+            const firstInvalid = scheduleInputs.find((input) => input.classList.contains('is-invalid'));
+            firstInvalid?.focus();
+        }
     });
 };
 

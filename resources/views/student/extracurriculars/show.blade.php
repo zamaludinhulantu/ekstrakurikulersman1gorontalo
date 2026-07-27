@@ -182,11 +182,14 @@
             'rejected' => 'Pendaftaran Ditolak',
             default => null,
         };
+        $limitReachedForNewRegistration = !$registration && ($hasReachedRegistrationLimit ?? false);
     @endphp
 
     <div class="split-actions mb-3">
         <a href="{{ route('student.extracurriculars.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali ke Daftar Kegiatan</a>
         @if($registration)
+            <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
+        @elseif($limitReachedForNewRegistration)
             <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
         @elseif($extracurricular->is_active)
             <a href="{{ route('student.extracurriculars.register', $extracurricular) }}" class="btn btn-primary"><i class="bi bi-send-check"></i>Daftar Kegiatan Ini</a>
@@ -194,6 +197,18 @@
             <button type="button" class="btn btn-outline-secondary" disabled><i class="bi bi-lock"></i>Pendaftaran Ditutup</button>
         @endif
     </div>
+
+    @if($hasLegacyRegistrationOverflow ?? false)
+        <div class="alert alert-warning mb-3">
+            <strong class="d-block mb-1">Data lama melebihi batas pendaftaran</strong>
+            {{ $student->registrationLegacyOverflowMessage() }}
+        </div>
+    @elseif($limitReachedForNewRegistration)
+        <div class="alert alert-warning mb-3">
+            <strong class="d-block mb-1">Batas maksimal pendaftaran tercapai</strong>
+            {{ $student->registrationLimitReachedMessage() }}
+        </div>
+    @endif
 
     <div class="row g-3">
         <div class="col-12 col-xl-8">
@@ -368,6 +383,8 @@
                 </div>
 
                 @if($registration)
+                    <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
+                @elseif($limitReachedForNewRegistration)
                     <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
                 @elseif($extracurricular->is_active)
                     <a href="{{ route('student.extracurriculars.register', $extracurricular) }}" class="btn btn-primary"><i class="bi bi-send-check"></i>Daftar Kegiatan Ini</a>

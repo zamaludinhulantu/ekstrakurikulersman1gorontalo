@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class Student extends Model
 {
     use HasFactory;
+
+    public const MIN_REGISTRATION_AGE = 8;
+    public const MAX_ACTIVE_REGISTRATIONS = 3;
 
     protected $fillable = [
         'user_id',
@@ -137,5 +141,41 @@ class Student extends Model
             ->replaceMatches('/\s+/u', ' ')
             ->trim()
             ->toString();
+    }
+
+    public static function latestAllowedRegistrationBirthDate(): string
+    {
+        return Carbon::today()->subYears(static::MIN_REGISTRATION_AGE)->format('Y-m-d');
+    }
+
+    public function activeRegistrationCount(): int
+    {
+        $registrations = $this->relationLoaded('registrations')
+            ? $this->registrations
+            : $this->registrations()->get(['id', 'status']);
+
+        return $registrations
+            ->filter(fn (Registration $registration) => $registration->status !== Registration::STATUS_REJECTED)
+            ->count();
+    }
+
+    public function hasReachedRegistrationLimit(): bool
+    {
+        return $this->activeRegistrationCount() >= static::MAX_ACTIVE_REGISTRATIONS;
+    }
+
+    public function hasLegacyRegistrationOverflow(): bool
+    {
+        return $this->activeRegistrationCount() > static::MAX_ACTIVE_REGISTRATIONS;
+    }
+
+    public function registrationLimitReachedMessage(): string
+    {
+        return 'Anda sudah terdaftar pada '.static::MAX_ACTIVE_REGISTRATIONS.' ekstrakurikuler. Jika ingin mendaftar ekstrakurikuler lain, batalkan salah satu pendaftaran terlebih dahulu.';
+    }
+
+    public function registrationLegacyOverflowMessage(): string
+    {
+        return 'Data pendaftaran siswa ini melebihi batas maksimal '.static::MAX_ACTIVE_REGISTRATIONS.' ekstrakurikuler. Data lama tetap disimpan, tetapi pendaftaran baru tidak dapat ditambahkan.';
     }
 }

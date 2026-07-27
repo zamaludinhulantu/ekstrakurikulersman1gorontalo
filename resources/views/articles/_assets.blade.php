@@ -979,24 +979,69 @@
                     danger: 'bi bi-trash3',
                 };
 
+                const restoreFormSubmitButtons = (form) => {
+                    if (!(form instanceof HTMLFormElement)) {
+                        return;
+                    }
+
+                    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+                        button.disabled = false;
+                        delete button.dataset.submitting;
+                        if (button.dataset.originalHtml) {
+                            button.innerHTML = button.dataset.originalHtml;
+                            delete button.dataset.originalHtml;
+                        }
+                        button.style.removeProperty('width');
+                        button.style.removeProperty('max-width');
+                        button.classList.remove('is-loading');
+                    });
+                };
+
+                const clearTemporarySubmitter = (form) => {
+                    if (!(form instanceof HTMLFormElement)) {
+                        return;
+                    }
+
+                    form.querySelectorAll('[data-confirm-temp-submitter="true"]').forEach((input) => input.remove());
+                };
+
+                const appendTemporarySubmitter = (form, submitter) => {
+                    if (
+                        !(form instanceof HTMLFormElement)
+                        || !(submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement)
+                        || !submitter.name
+                    ) {
+                        return;
+                    }
+
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = submitter.name;
+                    input.value = submitter.value;
+                    input.setAttribute('data-confirm-temp-submitter', 'true');
+                    form.appendChild(input);
+                };
+
                 const submitFormWithBypass = (form, submitter = null) => {
                     if (!(form instanceof HTMLFormElement)) {
                         return;
                     }
 
-                    form.dataset.confirmed = 'true';
+                    restoreFormSubmitButtons(form);
+                    clearTemporarySubmitter(form);
+
+                    if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
+                        form.dataset.confirmed = 'false';
+                        return;
+                    }
+
+                    appendTemporarySubmitter(form, submitter);
 
                     if (submitter instanceof HTMLButtonElement) {
                         submitter.dataset.confirmBypass = 'true';
-                        submitter.click();
-                        return;
                     }
 
-                    if (typeof form.requestSubmit === 'function') {
-                        form.requestSubmit();
-                        return;
-                    }
-
+                    form.dataset.confirmed = 'true';
                     form.submit();
                 };
 
@@ -1280,29 +1325,6 @@
                         resetPreviewToCurrent();
                     }
 
-                    const publishButton = form.querySelector('[data-article-submit-action="publish"]');
-                    publishButton?.addEventListener('click', (event) => {
-                        if (publishButton.dataset.confirmBypass === 'true') {
-                            publishButton.dataset.confirmBypass = 'false';
-                            return;
-                        }
-
-                        const currentStatus = status?.value || 'draft';
-                        if (currentStatus !== 'published') {
-                            return;
-                        }
-
-                        event.preventDefault();
-                        openConfirmDialog({
-                            title: 'Publikasikan artikel?',
-                            message: 'Artikel ini akan langsung tampil pada halaman publik. Lanjutkan publikasi?',
-                            variant: 'primary',
-                            submitLabel: 'Publikasikan',
-                            onConfirm: () => submitFormWithBypass(form, publishButton),
-                            trigger: publishButton,
-                        });
-                    });
-
                     form.addEventListener('submit', (event) => {
                         const submitter = event.submitter;
                         if (!(submitter instanceof HTMLButtonElement)) {
@@ -1356,6 +1378,7 @@
                         }
 
                         event.preventDefault();
+                        restoreFormSubmitButtons(form);
                         const submitButton = event.submitter instanceof HTMLElement
                             ? event.submitter
                             : form.querySelector('button[type="submit"], .dropdown-item');

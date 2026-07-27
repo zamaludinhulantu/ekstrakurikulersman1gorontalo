@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('page_title', 'Jadwal Kegiatan Saya')
-@section('page_subtitle', 'Lihat jadwal mendatang, riwayat kegiatan, dan tes bakat terdekat.')
+@section('page_subtitle', 'Lihat semua agenda siswa, termasuk kegiatan ekskul dan jadwal tes bakat.')
 
 @push('styles')
     <style>
@@ -147,6 +147,31 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             align-items: center;
+        }
+
+        .schedule-type-pill {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0.3rem 0.7rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 0.74rem;
+            font-weight: 800;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .schedule-type-pill[data-type="activity"] {
+            color: #1d4f91;
+            border-color: #bfd5f5;
+            background: #edf5ff;
+        }
+
+        .schedule-type-pill[data-type="talent_test"] {
+            color: #8a4a00;
+            border-color: #f1cf8d;
+            background: #fff4db;
         }
 
         .schedule-filter-actions {
@@ -386,13 +411,11 @@
                     <thead>
                     <tr>
                         <th>Ekstrakurikuler</th>
-                        <th>Judul</th>
+                        <th>Agenda</th>
                         <th>Tanggal</th>
                         <th>Jam</th>
                         <th>Lokasi</th>
-                        @if($tab === 'history')
-                            <th>Jenis</th>
-                        @endif
+                        <th>Jenis</th>
                         <th>Status</th>
                     </tr>
                     </thead>
@@ -400,18 +423,23 @@
                     @forelse($rows as $row)
                         <tr class="{{ $tab === 'history' ? 'schedule-history-row' : '' }}">
                             <td>{{ $row->extracurricular->name ?? '-' }}</td>
-                            <td>{{ $row->title }}</td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    <strong>{{ $row->title }}</strong>
+                                    <div>
+                                        <span class="schedule-type-pill" data-type="{{ $row->student_type_key }}">{{ $row->student_type_label }}</span>
+                                    </div>
+                                </div>
+                            </td>
                             <td>{{ optional($row->activity_date)->format('d-m-Y') }}</td>
                             <td>{{ \Illuminate\Support\Str::substr($row->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr($row->end_time, 0, 5) }}</td>
                             <td>{{ $row->location }}</td>
-                            @if($tab === 'history')
-                                <td>{{ $row->student_type_label }}</td>
-                            @endif
+                            <td>{{ $row->student_type_label }}</td>
                             <td><span class="badge {{ $row->student_display_status === 'completed' ? 'badge-status-secondary' : ($row->student_display_status === 'cancelled' ? 'badge-status-danger' : ($row->student_display_status === 'today' ? 'badge-status-warning' : 'badge-status-success')) }}">{{ $row->student_display_label }}</span></td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $tab === 'history' ? 7 : 6 }}">
+                            <td colspan="7">
                                 <div class="empty-state">
                                     <div class="icon"><i class="bi bi-calendar-x"></i></div>
                                     <p class="mb-0">{{ $tab === 'history' ? 'Belum ada riwayat kegiatan.' : 'Belum ada jadwal mendatang.' }}</p>
@@ -429,14 +457,15 @@
                             <h3 class="mobile-data-card-title">{{ $row->title }}</h3>
                             <span class="badge {{ $row->student_display_status === 'completed' ? 'badge-status-secondary' : ($row->student_display_status === 'cancelled' ? 'badge-status-danger' : ($row->student_display_status === 'today' ? 'badge-status-warning' : 'badge-status-success')) }}">{{ $row->student_display_label }}</span>
                         </div>
+                        <div class="mb-2">
+                            <span class="schedule-type-pill" data-type="{{ $row->student_type_key }}">{{ $row->student_type_label }}</span>
+                        </div>
                         <div class="mobile-data-list">
                             <div><span class="mobile-data-item-label">Ekstrakurikuler</span><p class="mobile-data-item-value">{{ $row->extracurricular->name ?? '-' }}</p></div>
                             <div><span class="mobile-data-item-label">Tanggal</span><p class="mobile-data-item-value">{{ optional($row->activity_date)->format('d-m-Y') }}</p></div>
                             <div><span class="mobile-data-item-label">Jam</span><p class="mobile-data-item-value">{{ \Illuminate\Support\Str::substr($row->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr($row->end_time, 0, 5) }}</p></div>
                             <div><span class="mobile-data-item-label">Lokasi</span><p class="mobile-data-item-value">{{ $row->location }}</p></div>
-                            @if($tab === 'history')
-                                <div><span class="mobile-data-item-label">Jenis kegiatan</span><p class="mobile-data-item-value">{{ $row->student_type_label }}</p></div>
-                            @endif
+                            <div><span class="mobile-data-item-label">Jenis kegiatan</span><p class="mobile-data-item-value">{{ $row->student_type_label }}</p></div>
                         </div>
                     </div>
                 @empty

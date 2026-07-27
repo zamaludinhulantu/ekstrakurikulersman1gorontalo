@@ -281,6 +281,8 @@ class TalentTestController extends Controller
         $participant->setAttribute('student_result', $publishedResult);
         $participant->setAttribute('student_result_category', $publishedResult?->ability_category ?: 'Belum ada kategori');
         $participant->setAttribute('student_score', $publishedResult?->overall_score);
+        $participant->setAttribute('student_decision_label', $publishedResult?->decisionLabel() ?? 'Belum diputuskan');
+        $participant->setAttribute('student_decision_notes', $publishedResult?->decision_notes ?: 'Belum ada catatan keputusan.');
         $participant->setAttribute('student_recommendation', $publishedResult?->recommendation ?: 'Belum ada rekomendasi yang dipublikasikan.');
         $participant->setAttribute('student_schedule_badge', $statusKey === 'today' ? 'Hari Ini' : ($statusKey === 'tomorrow' ? 'Besok' : ($statusKey === 'scheduled' ? 'Mendatang' : $statusLabel)));
         $participant->setAttribute('student_completed', !$isCancelled && $endAt && $endAt->lt($now));

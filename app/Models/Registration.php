@@ -16,6 +16,10 @@ class Registration extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
+    public const DISPLAY_STATUS_WAITING_TEST = 'waiting_test';
+
+    public const DISPLAY_STATUS_SCHEDULED_TEST = 'scheduled_test';
+
     protected $fillable = [
         'student_id',
         'extracurricular_id',
@@ -76,5 +80,61 @@ class Registration extends Model
     public function getSelectedBranchLabelAttribute(): string
     {
         return $this->selected_branch ?: '-';
+    }
+
+    public function hasPublishedTalentTestResult(): bool
+    {
+        $results = $this->relationLoaded('talentTestResults')
+            ? $this->talentTestResults
+            : $this->talentTestResults()->get(['id', 'status']);
+
+        return $results->contains(fn (TalentTestResult $result) => $result->status === 'published');
+    }
+
+    public function latestPublishedTalentTestResult(): ?TalentTestResult
+    {
+        $results = $this->relationLoaded('talentTestResults')
+            ? $this->talentTestResults
+            : $this->talentTestResults()->get();
+
+        return $results
+            ->where('status', 'published')
+            ->sortByDesc(fn (TalentTestResult $result) => optional($result->published_at)->getTimestamp() ?? 0)
+            ->first();
+    }
+
+    public function hasScheduledTalentTest(): bool
+    {
+        $participants = $this->relationLoaded('talentTestParticipants')
+            ? $this->talentTestParticipants
+            : $this->talentTestParticipants()->with('schedule:id,activity_date')->get();
+
+        return $participants->isNotEmpty();
+    }
+
+    public function displayStatus(): string
+    {
+        if (
+            $this->status !== self::STATUS_REJECTED
+            && $this->willing_to_take_test
+            && ! $this->hasPublishedTalentTestResult()
+        ) {
+            return $this->hasScheduledTalentTest()
+                ? self::DISPLAY_STATUS_SCHEDULED_TEST
+                : self::DISPLAY_STATUS_WAITING_TEST;
+        }
+
+        return $this->status;
+    }
+
+    public function canStudentEdit(): bool
+    {
+        if ($this->status === self::STATUS_REJECTED) {
+            return ! $this->hasPublishedTalentTestResult();
+        }
+
+        return $this->status === self::STATUS_PENDING
+            && ! $this->willing_to_take_test
+            && ! $this->hasScheduledTalentTest();
     }
 }

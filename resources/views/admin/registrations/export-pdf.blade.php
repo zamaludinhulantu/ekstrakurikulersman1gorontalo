@@ -114,13 +114,7 @@
                         ->implode(', ');
                     $statusLabels = $studentRegistrations
                         ->map(function ($registration) use ($statusMap) {
-                            $displayStatus = $registration->status;
-                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
-                            $hasScheduledTest = $registration->talentTestParticipants->isNotEmpty();
-                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
-                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
-                            }
-
+                            $displayStatus = $registration->displayStatus();
                             return $statusMap[$displayStatus] ?? ucfirst($displayStatus);
                         })
                         ->unique()

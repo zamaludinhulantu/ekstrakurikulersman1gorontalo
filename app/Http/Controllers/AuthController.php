@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -28,6 +30,7 @@ class AuthController extends Controller
     {
         return view('auth.register', [
             'classOptions' => Student::registrationClassOptions(),
+            'prefill' => session('registration_form_data', []),
         ]);
     }
 
@@ -166,7 +169,7 @@ class AuthController extends Controller
                 ->withInput($request->except(['password', 'password_confirmation']));
         }
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -208,6 +211,39 @@ class AuthController extends Controller
             'parent_phone' => 'no. telepon orang tua',
         ]);
 
+        $validator->after(function ($validator): void {
+            $dateOfBirth = $validator->getData()['date_of_birth'] ?? null;
+            if (! filled($dateOfBirth)) {
+                return;
+            }
+
+            try {
+                $birthDate = Carbon::parse($dateOfBirth)->startOfDay();
+            } catch (\Throwable) {
+                return;
+            }
+
+            $today = Carbon::today();
+            if ($birthDate->gte($today)) {
+                $validator->errors()->add(
+                    'date_of_birth',
+                    'Tanggal lahir harus sebelum '.Carbon::today()->translatedFormat('d F Y').'.'
+                );
+
+                return;
+            }
+
+            $minimumBirthDate = Carbon::today()->subYears(Student::MIN_REGISTRATION_AGE);
+            if ($birthDate->gt($minimumBirthDate)) {
+                $validator->errors()->add(
+                    'date_of_birth',
+                    'Usia minimal saat registrasi adalah '.Student::MIN_REGISTRATION_AGE.' tahun.'
+                );
+            }
+        });
+
+        $validated = $validator->validate();
+
         $user = DB::transaction(function () use ($validated): User {
             $user = User::create([
                 'name' => $validated['name'],
@@ -234,6 +270,9 @@ class AuthController extends Controller
         });
 
         $verificationPreviewLink = $this->sendOrPreviewVerificationEmail($user);
+        $request->session()->put('registration_form_data', collect($validated)
+            ->except(['password'])
+            ->all());
 
         $redirect = redirect()
             ->route('verification.notice', ['email' => $user->email])
@@ -306,6 +345,8 @@ class AuthController extends Controller
             $user->markEmailAsVerified();
             event(new Verified($user));
         }
+
+        $request->session()->forget('registration_form_data');
 
         $pendingExtracurricularId = $request->session()->get('pending_extracurricular_id');
 

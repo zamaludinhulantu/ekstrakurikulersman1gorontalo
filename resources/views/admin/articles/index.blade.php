@@ -208,7 +208,7 @@
                                                         </li>
                                                         @if($article->publication_status !== \App\Models\Article::STATUS_PUBLISHED)
                                                             <li>
-                                                                <form method="post" action="{{ route('admin.articles.publish', $article) }}" class="article-confirmable-form" data-confirm-title="Publikasikan artikel?" data-confirm-message="Artikel ini akan langsung tampil pada halaman publik. Lanjutkan publikasi?" data-confirm-submit-label="Publikasikan" data-confirm-variant="primary">
+                                                                <form method="post" action="{{ route('admin.articles.publish', $article) }}">
                                                                     @csrf
                                                                     @method('patch')
                                                                     <button class="dropdown-item" type="submit"><i class="bi bi-send-check"></i>Publikasikan</button>
@@ -296,7 +296,7 @@
                                                 </li>
                                                 @if($article->publication_status !== \App\Models\Article::STATUS_PUBLISHED)
                                                     <li>
-                                                        <form method="post" action="{{ route('admin.articles.publish', $article) }}" class="article-confirmable-form" data-confirm-title="Publikasikan artikel?" data-confirm-message="Artikel ini akan langsung tampil pada halaman publik. Lanjutkan publikasi?" data-confirm-submit-label="Publikasikan" data-confirm-variant="primary">
+                                                        <form method="post" action="{{ route('admin.articles.publish', $article) }}">
                                                             @csrf
                                                             @method('patch')
                                                             <button class="dropdown-item" type="submit"><i class="bi bi-send-check"></i>Publikasikan</button>

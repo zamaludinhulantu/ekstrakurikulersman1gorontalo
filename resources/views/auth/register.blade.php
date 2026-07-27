@@ -54,12 +54,12 @@
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label for="name" class="form-label">Nama Lengkap</label>
-                                            <input type="text" id="name" name="name" value="{{ old('name') }}" class="form-control" placeholder="Nama lengkap siswa" required autofocus>
+                                            <input type="text" id="name" name="name" value="{{ old('name', $prefill['name'] ?? '') }}" class="form-control" placeholder="Nama lengkap siswa" required autofocus>
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="email" class="form-label">Email</label>
-                                            <input type="email" id="email" name="email" value="{{ old('email') }}" class="form-control" placeholder="contoh: siswa@email.com" required>
+                                            <input type="email" id="email" name="email" value="{{ old('email', $prefill['email'] ?? '') }}" class="form-control" placeholder="contoh: siswa@email.com" required>
                                             <div class="form-text">Gunakan email aktif. Akun baru dapat digunakan setelah email berhasil diverifikasi.</div>
                                         </div>
 
@@ -87,7 +87,7 @@
                                             <select id="class_name" name="class_name" class="form-select">
                                                 <option value="">Pilih kelas</option>
                                                 @foreach(($classOptions ?? []) as $value => $label)
-                                                    <option value="{{ $value }}" @selected(old('class_name') === $value)>{{ $label }}</option>
+                                                    <option value="{{ $value }}" @selected(old('class_name', $prefill['class_name'] ?? null) === $value)>{{ $label }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -95,35 +95,36 @@
                                         <div class="col-md-6">
                                             <label for="gender" class="form-label">Jenis Kelamin</label>
                                             <select id="gender" name="gender" class="form-select" required>
-                                                <option value="" disabled @selected(old('gender') === null)>Pilih jenis kelamin</option>
-                                                <option value="L" @selected(old('gender') === 'L')>Laki-laki</option>
-                                                <option value="P" @selected(old('gender') === 'P')>Perempuan</option>
+                                                <option value="" disabled @selected(old('gender', $prefill['gender'] ?? null) === null)>Pilih jenis kelamin</option>
+                                                <option value="L" @selected(old('gender', $prefill['gender'] ?? null) === 'L')>Laki-laki</option>
+                                                <option value="P" @selected(old('gender', $prefill['gender'] ?? null) === 'P')>Perempuan</option>
                                             </select>
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="date_of_birth" class="form-label">Tanggal Lahir</label>
-                                            <input type="date" id="date_of_birth" name="date_of_birth" value="{{ old('date_of_birth') }}" class="form-control">
+                                            <input type="date" id="date_of_birth" name="date_of_birth" value="{{ old('date_of_birth', $prefill['date_of_birth'] ?? '') }}" max="{{ \App\Models\Student::latestAllowedRegistrationBirthDate() }}" class="form-control">
+                                            <div class="helper-text mt-1">Tanggal lahir minimal untuk registrasi saat ini: {{ \App\Models\Student::latestAllowedRegistrationBirthDate() }} atau lebih lama.</div>
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="phone" class="form-label">No. Telepon</label>
-                                            <input type="text" id="phone" name="phone" value="{{ old('phone') }}" class="form-control" placeholder="08xxxxxxxxxx">
+                                            <input type="text" id="phone" name="phone" value="{{ old('phone', $prefill['phone'] ?? '') }}" class="form-control" placeholder="08xxxxxxxxxx">
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="parent_phone" class="form-label">No. Telepon Orang Tua</label>
-                                            <input type="text" id="parent_phone" name="parent_phone" value="{{ old('parent_phone') }}" class="form-control" placeholder="08xxxxxxxxxx">
+                                            <input type="text" id="parent_phone" name="parent_phone" value="{{ old('parent_phone', $prefill['parent_phone'] ?? '') }}" class="form-control" placeholder="08xxxxxxxxxx">
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="parent_name" class="form-label">Nama Orang Tua / Wali</label>
-                                            <input type="text" id="parent_name" name="parent_name" value="{{ old('parent_name') }}" class="form-control" placeholder="Nama orang tua atau wali">
+                                            <input type="text" id="parent_name" name="parent_name" value="{{ old('parent_name', $prefill['parent_name'] ?? '') }}" class="form-control" placeholder="Nama orang tua atau wali">
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="address" class="form-label">Alamat</label>
-                                            <textarea id="address" name="address" class="form-control" rows="1" placeholder="Alamat siswa">{{ old('address') }}</textarea>
+                                            <textarea id="address" name="address" class="form-control" rows="1" placeholder="Alamat siswa">{{ old('address', $prefill['address'] ?? '') }}</textarea>
                                         </div>
                                     </div>
                                 </div>

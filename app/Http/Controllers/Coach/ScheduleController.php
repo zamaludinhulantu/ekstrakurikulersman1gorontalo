@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Coach;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coach;
-use App\Models\Extracurricular;
+use App\Models\Registration;
 use App\Models\Schedule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,7 +39,7 @@ class ScheduleController extends Controller
         abort_unless($coach, 404, 'Data pembina tidak ditemukan.');
 
         return view('coach.schedules.create', [
-            'extracurriculars' => $coach->extracurriculars()->orderBy('name')->get(),
+            'extracurriculars' => $this->extracurricularOptions($coach->id),
         ]);
     }
 
@@ -49,8 +50,10 @@ class ScheduleController extends Controller
 
         $validated = $this->validatePayload($request, $coach->id);
         $validated['coach_id'] = $coach->id;
-
-        Schedule::create($validated);
+        DB::transaction(function () use ($validated, $request): void {
+            $schedule = Schedule::create($validated);
+            $this->syncParticipants($schedule, $request->input('participant_registration_ids', []));
+        });
 
         return redirect()->route('coach.schedules.index')->with('success', 'Jadwal berhasil ditambahkan.');
     }
@@ -59,10 +62,11 @@ class ScheduleController extends Controller
     {
         $this->authorize('manageByCoach', $schedule);
         $coach = auth()->user()->coach;
+        $schedule->load('scheduleParticipants');
 
         return view('coach.schedules.edit', [
             'schedule' => $schedule,
-            'extracurriculars' => $coach->extracurriculars()->orderBy('name')->get(),
+            'extracurriculars' => $this->extracurricularOptions($coach->id),
         ]);
     }
 
@@ -72,7 +76,10 @@ class ScheduleController extends Controller
         $coach = auth()->user()->coach;
 
         $validated = $this->validatePayload($request, $coach->id);
-        $schedule->update($validated);
+        DB::transaction(function () use ($schedule, $validated, $request): void {
+            $schedule->update($validated);
+            $this->syncParticipants($schedule, $request->input('participant_registration_ids', []));
+        });
 
         return redirect()->route('coach.schedules.index')->with('success', 'Jadwal berhasil diperbarui.');
     }
@@ -98,6 +105,53 @@ class ScheduleController extends Controller
             'end_time' => ['required', 'after:start_time'],
             'location' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'participant_registration_ids' => ['nullable', 'array'],
+            'participant_registration_ids.*' => ['integer'],
         ]);
+    }
+
+    private function extracurricularOptions(int $coachId)
+    {
+        return Coach::findOrFail($coachId)
+            ->extracurriculars()
+            ->with(['registrations' => function ($query): void {
+                $query->where('status', Registration::STATUS_APPROVED)
+                    ->with('student.user')
+                    ->orderBy('created_at');
+            }])
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function syncParticipants(Schedule $schedule, array $registrationIds): void
+    {
+        $selectedIds = collect($registrationIds)
+            ->map(fn ($value) => (int) $value)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $registrations = Registration::query()
+            ->with('student')
+            ->where('extracurricular_id', $schedule->extracurricular_id)
+            ->where('status', Registration::STATUS_APPROVED)
+            ->whereIn('id', $selectedIds)
+            ->get();
+
+        $existingStudentIds = [];
+        foreach ($registrations as $registration) {
+            $existingStudentIds[] = $registration->student_id;
+            $schedule->scheduleParticipants()->updateOrCreate(
+                ['student_id' => $registration->student_id],
+                [
+                    'registration_id' => $registration->id,
+                    'assigned_by' => auth()->id(),
+                ]
+            );
+        }
+
+        $schedule->scheduleParticipants()
+            ->whereNotIn('student_id', $existingStudentIds)
+            ->delete();
     }
 }

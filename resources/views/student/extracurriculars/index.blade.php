@@ -298,6 +298,13 @@
 @endpush
 
 @section('content')
+    @if($hasLegacyRegistrationOverflow ?? false)
+        <div class="alert alert-warning mb-3">
+            <strong class="d-block mb-1">Data lama melebihi batas pendaftaran</strong>
+            {{ $student->registrationLegacyOverflowMessage() }}
+        </div>
+    @endif
+
     @php
         $currentCategory = $category ?? 'semua';
         $currentStatus = $status ?? 'all';
@@ -482,6 +489,10 @@
                             @if($statusLabel)
                                 <a href="{{ route('student.registrations.index') }}" class="btn {{ $statusButtonClass }}">
                                     {{ strtolower((string) $status) === 'approved' ? 'Lihat Status' : $statusLabel }}
+                                </a>
+                            @elseif($hasReachedRegistrationLimit ?? false)
+                                <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-exclamation-circle"></i>Batas 3 Ekskul
                                 </a>
                             @else
                                 <a href="{{ route('student.extracurriculars.register', $item) }}" class="btn btn-primary">

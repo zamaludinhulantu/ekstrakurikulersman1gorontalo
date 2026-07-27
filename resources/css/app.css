@@ -1019,6 +1019,12 @@ textarea.form-control {
     border-color: #f5d289;
 }
 
+.badge-status-info {
+    background: #e7f0ff;
+    color: #1f4fa3;
+    border-color: #bfd4ff;
+}
+
 .badge-status-danger {
     background: var(--ui-danger-soft);
     color: #ab3737;

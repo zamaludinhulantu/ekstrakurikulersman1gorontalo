@@ -60,6 +60,11 @@ class Schedule extends Model
         return $this->hasMany(TalentTestResult::class);
     }
 
+    public function scheduleParticipants(): HasMany
+    {
+        return $this->hasMany(ScheduleParticipant::class);
+    }
+
     public function isTalentTest(): bool
     {
         return $this->schedule_type === 'talent_test';

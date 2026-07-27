@@ -339,12 +339,16 @@
                                         <span>Kategori</span>
                                         <p>{{ $result?->ability_category ?: 'Belum ada kategori' }}</p>
                                     </div>
+                                    <div class="talent-card-meta-item">
+                                        <span>Keputusan</span>
+                                        <p>{{ $test->student_decision_label }}</p>
+                                    </div>
                                 @endif
                             </div>
 
                             @if($tab === 'history')
                                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                                    <span class="talent-result-highlight">{{ $result?->recommended_role ?: 'Belum ada peran rekomendasi' }}</span>
+                                    <span class="talent-result-highlight">{{ $test->student_decision_label }}</span>
                                     <button
                                         type="button"
                                         class="btn btn-outline-primary"
@@ -354,6 +358,8 @@
                                         data-extracurricular="{{ $schedule->extracurricular->name ?? '-' }}"
                                         data-score="{{ $result?->overall_score !== null ? number_format((float) $result->overall_score, 0, ',', '.') : '—' }}"
                                         data-category="{{ $result?->ability_category ?: 'Belum ada kategori' }}"
+                                        data-decision="{{ $test->student_decision_label }}"
+                                        data-decision-notes="{{ $test->student_decision_notes }}"
                                         data-group="{{ $result?->training_group ?: 'Belum ada kelompok' }}"
                                         data-role="{{ $result?->recommended_role ?: 'Belum ada peran rekomendasi' }}"
                                         data-notes="{{ $result?->coach_notes ?: 'Belum ada catatan pembina.' }}"
@@ -445,9 +451,14 @@
                         <div class="talent-detail-item"><span>Ekstrakurikuler</span><strong id="talentResultExtracurricular">-</strong></div>
                         <div class="talent-detail-item"><span>Nilai akhir</span><strong id="talentResultScore">-</strong></div>
                         <div class="talent-detail-item"><span>Kategori</span><strong id="talentResultCategory">-</strong></div>
+                        <div class="talent-detail-item"><span>Keputusan</span><strong id="talentResultDecision">-</strong></div>
                         <div class="talent-detail-item"><span>Kelompok kemampuan</span><strong id="talentResultGroup">-</strong></div>
                         <div class="talent-detail-item"><span>Peran rekomendasi</span><strong id="talentResultRole">-</strong></div>
                         <div class="talent-detail-item"><span>Tanggal penilaian</span><strong id="talentResultDate">-</strong></div>
+                    </div>
+                    <div class="talent-detail-item mb-3">
+                        <span>Catatan keputusan</span>
+                        <p class="mb-0" id="talentResultDecisionNotes">-</p>
                     </div>
                     <div class="talent-detail-item mb-3">
                         <span>Catatan pembina</span>
@@ -503,6 +514,8 @@
                     extracurricular: document.getElementById('talentResultExtracurricular'),
                     score: document.getElementById('talentResultScore'),
                     category: document.getElementById('talentResultCategory'),
+                    decision: document.getElementById('talentResultDecision'),
+                    decisionNotes: document.getElementById('talentResultDecisionNotes'),
                     group: document.getElementById('talentResultGroup'),
                     role: document.getElementById('talentResultRole'),
                     date: document.getElementById('talentResultDate'),
@@ -520,6 +533,8 @@
                     resultFields.extracurricular.textContent = trigger.dataset.extracurricular || '-';
                     resultFields.score.textContent = trigger.dataset.score || '-';
                     resultFields.category.textContent = trigger.dataset.category || '-';
+                    resultFields.decision.textContent = trigger.dataset.decision || '-';
+                    resultFields.decisionNotes.textContent = trigger.dataset.decisionNotes || '-';
                     resultFields.group.textContent = trigger.dataset.group || '-';
                     resultFields.role.textContent = trigger.dataset.role || '-';
                     resultFields.date.textContent = trigger.dataset.date || '-';

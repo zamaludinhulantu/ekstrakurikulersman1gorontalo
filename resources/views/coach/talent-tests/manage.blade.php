@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('page_title', 'Kelola Hasil Tes Bakat')
-@section('page_subtitle', 'Kelola kehadiran, nilai, rekomendasi, dan publikasi hasil peserta dengan alur yang lebih fokus.')
+@section('page_subtitle', 'Kelola kehadiran, penilaian inti, dan publikasi hasil peserta dengan form yang lebih ringkas.')
 
 @push('styles')
     <style>
@@ -317,6 +317,60 @@
             font-size: 0.79rem;
         }
 
+        .talent-optional-panel {
+            margin-top: 1rem;
+            border: 1px dashed #d8e2ef;
+            border-radius: 18px;
+            background: #fcfdff;
+            padding: 0.9rem 1rem;
+        }
+
+        .talent-optional-panel summary {
+            cursor: pointer;
+            color: #24456f;
+            font-weight: 800;
+            list-style: none;
+        }
+
+        .talent-optional-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .talent-optional-panel summary::before {
+            content: '+';
+            display: inline-block;
+            width: 1rem;
+            margin-right: 0.35rem;
+            color: #4e73a3;
+            font-weight: 900;
+        }
+
+        .talent-optional-panel[open] summary::before {
+            content: '-';
+        }
+
+        .talent-section-label {
+            margin-bottom: 0.3rem;
+            color: #70839b;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .talent-bulk-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(220px, 260px) minmax(0, 1.3fr) auto;
+            gap: 0.85rem;
+            align-items: end;
+            padding: 1rem 1.1rem 0;
+        }
+
+        .talent-bulk-count {
+            color: #647b95;
+            font-size: 0.83rem;
+        }
+
         @media (max-width: 1199.98px) {
             .talent-manage-summary {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -330,6 +384,10 @@
 
             .talent-participant-list {
                 max-height: none;
+            }
+
+            .talent-bulk-toolbar {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -374,6 +432,11 @@
             'Sakit' => 'badge-status-warning',
             'Belum Diisi' => 'badge-status-secondary',
         ];
+        $decisionClassMap = [
+            'Diterima ke Ekskul' => 'badge-status-success',
+            'Tidak Diterima' => 'badge-status-danger',
+            'Belum diputuskan' => 'badge-status-secondary',
+        ];
     @endphp
 
     <div class="talent-manage-grid" data-talent-manage>
@@ -412,6 +475,85 @@
         <form method="post" action="{{ route('coach.talent-tests.results.save', $talentTest) }}" id="talentManageForm">
             @csrf
             <input type="hidden" name="target_participant_id" id="targetParticipantId" value="{{ $activeParticipantId }}">
+
+        @if($participants->isNotEmpty())
+            <div class="talent-panel-card card">
+                <div class="card-header">
+                    <h2>Rekap Hasil Peserta</h2>
+                    <p>Lihat nilai, kategori kemampuan, dan keputusan akhir semua peserta dalam satu tabel.</p>
+                </div>
+                <div class="talent-bulk-toolbar">
+                    <div>
+                        <div class="talent-bulk-count" id="bulkSelectionCount">0 peserta dipilih untuk aksi massal.</div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="bulkDecisionStatus">Keputusan massal</label>
+                        <select id="bulkDecisionStatus" name="bulk_decision_status" class="form-select">
+                            <option value="">Pilih keputusan</option>
+                            <option value="accepted" @selected(old('bulk_decision_status') === 'accepted')>Diterima ke ekskul</option>
+                            <option value="rejected" @selected(old('bulk_decision_status') === 'rejected')>Tidak diterima</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="bulkDecisionNotes">Catatan keputusan massal</label>
+                        <input id="bulkDecisionNotes" type="text" name="bulk_decision_notes" class="form-control" value="{{ old('bulk_decision_notes') }}" placeholder="Opsional, diterapkan ke peserta yang belum punya catatan keputusan">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" id="bulkSelectVisibleButton">Pilih Semua</button>
+                        <button type="submit" class="btn btn-outline-primary" name="apply_bulk_decision" value="1" id="applyBulkDecisionButton" disabled>
+                            <i class="bi bi-check2-square"></i>Terapkan
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                            <tr>
+                                <th style="width: 48px;">
+                                    <input type="checkbox" class="form-check-input" id="bulkSelectAllRows">
+                                </th>
+                                <th>Peserta</th>
+                                <th>Kehadiran</th>
+                                <th>Aspek</th>
+                                <th>Nilai</th>
+                                <th>Kategori</th>
+                                <th>Keputusan</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach($participants as $participant)
+                                @php $result = $resultsByStudent[$participant->student_id] ?? null; @endphp
+                                <tr>
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            name="selected_participant_ids[]"
+                                            value="{{ $participant->id }}"
+                                            data-bulk-select-row
+                                            @checked(in_array((string) $participant->id, array_map('strval', old('selected_participant_ids', [])), true))
+                                        >
+                                    </td>
+                                    <td>
+                                        <strong>{{ $participant->student->user->name ?? '-' }}</strong>
+                                        <div class="small text-muted">{{ $participant->student->class_name ?: 'Kelas belum diatur' }}</div>
+                                    </td>
+                                    <td><span class="badge {{ $attendanceClassMap[$participant->attendance_label] ?? 'badge-status-secondary' }}">{{ $participant->attendance_label }}</span></td>
+                                    <td>{{ $participant->filled_aspect_count }}/{{ $participant->total_aspect_count }}</td>
+                                    <td>{{ $participant->overall_score_label ?? 'Belum ada' }}</td>
+                                    <td>{{ $result?->ability_category ?: 'Belum ditentukan' }}</td>
+                                    <td><span class="badge {{ $decisionClassMap[$participant->decision_label] ?? 'badge-status-secondary' }}">{{ $participant->decision_label }}</span></td>
+                                    <td><span class="badge {{ $participant->result_status_class }}">{{ $participant->result_status_label }}</span></td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endif
 
             <div class="talent-manage-layout">
                 <aside class="talent-panel-card card">
@@ -550,8 +692,7 @@
 
                                     <div class="talent-tab-bar" data-panel-tabs>
                                         <button type="button" class="talent-tab-button is-active" data-panel-tab-trigger="attendance-{{ $participant->id }}">Kehadiran</button>
-                                        <button type="button" class="talent-tab-button" data-panel-tab-trigger="scoring-{{ $participant->id }}">Penilaian</button>
-                                        <button type="button" class="talent-tab-button" data-panel-tab-trigger="recommendation-{{ $participant->id }}">Rekomendasi</button>
+                                        <button type="button" class="talent-tab-button" data-panel-tab-trigger="scoring-{{ $participant->id }}">Penilaian Inti</button>
                                         <button type="button" class="talent-tab-button" data-panel-tab-trigger="summary-{{ $participant->id }}">Ringkasan</button>
                                     </div>
 
@@ -560,7 +701,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-4">
                                                 <label class="form-label">Status Kehadiran</label>
-                                                <select name="participants[{{ $index }}][attendance_status]" class="form-select">
+                                                <select name="participants[{{ $index }}][attendance_status]" class="form-select" data-attendance-status>
                                                     @foreach(['pending' => 'Belum Diisi', 'present' => 'Hadir', 'absent' => 'Tidak Hadir', 'sick' => 'Sakit', 'permission' => 'Izin'] as $value => $label)
                                                         <option value="{{ $value }}" @selected($attendanceStatus === $value)>{{ $label }}</option>
                                                     @endforeach
@@ -574,7 +715,31 @@
                                     </div>
 
                                     <div data-panel-tab="scoring-{{ $participant->id }}" class="d-none">
-                                        <p class="talent-help-text">Isi seluruh aspek penilaian untuk peserta yang hadir. Nilai akhir hanya dianggap lengkap setelah semua aspek terisi.</p>
+                                        <p class="talent-help-text">Isi penilaian inti untuk peserta yang hadir. Kategori kemampuan tetap wajib sebelum hasil dipublikasikan.</p>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Kategori Kemampuan</label>
+                                                <input type="text" name="participants[{{ $index }}][ability_category]" class="form-control" value="{{ old("participants.$index.ability_category", $result->ability_category ?? '') }}" placeholder="Contoh: Dasar, Menengah" data-ability-category>
+                                                <div class="form-text">Wajib diisi untuk peserta yang hadir sebelum publikasi hasil.</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Keputusan Akhir</label>
+                                                <select name="participants[{{ $index }}][decision_status]" class="form-select" data-decision-status>
+                                                    <option value="">Belum diputuskan</option>
+                                                    <option value="accepted" @selected(old("participants.$index.decision_status", $result->decision_status ?? '') === 'accepted')>Diterima ke ekskul</option>
+                                                    <option value="rejected" @selected(old("participants.$index.decision_status", $result->decision_status ?? '') === 'rejected')>Tidak diterima</option>
+                                                </select>
+                                                <div class="form-text">Wajib dipilih sebelum publikasi, kecuali peserta ditandai tes ulang.</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Catatan Pembina</label>
+                                                <textarea name="participants[{{ $index }}][coach_notes]" class="form-control" rows="2" placeholder="Catatan inti hasil peserta">{{ old("participants.$index.coach_notes", $result->coach_notes ?? '') }}</textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Catatan Keputusan</label>
+                                                <textarea name="participants[{{ $index }}][decision_notes]" class="form-control" rows="2" placeholder="Opsional, jelaskan alasan diterima atau tidak diterima">{{ old("participants.$index.decision_notes", $result->decision_notes ?? '') }}</textarea>
+                                            </div>
+                                        </div>
                                         @if($aspects->isEmpty())
                                             <div class="alert alert-warning mb-0">Aspek penilaian untuk {{ $talentTest->extracurricular->name }} belum dibuat. Tambahkan dulu di menu aspek penilaian.</div>
                                         @else
@@ -597,7 +762,7 @@
                                                         <div class="row g-3">
                                                             <div class="col-md-4">
                                                                 <label class="form-label">Input Nilai</label>
-                                                                <input type="number" step="0.01" min="0" max="{{ $aspect->max_score }}" name="participants[{{ $index }}][scores][{{ $aspect->id }}]" class="form-control" value="{{ $currentScore }}">
+                                                                <input type="number" step="0.01" min="0" max="{{ $aspect->max_score }}" name="participants[{{ $index }}][scores][{{ $aspect->id }}]" class="form-control" value="{{ $currentScore }}" data-score-input>
                                                             </div>
                                                             <div class="col-md-8">
                                                                 <label class="form-label">Catatan per Aspek</label>
@@ -608,53 +773,46 @@
                                                 @endforeach
                                             </div>
                                         @endif
-                                    </div>
 
-                                    <div data-panel-tab="recommendation-{{ $participant->id }}" class="d-none">
-                                        <p class="talent-help-text">Isi kategori kemampuan, kelompok latihan, dan rekomendasi pembina untuk peserta aktif.</p>
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label class="form-label">Kategori Kemampuan</label>
-                                                <input type="text" name="participants[{{ $index }}][ability_category]" class="form-control" value="{{ old("participants.$index.ability_category", $result->ability_category ?? '') }}" placeholder="Contoh: Dasar, Menengah">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Kelompok Latihan</label>
-                                                <input type="text" name="participants[{{ $index }}][training_group]" class="form-control" value="{{ old("participants.$index.training_group", $result->training_group ?? '') }}" placeholder="Contoh: Fundamental A">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Posisi atau Peran</label>
-                                                <input type="text" name="participants[{{ $index }}][recommended_role]" class="form-control" value="{{ old("participants.$index.recommended_role", $result->recommended_role ?? '') }}" placeholder="Opsional">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Rekomendasi Pembina</label>
-                                                <textarea name="participants[{{ $index }}][recommendation]" class="form-control" rows="3" placeholder="Saran latihan atau tindak lanjut untuk siswa">{{ old("participants.$index.recommendation", $result->recommendation ?? '') }}</textarea>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Catatan Umum</label>
-                                                <textarea name="participants[{{ $index }}][coach_notes]" class="form-control" rows="3" placeholder="Catatan umum untuk hasil peserta">{{ old("participants.$index.coach_notes", $result->coach_notes ?? '') }}</textarea>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <label class="form-label">Catatan Internal</label>
-                                                <textarea name="participants[{{ $index }}][internal_notes]" class="form-control" rows="2" placeholder="Catatan internal pembina">{{ old("participants.$index.internal_notes", $result->internal_notes ?? '') }}</textarea>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label">Tes Ulang</label>
-                                                <select name="participants[{{ $index }}][retest_schedule_id]" class="form-select">
-                                                    <option value="">Tidak dijadwalkan</option>
-                                                    @foreach($retestSchedules as $schedule)
-                                                        <option value="{{ $schedule->id }}" @selected((string) old("participants.$index.retest_schedule_id", $result->retest_schedule_id ?? '') === (string) $schedule->id)>{{ optional($schedule->activity_date)->translatedFormat('d M Y') }} | {{ $schedule->title }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <div class="form-check mt-2">
-                                                    <input class="form-check-input" type="checkbox" value="1" id="needs_retest_{{ $participant->id }}" name="participants[{{ $index }}][needs_retest]" @checked(old("participants.$index.needs_retest", $result->needs_retest ?? false))>
-                                                    <label class="form-check-label" for="needs_retest_{{ $participant->id }}">Perlu tes ulang</label>
+                                        <details class="talent-optional-panel">
+                                            <summary>Opsi lanjutan</summary>
+                                            <p class="talent-help-text mt-2 mb-3">Bagian ini opsional. Isi hanya jika memang diperlukan untuk tindak lanjut pembinaan.</p>
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Kelompok Latihan</label>
+                                                    <input type="text" name="participants[{{ $index }}][training_group]" class="form-control" value="{{ old("participants.$index.training_group", $result->training_group ?? '') }}" placeholder="Contoh: Fundamental A">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Posisi atau Peran</label>
+                                                    <input type="text" name="participants[{{ $index }}][recommended_role]" class="form-control" value="{{ old("participants.$index.recommended_role", $result->recommended_role ?? '') }}" placeholder="Opsional">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">Tes Ulang</label>
+                                                    <select name="participants[{{ $index }}][retest_schedule_id]" class="form-select">
+                                                        <option value="">Tidak dijadwalkan</option>
+                                                        @foreach($retestSchedules as $schedule)
+                                                            <option value="{{ $schedule->id }}" @selected((string) old("participants.$index.retest_schedule_id", $result->retest_schedule_id ?? '') === (string) $schedule->id)>{{ optional($schedule->activity_date)->translatedFormat('d M Y') }} | {{ $schedule->title }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <div class="form-check mt-2">
+                                                        <input class="form-check-input" type="checkbox" value="1" id="needs_retest_{{ $participant->id }}" name="participants[{{ $index }}][needs_retest]" @checked(old("participants.$index.needs_retest", $result->needs_retest ?? false))>
+                                                        <label class="form-check-label" for="needs_retest_{{ $participant->id }}">Perlu tes ulang</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Rekomendasi Pembina</label>
+                                                    <textarea name="participants[{{ $index }}][recommendation]" class="form-control" rows="3" placeholder="Saran latihan atau tindak lanjut untuk siswa">{{ old("participants.$index.recommendation", $result->recommendation ?? '') }}</textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Catatan Internal</label>
+                                                    <textarea name="participants[{{ $index }}][internal_notes]" class="form-control" rows="3" placeholder="Catatan internal pembina">{{ old("participants.$index.internal_notes", $result->internal_notes ?? '') }}</textarea>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </details>
                                     </div>
 
                                     <div data-panel-tab="summary-{{ $participant->id }}" class="d-none">
-                                        <p class="talent-help-text">Ringkasan ini membantu memastikan hasil peserta sudah lengkap sebelum dipublikasikan.</p>
+                                        <p class="talent-help-text">Ringkasan ini membantu memastikan hasil peserta sudah cukup sebelum dipublikasikan.</p>
                                         <div class="talent-summary-grid">
                                             <div class="talent-summary-box">
                                                 <span>Status Publikasi</span>
@@ -677,18 +835,41 @@
                                                 <p>{{ $result?->ability_category ?? 'Belum ditentukan' }}</p>
                                             </div>
                                             <div class="talent-summary-box">
-                                                <span>Kelompok Latihan</span>
-                                                <p>{{ $result?->training_group ?? 'Belum ditentukan' }}</p>
+                                                <span>Keputusan Akhir</span>
+                                                <p>{{ $participant->decision_label }}</p>
                                             </div>
                                             <div class="talent-summary-box">
-                                                <span>Peran Rekomendasi</span>
-                                                <p>{{ $result?->recommended_role ?? 'Belum ditentukan' }}</p>
-                                            </div>
-                                            <div class="talent-summary-box">
-                                                <span>Ringkasan Catatan</span>
+                                                <span>Catatan Pembina</span>
                                                 <p>{{ $result?->coach_notes ?: ($result?->recommendation ?: 'Belum ada catatan') }}</p>
                                             </div>
                                         </div>
+                                        @if($result?->training_group || $result?->recommended_role || $result?->recommendation || $result?->internal_notes || $result?->needs_retest)
+                                            <details class="talent-optional-panel mt-3" open>
+                                                <summary>Ringkasan lanjutan</summary>
+                                                <div class="row g-3 mt-1">
+                                                    <div class="col-md-4">
+                                                        <div class="talent-section-label">Kelompok latihan</div>
+                                                        <div>{{ $result?->training_group ?? 'Belum ditentukan' }}</div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="talent-section-label">Peran rekomendasi</div>
+                                                        <div>{{ $result?->recommended_role ?? 'Belum ditentukan' }}</div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="talent-section-label">Tes ulang</div>
+                                                        <div>{{ $result?->needs_retest ? 'Perlu tes ulang' : 'Tidak' }}</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="talent-section-label">Rekomendasi pembina</div>
+                                                        <div>{{ $result?->recommendation ?: 'Belum ada rekomendasi tambahan' }}</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="talent-section-label">Catatan internal</div>
+                                                        <div>{{ $result?->internal_notes ?: 'Belum ada catatan internal' }}</div>
+                                                    </div>
+                                                </div>
+                                            </details>
+                                        @endif
                                         @if($participant->publish_block_reason)
                                             <div class="alert alert-warning mt-3 mb-0">{{ $participant->publish_block_reason }}</div>
                                         @endif
@@ -752,6 +933,129 @@
             const activeReason = document.getElementById('activeParticipantReason');
             const publishButton = document.getElementById('publishParticipantButton');
             const publishLabel = document.getElementById('publishParticipantLabel');
+            const bulkCheckboxes = Array.from(root.querySelectorAll('[data-bulk-select-row]'));
+            const bulkSelectAllRows = document.getElementById('bulkSelectAllRows');
+            const bulkSelectVisibleButton = document.getElementById('bulkSelectVisibleButton');
+            const bulkSelectionCount = document.getElementById('bulkSelectionCount');
+            const applyBulkDecisionButton = document.getElementById('applyBulkDecisionButton');
+            const attendanceBadgeClassMap = {
+                present: 'badge-status-success',
+                absent: 'badge-status-danger',
+                permission: 'badge-status-warning',
+                sick: 'badge-status-warning',
+                pending: 'badge-status-secondary',
+            };
+            const attendanceLabelMap = {
+                present: 'Hadir',
+                absent: 'Tidak Hadir',
+                permission: 'Izin',
+                sick: 'Sakit',
+                pending: 'Belum Diisi',
+            };
+
+            const getParticipantPanel = (participantId) => participantPanels.find((panel) => panel.dataset.participantPanel === participantId);
+
+            const resolveParticipantState = (participantId) => {
+                const panel = getParticipantPanel(participantId);
+                if (!panel) return null;
+
+                const attendanceStatus = panel.querySelector('[data-attendance-status]')?.value || 'pending';
+                const abilityCategory = (panel.querySelector('[data-ability-category]')?.value || '').trim();
+                const decisionStatus = panel.querySelector('[data-decision-status]')?.value || '';
+                const needsRetest = !!panel.querySelector('input[name$="[needs_retest]"]')?.checked;
+                const filledAspectCount = Array.from(panel.querySelectorAll('[data-score-input]'))
+                    .filter((input) => input.value !== '' && input.value !== null)
+                    .length;
+                const totalAspectCount = Array.from(panel.querySelectorAll('[data-score-input]')).length;
+                const isAbsent = ['absent', 'sick', 'permission'].includes(attendanceStatus);
+
+                let reason = '';
+                let ready = false;
+
+                if (isAbsent) {
+                    ready = true;
+                } else if (attendanceStatus !== 'present') {
+                    reason = 'Tentukan status kehadiran peserta terlebih dahulu.';
+                } else if (filledAspectCount === 0) {
+                    reason = 'Isi minimal satu aspek penilaian.';
+                } else if (!abilityCategory) {
+                    reason = 'Kategori kemampuan belum diisi.';
+                } else if (!needsRetest && !decisionStatus) {
+                    reason = 'Pilih keputusan akhir peserta atau tandai tes ulang.';
+                } else {
+                    ready = true;
+                }
+
+                return {
+                    attendanceStatus,
+                    attendanceLabel: attendanceLabelMap[attendanceStatus] || 'Belum Diisi',
+                    decisionStatus,
+                    needsRetest,
+                    filledAspectCount,
+                    totalAspectCount,
+                    ready,
+                    reason,
+                };
+            };
+
+            const syncParticipantState = (participantId) => {
+                const button = participantButtons.find((item) => item.dataset.participantId === participantId);
+                const panel = getParticipantPanel(participantId);
+                const state = resolveParticipantState(participantId);
+                if (!button || !panel || !state) return;
+
+                button.dataset.filled = String(state.filledAspectCount);
+                button.dataset.total = String(state.totalAspectCount);
+                button.dataset.ready = state.ready ? '1' : '0';
+                button.dataset.reason = state.reason;
+
+                const badge = button.querySelector('.talent-participant-item__top .badge');
+                if (badge) {
+                    badge.textContent = state.attendanceLabel;
+                    badge.className = `badge ${attendanceBadgeClassMap[state.attendanceStatus] || 'badge-status-secondary'}`;
+                }
+
+                const metaValues = button.querySelectorAll('.talent-participant-item__meta span');
+                if (metaValues[0]) {
+                    metaValues[0].innerHTML = `Aspek terisi: <strong>${state.filledAspectCount}/${state.totalAspectCount}</strong>`;
+                }
+                if (metaValues[1]) {
+                    metaValues[1].textContent = state.totalAspectCount - state.filledAspectCount > 0
+                        ? `${state.totalAspectCount - state.filledAspectCount} aspek belum diisi`
+                        : 'Semua aspek sudah diisi';
+                }
+
+                const summaryBoxes = panel.querySelectorAll('.talent-summary-box p');
+                if (summaryBoxes[2]) {
+                    summaryBoxes[2].textContent = `${state.filledAspectCount} dari ${state.totalAspectCount}`;
+                }
+                if (summaryBoxes[3]) {
+                    summaryBoxes[3].textContent = String(Math.max(state.totalAspectCount - state.filledAspectCount, 0));
+                }
+
+                const panelScoreSummary = panel.querySelector('.page-summary-banner .col-md-4:last-child .data-point-value');
+                if (panelScoreSummary) {
+                    panelScoreSummary.textContent = `${state.filledAspectCount}/${state.totalAspectCount}`;
+                }
+
+                const warning = panel.querySelector('.alert.alert-warning');
+                if (warning) {
+                    if (state.reason) {
+                        warning.textContent = state.reason;
+                        warning.classList.remove('d-none');
+                    } else {
+                        warning.classList.add('d-none');
+                    }
+                }
+
+                if (targetParticipantId.value === participantId) {
+                    activeProgress.textContent = `${state.filledAspectCount}/${state.totalAspectCount} aspek terisi`;
+                    activeReason.textContent = state.reason;
+                    if (publishButton) {
+                        publishButton.disabled = !state.ready;
+                    }
+                }
+            };
 
             const activateParticipant = (participantId) => {
                 participantButtons.forEach((button) => {
@@ -767,12 +1071,7 @@
 
                 targetParticipantId.value = participantId;
                 activeName.textContent = activeButton.dataset.name || '-';
-                activeProgress.textContent = `${activeButton.dataset.filled || 0}/${activeButton.dataset.total || 0} aspek terisi`;
-                activeReason.textContent = activeButton.dataset.reason || '';
-                if (publishButton) {
-                    const isReady = activeButton.dataset.ready === '1';
-                    publishButton.disabled = !isReady;
-                }
+                syncParticipantState(participantId);
                 if (publishLabel) {
                     publishLabel.textContent = activeButton.dataset.published === '1'
                         ? 'Perbarui Hasil'
@@ -813,6 +1112,40 @@
             searchInput?.addEventListener('input', applyParticipantFilter);
             filterSelect?.addEventListener('change', applyParticipantFilter);
 
+            const syncBulkSelectionState = () => {
+                const selectedCount = bulkCheckboxes.filter((checkbox) => checkbox.checked).length;
+
+                if (bulkSelectionCount) {
+                    bulkSelectionCount.textContent = `${selectedCount} peserta dipilih untuk aksi massal.`;
+                }
+
+                if (applyBulkDecisionButton) {
+                    applyBulkDecisionButton.disabled = selectedCount === 0;
+                }
+
+                if (bulkSelectAllRows) {
+                    bulkSelectAllRows.checked = bulkCheckboxes.length > 0 && bulkCheckboxes.every((checkbox) => checkbox.checked);
+                }
+            };
+
+            bulkCheckboxes.forEach((checkbox) => {
+                checkbox.addEventListener('change', syncBulkSelectionState);
+            });
+
+            bulkSelectAllRows?.addEventListener('change', () => {
+                bulkCheckboxes.forEach((checkbox) => {
+                    checkbox.checked = bulkSelectAllRows.checked;
+                });
+                syncBulkSelectionState();
+            });
+
+            bulkSelectVisibleButton?.addEventListener('click', () => {
+                bulkCheckboxes.forEach((checkbox) => {
+                    checkbox.checked = true;
+                });
+                syncBulkSelectionState();
+            });
+
             root.querySelectorAll('[data-panel-tabs]').forEach((tabBar) => {
                 const triggers = Array.from(tabBar.querySelectorAll('[data-panel-tab-trigger]'));
                 triggers.forEach((trigger) => {
@@ -835,7 +1168,17 @@
                 });
             });
 
+            participantPanels.forEach((panel) => {
+                const participantId = panel.dataset.participantPanel;
+                panel.querySelectorAll('[data-attendance-status], [data-score-input], [data-ability-category], [data-decision-status], input[name$="[needs_retest]"]').forEach((input) => {
+                    input.addEventListener('input', () => syncParticipantState(participantId));
+                    input.addEventListener('change', () => syncParticipantState(participantId));
+                });
+            });
+
             applyParticipantFilter();
+            participantButtons.forEach((button) => syncParticipantState(button.dataset.participantId));
+            syncBulkSelectionState();
         });
     </script>
 @endpush

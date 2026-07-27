@@ -28,7 +28,7 @@
                 </thead>
                 <tbody>
                     @forelse($participants as $row)
-                        @php $latestResult = $row->talentTestResults->sortByDesc('published_at')->first(); @endphp
+                        @php $latestResult = $row->latestPublishedTalentTestResult(); @endphp
                         <tr>
                         <td>
                             <button type="button" class="btn btn-link p-0 text-start profile-preview-trigger" data-profile-url="{{ route('registrations.profile-preview', $row) }}">
@@ -55,7 +55,7 @@
         </div>
         <div class="mobile-stack-table p-3">
             @forelse($participants as $row)
-                @php $latestResult = $row->talentTestResults->sortByDesc('published_at')->first(); @endphp
+                @php $latestResult = $row->latestPublishedTalentTestResult(); @endphp
                 <div class="mobile-data-card">
                     <div class="mobile-data-card-header">
                         <div>

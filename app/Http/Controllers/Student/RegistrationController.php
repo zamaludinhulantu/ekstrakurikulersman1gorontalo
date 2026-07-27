@@ -25,6 +25,8 @@ class RegistrationController extends Controller
             ->where('extracurricular_id', $extracurricular->id)
             ->first();
 
+        $student->loadMissing('registrations');
+
         $extracurricular->loadCount([
             'registrations as participants_count' => fn ($query) => $query->where('status', Registration::STATUS_APPROVED),
         ])->load([
@@ -37,6 +39,9 @@ class RegistrationController extends Controller
             'extracurricular' => $extracurricular,
             'registration' => $registration,
             'student' => $student,
+            'activeRegistrationCount' => $student->activeRegistrationCount(),
+            'hasReachedRegistrationLimit' => $student->hasReachedRegistrationLimit(),
+            'hasLegacyRegistrationOverflow' => $student->hasLegacyRegistrationOverflow(),
         ]);
     }
 
@@ -46,12 +51,19 @@ class RegistrationController extends Controller
 
         abort_unless($student, 404, 'Data siswa tidak ditemukan.');
 
-        $registrations = Registration::with(['extracurricular', 'talentTestResults.schedule'])
+        $registrations = Registration::with(['extracurricular', 'talentTestResults.schedule', 'talentTestParticipants.schedule'])
             ->where('student_id', $student->id)
             ->latest()
             ->paginate(10);
 
-        return view('student.registrations.index', compact('registrations'));
+        $student->loadMissing('registrations');
+
+        return view('student.registrations.index', [
+            'registrations' => $registrations,
+            'student' => $student,
+            'activeRegistrationCount' => $student->activeRegistrationCount(),
+            'hasLegacyRegistrationOverflow' => $student->hasLegacyRegistrationOverflow(),
+        ]);
     }
 
     public function store(StoreStudentRegistrationRequest $request, Extracurricular $extracurricular): RedirectResponse
@@ -67,6 +79,11 @@ class RegistrationController extends Controller
 
         if ($registration && $registration->status !== Registration::STATUS_REJECTED) {
             return back()->with('error', 'Anda sudah mendaftar di ekstrakurikuler ini.');
+        }
+
+        $student->loadMissing('registrations');
+        if ($student->hasReachedRegistrationLimit()) {
+            return back()->with('error', $student->registrationLimitReachedMessage());
         }
 
         DB::transaction(function () use ($request, $student, $extracurricular): void {
@@ -106,22 +123,41 @@ class RegistrationController extends Controller
             ]);
     }
 
-    public function edit(Registration $registration): View
+    public function edit(Registration $registration): View|RedirectResponse
     {
         $student = auth()->user()->student;
         abort_unless($student && $student->id === $registration->student_id, 403);
-        abort_unless(in_array($registration->status, [Registration::STATUS_PENDING, Registration::STATUS_REJECTED], true), 403);
+        if (! $registration->canStudentEdit()) {
+            return redirect()
+                ->route('student.registrations.index')
+                ->with('error', 'Pendaftaran ini sudah tidak dapat diubah dari akun siswa.');
+        }
+        $student->loadMissing('registrations');
 
         $registration->load('extracurricular');
 
-        return view('student.registrations.edit', compact('registration'));
+        return view('student.registrations.edit', [
+            'registration' => $registration,
+            'student' => $student,
+            'limitReachedForReactivation' => $registration->status === Registration::STATUS_REJECTED && $student->hasReachedRegistrationLimit(),
+            'hasLegacyRegistrationOverflow' => $student->hasLegacyRegistrationOverflow(),
+        ]);
     }
 
     public function update(StoreStudentRegistrationRequest $request, Registration $registration): RedirectResponse
     {
         $student = auth()->user()->student;
         abort_unless($student && $student->id === $registration->student_id, 403);
-        abort_unless(in_array($registration->status, [Registration::STATUS_PENDING, Registration::STATUS_REJECTED], true), 403);
+        if (! $registration->canStudentEdit()) {
+            return redirect()
+                ->route('student.registrations.index')
+                ->with('error', 'Pendaftaran ini sudah tidak dapat diubah dari akun siswa.');
+        }
+        $student->loadMissing('registrations');
+
+        if ($registration->status === Registration::STATUS_REJECTED && $student->hasReachedRegistrationLimit()) {
+            return back()->with('error', $student->registrationLimitReachedMessage());
+        }
 
         DB::transaction(function () use ($request, $registration): void {
             $proofPath = $registration->achievement_proof_path;

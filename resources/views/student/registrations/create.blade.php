@@ -118,6 +118,10 @@
         $coachText = $extracurricular->coach_names === 'Belum tersedia' ? 'Pembina belum ditentukan.' : $extracurricular->coach_names;
         $profileIncomplete = blank($student->nis) || blank($student->class_name);
         $branchOptions = collect($extracurricular->branch_options ?? [])->filter()->values();
+        $limitReachedForNewRegistration = (
+            ! $registration
+            || strtolower((string) $registration?->status) === 'rejected'
+        ) && ($hasReachedRegistrationLimit ?? false);
         $statusLabel = match (strtolower((string) $registration?->status)) {
             'pending' => 'Menunggu Konfirmasi',
             'approved' => 'Sudah Mendaftar',
@@ -129,6 +133,8 @@
     <div class="split-actions mb-3">
         <a href="{{ route('student.extracurriculars.show', $extracurricular) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali ke Detail</a>
         @if($registration)
+            <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
+        @elseif($limitReachedForNewRegistration)
             <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
         @endif
     </div>
@@ -171,6 +177,18 @@
         </div>
     </div>
 
+    @if($hasLegacyRegistrationOverflow ?? false)
+        <div class="alert alert-warning mb-3">
+            <strong class="d-block mb-1">Data lama melebihi batas pendaftaran</strong>
+            {{ $student->registrationLegacyOverflowMessage() }}
+        </div>
+    @elseif($limitReachedForNewRegistration)
+        <div class="alert alert-warning mb-3">
+            <strong class="d-block mb-1">Batas maksimal pendaftaran tercapai</strong>
+            {{ $student->registrationLimitReachedMessage() }}
+        </div>
+    @endif
+
     <div class="card registration-form-card">
         <div class="card-header">{{ $registration ? 'Status Pendaftaran' : 'Form Pendaftaran' }}</div>
         <div class="card-body">
@@ -185,6 +203,18 @@
                 <div class="form-section-card mb-3">
                     <h3 class="form-section-title">Data yang sudah dikirim</h3>
                     @include('partials.registration-talent-summary', ['registration' => $registration])
+                </div>
+                <div class="form-actions">
+                    <a href="{{ route('student.extracurriculars.show', $extracurricular) }}" class="btn btn-outline-secondary flex-fill"><i class="bi bi-arrow-left"></i>Kembali ke Detail</a>
+                    <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary flex-fill"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
+                </div>
+            @elseif($limitReachedForNewRegistration)
+                <div class="info-banner mb-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <div>
+                        <strong class="d-block mb-1">Pendaftaran baru tidak dapat ditambahkan</strong>
+                        {{ $student->registrationLimitReachedMessage() }}
+                    </div>
                 </div>
                 <div class="form-actions">
                     <a href="{{ route('student.extracurriculars.show', $extracurricular) }}" class="btn btn-outline-secondary flex-fill"><i class="bi bi-arrow-left"></i>Kembali ke Detail</a>

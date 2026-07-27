@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Registration;
 use App\Models\Schedule;
+use App\Models\ScheduleParticipant;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,15 +38,11 @@ class AttendanceController extends Controller
         $attendanceMap = collect();
 
         if ($request->filled('schedule_id')) {
-            $selectedSchedule = Schedule::with('extracurricular.coaches.user')
+            $selectedSchedule = Schedule::with(['extracurricular.coaches.user', 'scheduleParticipants.registration', 'scheduleParticipants.student.user'])
                 ->whereHas('extracurricular.coaches', fn ($query) => $query->whereKey($coach->id))
                 ->findOrFail($request->integer('schedule_id'));
 
-            $participants = Registration::with('student.user')
-                ->where('extracurricular_id', $selectedSchedule->extracurricular_id)
-                ->where('status', Registration::STATUS_APPROVED)
-                ->orderBy('created_at')
-                ->get();
+            $participants = $this->participantRegistrationsForSchedule($selectedSchedule);
 
             $attendanceMap = Attendance::where('schedule_id', $selectedSchedule->id)
                 ->get()
@@ -63,8 +60,7 @@ class AttendanceController extends Controller
     public function save(Request $request, Schedule $schedule): RedirectResponse
     {
         $this->authorize('manageByCoach', $schedule);
-        $allowedStudentIds = Registration::where('extracurricular_id', $schedule->extracurricular_id)
-            ->where('status', Registration::STATUS_APPROVED)
+        $allowedStudentIds = $this->participantRegistrationsForSchedule($schedule)
             ->pluck('student_id')
             ->all();
 
@@ -234,6 +230,42 @@ class AttendanceController extends Controller
     private function supportsEnhancedAttendanceSchema(): bool
     {
         return Schema::hasColumns('attendances', ['is_late', 'save_state', 'finalized_at']);
+    }
+
+    private function participantRegistrationsForSchedule(Schedule $schedule)
+    {
+        $schedule->loadMissing(['scheduleParticipants.registration.student.user', 'scheduleParticipants.student.user']);
+
+        if ($schedule->scheduleParticipants->isNotEmpty()) {
+            return $schedule->scheduleParticipants
+                ->map(function (ScheduleParticipant $participant) use ($schedule) {
+                    if ($participant->registration) {
+                        $participant->registration->setRelation('student', $participant->registration->student ?? $participant->student);
+
+                        return $participant->registration;
+                    }
+
+                    $registration = new Registration([
+                        'id' => $participant->registration_id,
+                        'extracurricular_id' => $schedule->extracurricular_id,
+                        'student_id' => $participant->student_id,
+                        'status' => Registration::STATUS_APPROVED,
+                    ]);
+                    $registration->exists = true;
+                    $registration->setRelation('student', $participant->student);
+
+                    return $registration;
+                })
+                ->filter(fn ($registration) => $registration->student !== null)
+                ->sortBy(fn ($registration) => strtolower($registration->student->user->name ?? ''))
+                ->values();
+        }
+
+        return Registration::with('student.user')
+            ->where('extracurricular_id', $schedule->extracurricular_id)
+            ->where('status', Registration::STATUS_APPROVED)
+            ->orderBy('created_at')
+            ->get();
     }
 
     private function buildFilename(array $filters): string

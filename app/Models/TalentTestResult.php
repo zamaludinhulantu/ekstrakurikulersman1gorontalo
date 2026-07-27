@@ -19,6 +19,8 @@ class TalentTestResult extends Model
         'status',
         'overall_score',
         'ability_category',
+        'decision_status',
+        'decision_notes',
         'training_group',
         'recommended_role',
         'recommendation',
@@ -26,6 +28,7 @@ class TalentTestResult extends Model
         'internal_notes',
         'needs_retest',
         'retest_schedule_id',
+        'decided_at',
         'evaluated_at',
         'published_at',
     ];
@@ -35,9 +38,19 @@ class TalentTestResult extends Model
         return [
             'overall_score' => 'decimal:2',
             'needs_retest' => 'boolean',
+            'decided_at' => 'datetime',
             'evaluated_at' => 'datetime',
             'published_at' => 'datetime',
         ];
+    }
+
+    public function decisionLabel(): string
+    {
+        return match ($this->decision_status) {
+            'accepted' => 'Diterima ke Ekskul',
+            'rejected' => 'Tidak Diterima',
+            default => 'Belum diputuskan',
+        };
     }
 
     public function schedule(): BelongsTo

@@ -16,11 +16,18 @@ class SaveTalentTestResultsRequest extends FormRequest
     {
         return [
             'publish' => ['nullable', 'boolean'],
+            'apply_bulk_decision' => ['nullable', 'boolean'],
+            'selected_participant_ids' => ['nullable', 'array'],
+            'selected_participant_ids.*' => ['integer', 'exists:talent_test_participants,id'],
+            'bulk_decision_status' => ['nullable', Rule::in(['accepted', 'rejected'])],
+            'bulk_decision_notes' => ['nullable', 'string'],
             'participants' => ['required', 'array', 'min:1'],
             'participants.*.participant_id' => ['required', 'integer', 'exists:talent_test_participants,id'],
             'participants.*.attendance_status' => ['required', Rule::in(['pending', 'present', 'absent', 'sick', 'permission'])],
             'participants.*.attendance_notes' => ['nullable', 'string'],
             'participants.*.ability_category' => ['nullable', 'string', 'max:120'],
+            'participants.*.decision_status' => ['nullable', Rule::in(['accepted', 'rejected'])],
+            'participants.*.decision_notes' => ['nullable', 'string'],
             'participants.*.training_group' => ['nullable', 'string', 'max:120'],
             'participants.*.recommended_role' => ['nullable', 'string', 'max:120'],
             'participants.*.recommendation' => ['nullable', 'string'],
@@ -47,6 +54,7 @@ class SaveTalentTestResultsRequest extends FormRequest
 
         $this->merge([
             'publish' => $this->boolean('publish'),
+            'apply_bulk_decision' => $this->boolean('apply_bulk_decision'),
             'participants' => $participants,
         ]);
     }

@@ -248,7 +248,9 @@ class TalentTestController extends Controller
                 $isPublished = $result?->status === 'published' || (bool) $result?->published_at;
                 $isDraft = $result && ! $isPublished;
                 $isAbsent = in_array($attendanceStatus, ['absent', 'sick', 'permission'], true);
-                $hasCompleteResult = $isAbsent || ($isPresent && $missingAspectCount === 0 && filled($result?->ability_category));
+                $hasDecision = filled($result?->decision_status);
+                $hasCompleteResult = $isAbsent
+                    || ($isPresent && $filledAspectCount > 0 && filled($result?->ability_category) && ($result?->needs_retest || $hasDecision));
                 $statusFilter = $isAbsent
                     ? 'absent'
                     : ($isPublished ? 'published' : ($isDraft ? 'draft' : 'pending'));
@@ -261,8 +263,15 @@ class TalentTestController extends Controller
                 $participant->setAttribute('filled_aspect_count', $filledAspectCount);
                 $participant->setAttribute('missing_aspect_count', $missingAspectCount);
                 $participant->setAttribute('total_aspect_count', $aspects->count());
+                $participant->setAttribute('decision_label', $result?->decisionLabel() ?? 'Belum diputuskan');
                 $participant->setAttribute('is_publish_ready', $hasCompleteResult);
-                $participant->setAttribute('publish_block_reason', $hasCompleteResult ? null : $this->buildPublishBlockReason($attendanceStatus, $filledAspectCount, $aspects->count(), (string) ($result?->ability_category ?? '')));
+                $participant->setAttribute('publish_block_reason', $hasCompleteResult ? null : $this->buildPublishBlockReason(
+                    $attendanceStatus,
+                    $filledAspectCount,
+                    (string) ($result?->ability_category ?? ''),
+                    (string) ($result?->decision_status ?? ''),
+                    (bool) ($result?->needs_retest ?? false),
+                ));
 
                 return $participant;
             })
@@ -305,17 +314,52 @@ class TalentTestController extends Controller
         $aspectMap = $talentTest->extracurricular->talentTestAspects()->get()->keyBy('id');
         $participantIds = $talentTest->talentTestParticipants()->pluck('id')->all();
         $targetParticipantId = $request->integer('target_participant_id');
+        $applyBulkDecision = $request->boolean('apply_bulk_decision');
+        $selectedParticipantIds = collect($request->input('selected_participant_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => in_array($id, $participantIds, true))
+            ->values();
 
         $submittedParticipants = collect($request->input('participants', []))
-            ->filter(function (array $payload) use ($participantIds, $targetParticipantId): bool {
+            ->filter(function (array $payload) use ($participantIds, $targetParticipantId, $applyBulkDecision, $selectedParticipantIds): bool {
                 $participantId = (int) ($payload['participant_id'] ?? 0);
                 if (! in_array($participantId, $participantIds, true)) {
                     return false;
                 }
 
+                if ($applyBulkDecision) {
+                    return $selectedParticipantIds->contains($participantId);
+                }
+
                 return $targetParticipantId === 0 || $targetParticipantId === $participantId;
             })
             ->values();
+
+        if ($applyBulkDecision && $selectedParticipantIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'selected_participant_ids' => 'Pilih minimal satu peserta untuk aksi massal.',
+            ]);
+        }
+
+        if ($applyBulkDecision && ! filled($request->input('bulk_decision_status'))) {
+            throw ValidationException::withMessages([
+                'bulk_decision_status' => 'Pilih keputusan massal yang ingin diterapkan.',
+            ]);
+        }
+
+        if ($applyBulkDecision) {
+            $bulkDecisionStatus = $request->string('bulk_decision_status')->toString();
+            $bulkDecisionNotes = trim($request->string('bulk_decision_notes')->toString());
+
+            $submittedParticipants = $submittedParticipants->map(function (array $payload) use ($bulkDecisionStatus, $bulkDecisionNotes): array {
+                $payload['decision_status'] = $bulkDecisionStatus;
+                if ($bulkDecisionNotes !== '' && ! filled($payload['decision_notes'] ?? null)) {
+                    $payload['decision_notes'] = $bulkDecisionNotes;
+                }
+
+                return $payload;
+            })->values();
+        }
 
         if ($submittedParticipants->isEmpty()) {
             throw ValidationException::withMessages([
@@ -343,6 +387,11 @@ class TalentTestController extends Controller
                 $overallScore = $scores->isNotEmpty() ? round((float) $scores->avg(), 2) : null;
 
                 $isPublished = $request->boolean('publish');
+                $decisionStatus = $payload['decision_status'] ?? null;
+                $decisionNotes = isset($payload['decision_notes']) && trim((string) $payload['decision_notes']) !== ''
+                    ? trim((string) $payload['decision_notes'])
+                    : null;
+                $needsRetest = (bool) ($payload['needs_retest'] ?? false);
 
                 $result = TalentTestResult::updateOrCreate(
                     [
@@ -355,13 +404,16 @@ class TalentTestController extends Controller
                         'status' => $isPublished ? 'published' : 'draft',
                         'overall_score' => $overallScore,
                         'ability_category' => $payload['ability_category'] ?? null,
+                        'decision_status' => $decisionStatus,
+                        'decision_notes' => $decisionNotes,
                         'training_group' => $payload['training_group'] ?? null,
                         'recommended_role' => $payload['recommended_role'] ?? null,
                         'recommendation' => $payload['recommendation'] ?? null,
                         'coach_notes' => $payload['coach_notes'] ?? null,
                         'internal_notes' => $payload['internal_notes'] ?? null,
-                        'needs_retest' => (bool) ($payload['needs_retest'] ?? false),
+                        'needs_retest' => $needsRetest,
                         'retest_schedule_id' => $payload['retest_schedule_id'] ?? null,
+                        'decided_at' => $decisionStatus ? now() : null,
                         'evaluated_at' => now(),
                         'published_at' => $isPublished ? now() : null,
                     ]
@@ -379,6 +431,16 @@ class TalentTestController extends Controller
                         ]
                     );
                 }
+
+                if ($isPublished) {
+                    $this->syncRegistrationDecision(
+                        $participant->registration,
+                        $decisionStatus,
+                        $decisionNotes,
+                        (string) ($payload['coach_notes'] ?? ''),
+                        $needsRetest
+                    );
+                }
             }
 
             if ($request->boolean('publish')) {
@@ -392,9 +454,17 @@ class TalentTestController extends Controller
             }
         });
 
-        return back()->with('success', $request->boolean('publish')
+        $successMessage = $request->boolean('publish')
             ? 'Hasil peserta berhasil dipublikasikan.'
-            : 'Draft hasil peserta berhasil disimpan.');
+            : 'Draft hasil peserta berhasil disimpan.';
+
+        if ($applyBulkDecision) {
+            $successMessage = $request->boolean('publish')
+                ? 'Keputusan massal dan hasil peserta berhasil dipublikasikan.'
+                : 'Keputusan massal peserta berhasil disimpan.';
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     public function cancel(Request $request, Schedule $talentTest): RedirectResponse
@@ -541,15 +611,21 @@ class TalentTestController extends Controller
             return (float) $value >= 0 && (float) $value <= (float) $aspect->max_score;
         })->count();
 
-        if ($filledAspectCount !== $aspectMap->count()) {
+        if ($filledAspectCount === 0) {
             throw ValidationException::withMessages([
-                'publish' => 'Seluruh aspek wajib harus diisi sebelum hasil peserta dipublikasikan.',
+                'publish' => 'Isi minimal satu aspek penilaian sebelum hasil peserta dipublikasikan.',
             ]);
         }
 
         if (! filled($payload['ability_category'] ?? null)) {
             throw ValidationException::withMessages([
                 'publish' => 'Kategori kemampuan wajib diisi sebelum hasil peserta dipublikasikan.',
+            ]);
+        }
+
+        if (! ($payload['needs_retest'] ?? false) && ! filled($payload['decision_status'] ?? null)) {
+            throw ValidationException::withMessages([
+                'publish' => 'Pilih keputusan akhir peserta atau tandai perlu tes ulang sebelum publikasi.',
             ]);
         }
     }
@@ -586,7 +662,13 @@ class TalentTestController extends Controller
         };
     }
 
-    private function buildPublishBlockReason(string $attendanceStatus, int $filledAspectCount, int $aspectCount, string $abilityCategory): ?string
+    private function buildPublishBlockReason(
+        string $attendanceStatus,
+        int $filledAspectCount,
+        string $abilityCategory,
+        string $decisionStatus,
+        bool $needsRetest
+    ): ?string
     {
         if (in_array($attendanceStatus, ['absent', 'sick', 'permission'], true)) {
             return null;
@@ -596,15 +678,57 @@ class TalentTestController extends Controller
             return 'Tentukan status kehadiran peserta terlebih dahulu.';
         }
 
-        if ($filledAspectCount < $aspectCount) {
-            return 'Masih ada aspek penilaian yang belum diisi.';
+        if ($filledAspectCount === 0) {
+            return 'Isi minimal satu aspek penilaian.';
         }
 
         if ($abilityCategory === '') {
             return 'Kategori kemampuan belum diisi.';
         }
 
+        if (! $needsRetest && $decisionStatus === '') {
+            return 'Keputusan akhir belum dipilih.';
+        }
+
         return null;
+    }
+
+    private function syncRegistrationDecision(
+        ?Registration $registration,
+        ?string $decisionStatus,
+        ?string $decisionNotes,
+        string $coachNotes,
+        bool $needsRetest
+    ): void {
+        if (! $registration) {
+            return;
+        }
+
+        if ($needsRetest) {
+            $registration->update([
+                'status' => Registration::STATUS_PENDING,
+                'willing_to_take_test' => true,
+                'notes' => $decisionNotes ?: ($coachNotes !== '' ? $coachNotes : $registration->notes),
+                'verified_by' => auth()->id(),
+                'verified_at' => now(),
+            ]);
+
+            return;
+        }
+
+        if (! in_array($decisionStatus, ['accepted', 'rejected'], true)) {
+            return;
+        }
+
+        $registration->update([
+            'status' => $decisionStatus === 'accepted'
+                ? Registration::STATUS_APPROVED
+                : Registration::STATUS_REJECTED,
+            'willing_to_take_test' => false,
+            'notes' => $decisionNotes ?: ($coachNotes !== '' ? $coachNotes : $registration->notes),
+            'verified_by' => auth()->id(),
+            'verified_at' => now(),
+        ]);
     }
 
     private function guardTalentTest(Schedule $schedule): void

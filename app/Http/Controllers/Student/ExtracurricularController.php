@@ -26,6 +26,9 @@ class ExtracurricularController extends Controller
         $category = in_array($requestedCategory, $allowedCategories, true) ? $requestedCategory : 'semua';
         $status = $filters['status'] ?? 'all';
         $student = auth()->user()->student;
+        if ($student) {
+            $student->loadMissing('registrations');
+        }
 
         $registrations = $student
             ? Registration::where('student_id', $student->id)->pluck('status', 'extracurricular_id')
@@ -82,6 +85,10 @@ class ExtracurricularController extends Controller
             'category' => $category,
             'status' => $status,
             'registrationStatuses' => $registrations,
+            'student' => $student,
+            'activeRegistrationCount' => $student?->activeRegistrationCount() ?? 0,
+            'hasReachedRegistrationLimit' => $student?->hasReachedRegistrationLimit() ?? false,
+            'hasLegacyRegistrationOverflow' => $student?->hasLegacyRegistrationOverflow() ?? false,
             'filterCategories' => collect(Extracurricular::categoryDefinitions())
                 ->map(fn (array $definition) => ['key' => $definition['key'], 'label' => $definition['label']])
                 ->prepend(['key' => 'semua', 'label' => 'Semua'])
@@ -95,6 +102,7 @@ class ExtracurricularController extends Controller
         $registration = null;
 
         if ($student) {
+            $student->loadMissing('registrations');
             $registration = Registration::where('student_id', $student->id)
                 ->where('extracurricular_id', $extracurricular->id)
                 ->first();
@@ -114,6 +122,10 @@ class ExtracurricularController extends Controller
         return view('student.extracurriculars.show', [
             'extracurricular' => $extracurricular,
             'registration' => $registration,
+            'student' => $student,
+            'activeRegistrationCount' => $student?->activeRegistrationCount() ?? 0,
+            'hasReachedRegistrationLimit' => $student?->hasReachedRegistrationLimit() ?? false,
+            'hasLegacyRegistrationOverflow' => $student?->hasLegacyRegistrationOverflow() ?? false,
         ]);
     }
 

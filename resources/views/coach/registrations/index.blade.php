@@ -48,6 +48,7 @@
                     <option value="">Semua status</option>
                     <option value="pending" @selected($status === 'pending')>Menunggu</option>
                     <option value="waiting_test" @selected($status === 'waiting_test')>Menunggu Tes</option>
+                    <option value="scheduled_test" @selected($status === 'scheduled_test')>Tes Dijadwalkan</option>
                     <option value="approved" @selected($status === 'approved')>Diterima</option>
                     <option value="rejected" @selected($status === 'rejected')>Ditolak</option>
                 </select>
@@ -141,15 +142,7 @@
                                 <div class="d-flex flex-column gap-1">
                                     @foreach($studentRegistrations as $registration)
                                         @php
-                                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
-                                            $latestTalentParticipant = $registration->talentTestParticipants
-                                                ->sortByDesc(fn ($item) => optional($item->schedule)->activity_date?->timestamp ?? 0)
-                                                ->first();
-                                            $hasScheduledTest = (bool) $latestTalentParticipant;
-                                            $displayStatus = $registration->status;
-                                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
-                                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
-                                            }
+                                            $displayStatus = $registration->displayStatus();
                                             $displayStatusLabel = $statusMap[$displayStatus] ?? ucfirst($displayStatus);
                                         @endphp
                                         <span class="badge" data-status="{{ $displayStatusLabel }}">{{ $displayStatusLabel }}</span>
@@ -165,6 +158,11 @@
                                         Kemampuan awal: {{ $latestRegistration->current_skills }}.
                                     @endif
                                 </div>
+                                @if($student->hasLegacyRegistrationOverflow())
+                                    <div class="small text-warning fw-semibold mt-1">
+                                        Data lama siswa ini melebihi batas 3 ekstrakurikuler. Pendaftaran baru harus ditahan.
+                                    </div>
+                                @endif
                             </td>
                             <td class="text-end table-action-col">
                                 <div class="d-flex flex-column gap-2 align-items-end">
@@ -174,22 +172,14 @@
                                     </button>
                                     @foreach($studentRegistrations as $registration)
                                         @php
-                                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
-                                            $latestTalentParticipant = $registration->talentTestParticipants
-                                                ->sortByDesc(fn ($item) => optional($item->schedule)->activity_date?->timestamp ?? 0)
-                                                ->first();
-                                            $hasScheduledTest = (bool) $latestTalentParticipant;
-                                            $displayStatus = $registration->status;
-                                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
-                                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
-                                            }
+                                            $displayStatus = $registration->displayStatus();
                                         @endphp
                                         <div class="d-flex flex-wrap justify-content-end gap-1">
                                             <a href="{{ route('coach.registrations.show', $registration) }}" class="btn btn-sm btn-outline-primary action-button-compact">
                                                 <i class="bi bi-eye"></i>
                                                 <span class="d-none d-md-inline">{{ $registration->extracurricular->catalog_item_name ?? 'Detail' }}</span>
                                             </a>
-                                            @if($displayStatus === 'pending' || in_array($displayStatus, ['approved', 'rejected'], true))
+                                            @if(in_array($displayStatus, ['pending', 'approved', 'rejected'], true))
                                                 <button
                                                     type="button"
                                                     class="btn btn-sm btn-outline-secondary registration-verify-trigger"
@@ -199,13 +189,15 @@
                                                     data-student="{{ $registration->student->user->name ?? '-' }}"
                                                     data-nis="{{ $registration->student->nis ?? '-' }}"
                                                     data-class-name="{{ $registration->student->class_name ?? '-' }}"
+                                                    data-extracurricular-id="{{ $registration->extracurricular_id }}"
                                                     data-extracurricular="{{ $registration->extracurricular->name ?? '-' }}"
                                                     data-primary-talent="{{ $registration->primary_talent ?: '-' }}"
                                                     data-prior-experience="{{ $registration->prior_experience ?: '-' }}"
                                                     data-current-skills="{{ $registration->current_skills ?: '-' }}"
                                                     data-achievement-history="{{ $registration->achievement_history ?: '-' }}"
                                                     data-notes="{{ $registration->notes ?? '' }}"
-                                                    data-default-decision="{{ $displayStatus === 'pending' ? ($registration->willing_to_take_test ? 'schedule_test' : 'approve') : ($displayStatus === 'rejected' ? 'approve' : ($registration->willing_to_take_test ? 'schedule_test' : 'approve')) }}"
+                                                    data-current-schedule-id="{{ optional($registration->talentTestParticipants->sortByDesc('id')->first())->schedule_id ?? '' }}"
+                                                    data-default-decision="{{ $registration->willing_to_take_test ? 'schedule_test' : 'approve' }}"
                                                     data-modal-title="{{ $displayStatus === 'pending' ? 'Verifikasi Pendaftar' : ($displayStatus === 'rejected' ? 'Tinjau Kembali Pendaftaran' : 'Ubah Keputusan Pendaftaran') }}"
                                                 >
                                                     <i class="bi bi-check2-square"></i>
@@ -264,21 +256,19 @@
                                 <div class="d-flex flex-column gap-1">
                                     @foreach($studentRegistrations as $registration)
                                         @php
-                                            $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
-                                            $latestTalentParticipant = $registration->talentTestParticipants
-                                                ->sortByDesc(fn ($item) => optional($item->schedule)->activity_date?->timestamp ?? 0)
-                                                ->first();
-                                            $hasScheduledTest = (bool) $latestTalentParticipant;
-                                            $displayStatus = $registration->status;
-                                            if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
-                                                $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
-                                            }
+                                            $displayStatus = $registration->displayStatus();
                                             $displayStatusLabel = $statusMap[$displayStatus] ?? ucfirst($displayStatus);
                                         @endphp
                                         <span class="badge align-self-start" data-status="{{ $displayStatusLabel }}">{{ ($registration->extracurricular->name ?? '-') . ': ' . $displayStatusLabel }}</span>
                                     @endforeach
                                 </div>
                             </div>
+                            @if($student->hasLegacyRegistrationOverflow())
+                                <div>
+                                    <span class="mobile-data-item-label">Peringatan</span>
+                                    <p class="mobile-data-item-value text-warning fw-semibold">Data lama siswa ini melebihi batas 3 ekstrakurikuler. Pendaftaran baru harus ditahan.</p>
+                                </div>
+                            @endif
                         </div>
                         <div class="mobile-data-card-actions">
                             <button type="button" class="btn btn-outline-secondary profile-preview-trigger" data-profile-url="{{ route('registrations.profile-preview', $latestRegistration) }}">
@@ -286,20 +276,12 @@
                             </button>
                             @foreach($studentRegistrations as $registration)
                                 @php
-                                    $hasPublishedResult = $registration->talentTestResults->contains(fn ($item) => $item->status === 'published');
-                                    $latestTalentParticipant = $registration->talentTestParticipants
-                                        ->sortByDesc(fn ($item) => optional($item->schedule)->activity_date?->timestamp ?? 0)
-                                        ->first();
-                                    $hasScheduledTest = (bool) $latestTalentParticipant;
-                                    $displayStatus = $registration->status;
-                                    if ($registration->status === 'approved' && $registration->willing_to_take_test && ! $hasPublishedResult) {
-                                        $displayStatus = $hasScheduledTest ? 'scheduled_test' : 'waiting_test';
-                                    }
+                                    $displayStatus = $registration->displayStatus();
                                 @endphp
                                 <a href="{{ route('coach.registrations.show', $registration) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-eye"></i>{{ $registration->extracurricular->catalog_item_name ?? 'Detail' }}
                                 </a>
-                                @if($displayStatus === 'pending' || in_array($displayStatus, ['approved', 'rejected'], true))
+                                @if(in_array($displayStatus, ['pending', 'approved', 'rejected'], true))
                                     <button
                                         type="button"
                                         class="btn btn-outline-secondary registration-verify-trigger"
@@ -309,13 +291,15 @@
                                         data-student="{{ $registration->student->user->name ?? '-' }}"
                                         data-nis="{{ $registration->student->nis ?? '-' }}"
                                         data-class-name="{{ $registration->student->class_name ?? '-' }}"
+                                        data-extracurricular-id="{{ $registration->extracurricular_id }}"
                                         data-extracurricular="{{ $registration->extracurricular->name ?? '-' }}"
                                         data-primary-talent="{{ $registration->primary_talent ?: '-' }}"
                                         data-prior-experience="{{ $registration->prior_experience ?: '-' }}"
                                         data-current-skills="{{ $registration->current_skills ?: '-' }}"
                                         data-achievement-history="{{ $registration->achievement_history ?: '-' }}"
                                         data-notes="{{ $registration->notes ?? '' }}"
-                                        data-default-decision="{{ $displayStatus === 'pending' ? ($registration->willing_to_take_test ? 'schedule_test' : 'approve') : ($displayStatus === 'rejected' ? 'approve' : ($registration->willing_to_take_test ? 'schedule_test' : 'approve')) }}"
+                                        data-current-schedule-id="{{ optional($registration->talentTestParticipants->sortByDesc('id')->first())->schedule_id ?? '' }}"
+                                        data-default-decision="{{ $registration->willing_to_take_test ? 'schedule_test' : 'approve' }}"
                                         data-modal-title="{{ $displayStatus === 'pending' ? 'Verifikasi Pendaftar' : ($displayStatus === 'rejected' ? 'Tinjau Kembali Pendaftaran' : 'Ubah Keputusan Pendaftaran') }}"
                                     >
                                         <i class="bi bi-check2-square"></i>Verifikasi {{ $registration->extracurricular->catalog_item_name ?? 'Pendaftaran' }}
@@ -338,11 +322,9 @@
     <div class="modal fade" id="registrationVerificationModal" tabindex="-1" aria-labelledby="registrationVerificationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content verification-modal">
-                <form method="post" action="#" id="registrationVerificationForm">
+                <form method="post" action="#" id="registrationVerificationForm" data-schedule-options='@json($talentTestScheduleOptions ?? [])'>
                     @csrf
                     @method('patch')
-                    <input type="hidden" name="status" id="registrationVerificationStatus" value="approved">
-
                     <div class="modal-header border-0 pb-0">
                         <div>
                             <h2 class="modal-title h4 mb-1" id="registrationVerificationModalLabel">Verifikasi Pendaftar</h2>
@@ -383,7 +365,7 @@
 
                         <div class="form-section-card mt-3">
                             <h3 class="form-section-title">Keputusan Verifikasi</h3>
-                            <p class="form-section-copy">Pilih keputusan yang paling sesuai. Opsi jadwalkan tes tetap mempertahankan alur verifikasi, lalu lanjutkan penjadwalan tes dari modul tes bakat pembina.</p>
+                            <p class="form-section-copy">Pilih keputusan yang paling sesuai. Saat memilih jadwalkan tes, isi jadwal tes langsung dari form ini dan status pendaftaran tidak langsung menjadi diterima.</p>
                             <div class="verification-decision-group">
                                 <label class="verification-decision-option">
                                     <input type="radio" name="decision" value="approve" checked>
@@ -396,7 +378,7 @@
                                     <input type="radio" name="decision" value="schedule_test">
                                     <span>
                                         <strong>Jadwalkan Tes</strong>
-                                        <small>Simpan sebagai diterima dan lanjutkan penjadwalan tes bakat.</small>
+                                        <small>Simpan sebagai proses tes dan buat jadwal tes bakat untuk siswa ini.</small>
                                     </span>
                                 </label>
                                 <label class="verification-decision-option">
@@ -411,6 +393,45 @@
                             <div class="mt-3">
                                 <label class="form-label" for="registrationVerificationNotes">Catatan verifikasi</label>
                                 <textarea name="notes" id="registrationVerificationNotes" class="form-control" rows="4" placeholder="Tulis alasan keputusan, arahan tes, atau catatan tindak lanjut"></textarea>
+                            </div>
+
+                            <div class="mt-3 d-none" id="registrationVerificationScheduleFields">
+                                <div class="alert alert-danger d-none" id="registrationVerificationScheduleError" role="alert"></div>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label" for="registrationVerificationExistingSchedule">Gunakan jadwal yang sudah ada</label>
+                                        <select name="existing_schedule_id" id="registrationVerificationExistingSchedule" class="form-select">
+                                            <option value="">Buat jadwal baru</option>
+                                        </select>
+                                        <div class="helper-text mt-1" id="registrationVerificationExistingScheduleHelp">Pilih jadwal tes yang sudah dibuat untuk ekskul ini jika ingin menambahkan siswa ke jadwal yang sama.</div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-0" id="registrationVerificationScheduleManualFields">
+                                    <div class="col-md-12">
+                                        <label class="form-label" for="registrationVerificationScheduleTitle">Judul tes</label>
+                                        <input type="text" name="schedule_title" id="registrationVerificationScheduleTitle" class="form-control" placeholder="Contoh: Tes Bakat Gelombang 1">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="registrationVerificationScheduleDate">Tanggal tes</label>
+                                        <input type="date" name="schedule_date" id="registrationVerificationScheduleDate" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="registrationVerificationScheduleStartTime">Jam mulai</label>
+                                        <input type="time" name="schedule_start_time" id="registrationVerificationScheduleStartTime" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="registrationVerificationScheduleEndTime">Jam selesai</label>
+                                        <input type="time" name="schedule_end_time" id="registrationVerificationScheduleEndTime" class="form-control">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label" for="registrationVerificationScheduleLocation">Lokasi</label>
+                                        <input type="text" name="schedule_location" id="registrationVerificationScheduleLocation" class="form-control" placeholder="Aula, lapangan, ruang musik, dll.">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label" for="registrationVerificationScheduleDescription">Keterangan jadwal</label>
+                                        <textarea name="schedule_description" id="registrationVerificationScheduleDescription" class="form-control" rows="3" placeholder="Instruksi tes, perlengkapan, atau keterangan tambahan"></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

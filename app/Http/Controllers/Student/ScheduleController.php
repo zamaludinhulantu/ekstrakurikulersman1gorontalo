@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
+use App\Models\TalentTestParticipant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -21,6 +22,16 @@ class ScheduleController extends Controller
         $approvedExtracurricularIds = Registration::where('student_id', $student->id)
             ->where('status', Registration::STATUS_APPROVED)
             ->pluck('extracurricular_id');
+        $talentTestScheduleIds = TalentTestParticipant::query()
+            ->where('student_id', $student->id)
+            ->pluck('schedule_id');
+        $talentTestExtracurricularIds = Schedule::query()
+            ->whereIn('id', $talentTestScheduleIds)
+            ->pluck('extracurricular_id');
+        $accessibleExtracurricularIds = $approvedExtracurricularIds
+            ->merge($talentTestExtracurricularIds)
+            ->unique()
+            ->values();
 
         $date = $request->string('date')->toString();
         $tab = $request->string('tab')->toString() ?: 'upcoming';
@@ -33,7 +44,15 @@ class ScheduleController extends Controller
         $timeNow = $now->format('H:i:s');
 
         $baseQuery = Schedule::with(['extracurricular', 'coach.user'])
-            ->whereIn('extracurricular_id', $approvedExtracurricularIds)
+            ->where(function ($query) use ($approvedExtracurricularIds, $student): void {
+                $query->where(function ($activityQuery) use ($approvedExtracurricularIds): void {
+                    $activityQuery->whereIn('extracurricular_id', $approvedExtracurricularIds)
+                        ->where('schedule_type', '!=', 'talent_test');
+                })->orWhere(function ($talentTestQuery) use ($student): void {
+                    $talentTestQuery->where('schedule_type', 'talent_test')
+                        ->whereHas('talentTestParticipants', fn ($participantQuery) => $participantQuery->where('student_id', $student->id));
+                });
+            })
             ->when($date, fn ($query, $dateValue) => $query->whereDate('activity_date', $dateValue));
 
         $upcomingSchedules = (clone $baseQuery)
@@ -199,7 +218,7 @@ class ScheduleController extends Controller
         return view('student.schedules.index', [
             'date' => $date,
             'tab' => in_array($tab, ['upcoming', 'history'], true) ? $tab : 'upcoming',
-            'extracurriculars' => Extracurricular::whereIn('id', $approvedExtracurricularIds)->orderBy('name')->get(),
+            'extracurriculars' => Extracurricular::whereIn('id', $accessibleExtracurricularIds)->orderBy('name')->get(),
             'upcomingSchedules' => $upcomingSchedules,
             'historySchedules' => $historySchedules,
             'nextSchedule' => $nextSchedule,
