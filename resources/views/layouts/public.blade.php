@@ -78,6 +78,11 @@
                     <strong>Sistem Informasi Ekstrakurikuler</strong>
                     <div class="footer-public-school">SMA Negeri 1 Gorontalo</div>
                     <p>Portal resmi untuk menjelajahi kategori ekskul seperti OSN, FLS3N, Debat, O2SN, dan kegiatan umum secara lebih ringkas.</p>
+                    <div class="footer-public-actions">
+                        <button type="button" class="btn btn-light btn-sm install-app-trigger footer-install-app" hidden>
+                            <i class="bi bi-phone"></i>Install App
+                        </button>
+                    </div>
                 </div>
             </div>
             <div>
