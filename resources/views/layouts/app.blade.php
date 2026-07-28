@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('page_title', 'Dashboard') | {{ config('app.name') }}</title>
     <link rel="icon" type="image/jpeg" href="{{ asset('images/brand/sman1-gorontalo-logo.jpg') }}">
+    @include('partials.pwa-meta')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -15,6 +16,13 @@
     data-idle-logout-url="{{ route('logout') }}"
     data-idle-redirect-url="{{ route('login') }}"
     data-idle-keep-alive-url="{{ route('session.keep-alive') }}"
+    data-service-worker-url="{{ route('pwa.service-worker') }}"
+    data-pwa-enabled="true"
+    data-vapid-public-key="{{ config('services.webpush.public_key') }}"
+    data-push-status-url="{{ route('push-subscriptions.status') }}"
+    data-push-subscribe-url="{{ route('push-subscriptions.store') }}"
+    data-push-unsubscribe-url="{{ route('push-subscriptions.destroy') }}"
+    data-push-unsubscribe-all-url="{{ route('push-subscriptions.destroy-all') }}"
 >
 @php
     $authUser = auth()->user();
@@ -255,6 +263,7 @@
                     </div>
                 </div>
                 <div class="topbar-meta topbar-meta-desktop">
+                    @include('partials.notification-menu')
                     <div class="date-pill">
                         <i class="bi bi-calendar3 text-primary"></i>
                         <div>
@@ -284,6 +293,12 @@
                     <a href="{{ route('profile.edit') }}" class="dropdown-item">
                         <i class="bi bi-person-circle"></i>Profil
                     </a>
+                    <a href="{{ route('notifications.index') }}" class="dropdown-item">
+                        <i class="bi bi-bell"></i>Notifikasi
+                    </a>
+                    <a href="{{ route('settings.pwa-notifications') }}" class="dropdown-item">
+                        <i class="bi bi-phone"></i>PWA & Notifikasi
+                    </a>
                     <form action="{{ route('logout') }}" method="post">
                         @csrf
                         <button type="submit" class="dropdown-item text-danger" data-loading-text="Keluar...">
@@ -293,6 +308,7 @@
                 </div>
             </div>
             <div class="page-actions page-actions-desktop mt-3">
+                <a href="{{ route('settings.pwa-notifications') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-phone"></i>PWA & Notifikasi</a>
                 <a href="{{ route('profile.edit') }}" class="btn btn-outline-primary btn-sm" aria-label="Buka halaman profil"><i class="bi bi-person-circle"></i>Profil</a>
                 <form action="{{ route('logout') }}" method="post" class="d-inline-flex">
                     @csrf
@@ -375,6 +391,7 @@
 </div>
 
 @stack('scripts')
+@include('partials.pwa-ui')
 <script>
     (function () {
         const statusClassMap = {

@@ -16,11 +16,13 @@ use App\Policies\ExtracurricularPolicy;
 use App\Policies\RegistrationPolicy;
 use App\Policies\SchedulePolicy;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Database\QueryException;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -65,7 +67,13 @@ class AppServiceProvider extends ServiceProvider
                 ->line('Jika Anda tidak merasa membuat akun ini, abaikan email ini.');
         });
 
-        $hasSystemSettingsTable ??= Schema::hasTable('system_settings');
+        if ($hasSystemSettingsTable === null) {
+            try {
+                $hasSystemSettingsTable = Schema::hasTable('system_settings');
+            } catch (QueryException) {
+                $hasSystemSettingsTable = false;
+            }
+        }
 
         if ($hasSystemSettingsTable) {
             $settings = SystemSetting::valuesFor([
@@ -111,5 +119,28 @@ class AppServiceProvider extends ServiceProvider
                 Config::set('mail.from.name', $settings->get('mail_from_name'));
             }
         }
+
+        View::composer(['partials.notification-menu', 'notifications.index'], function ($view): void {
+            static $notificationData = [];
+
+            $user = auth()->user();
+            if (! $user) {
+                $view->with([
+                    'unreadNotificationCount' => 0,
+                    'recentNotifications' => collect(),
+                ]);
+
+                return;
+            }
+
+            if (! array_key_exists($user->id, $notificationData)) {
+                $notificationData[$user->id] = [
+                    'unreadNotificationCount' => $user->unreadNotifications()->count(),
+                    'recentNotifications' => $user->notifications()->latest()->limit(5)->get(),
+                ];
+            }
+
+            $view->with($notificationData[$user->id]);
+        });
     }
 }

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Coach;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coach;
+use App\Models\NotificationPreference;
 use App\Models\Registration;
 use App\Models\Schedule;
+use App\Support\NotificationCenter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,6 +55,7 @@ class ScheduleController extends Controller
         DB::transaction(function () use ($validated, $request): void {
             $schedule = Schedule::create($validated);
             $this->syncParticipants($schedule, $request->input('participant_registration_ids', []));
+            $this->notifyParticipants($schedule, 'Jadwal baru telah dibuat untuk kegiatan ekstrakurikuler Anda.', 'schedule-created-'.$schedule->id);
         });
 
         return redirect()->route('coach.schedules.index')->with('success', 'Jadwal berhasil ditambahkan.');
@@ -79,6 +82,7 @@ class ScheduleController extends Controller
         DB::transaction(function () use ($schedule, $validated, $request): void {
             $schedule->update($validated);
             $this->syncParticipants($schedule, $request->input('participant_registration_ids', []));
+            $this->notifyParticipants($schedule, 'Jadwal kegiatan Anda telah diperbarui. Silakan cek tanggal, waktu, dan lokasi terbaru.', 'schedule-updated-'.$schedule->id, NotificationPreference::CATEGORY_SCHEDULE_CHANGES);
         });
 
         return redirect()->route('coach.schedules.index')->with('success', 'Jadwal berhasil diperbarui.');
@@ -153,5 +157,29 @@ class ScheduleController extends Controller
         $schedule->scheduleParticipants()
             ->whereNotIn('student_id', $existingStudentIds)
             ->delete();
+    }
+
+    private function notifyParticipants(
+        Schedule $schedule,
+        string $message,
+        string $tag,
+        string $category = NotificationPreference::CATEGORY_SCHEDULE_ACTIVITY
+    ): void {
+        $students = Registration::query()
+            ->with('student.user')
+            ->where('extracurricular_id', $schedule->extracurricular_id)
+            ->where('status', Registration::STATUS_APPROVED)
+            ->get()
+            ->pluck('student.user')
+            ->filter();
+
+        app(NotificationCenter::class)->notifyUsers($students, [
+            'title' => $schedule->title ?: 'Pembaruan jadwal ekstrakurikuler',
+            'message' => $message,
+            'url' => route('student.schedules.index'),
+            'category' => $category,
+            'icon' => 'bi-calendar-event',
+            'tag' => $tag,
+        ]);
     }
 }

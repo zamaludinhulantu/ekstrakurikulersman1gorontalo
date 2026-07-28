@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Coach;
 use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\NotificationPreference;
 use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\ScheduleParticipant;
+use App\Support\NotificationCenter;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -157,6 +159,25 @@ class AttendanceController extends Controller
                 );
             }
         });
+
+        if ($submitAction === 'finalize') {
+            $recipients = Registration::query()
+                ->with('student.user')
+                ->where('extracurricular_id', $schedule->extracurricular_id)
+                ->where('status', Registration::STATUS_APPROVED)
+                ->get()
+                ->pluck('student.user')
+                ->filter();
+
+            app(NotificationCenter::class)->notifyUsers($recipients, [
+                'title' => 'Presensi kegiatan diperbarui',
+                'message' => "Presensi untuk {$schedule->title} telah dicatat oleh pembina.",
+                'url' => route('student.attendances.index'),
+                'category' => NotificationPreference::CATEGORY_ATTENDANCE,
+                'icon' => 'bi-check2-square',
+                'tag' => 'attendance-'.$schedule->id,
+            ]);
+        }
 
         return redirect()->route('coach.attendances.index', ['schedule_id' => $schedule->id])
             ->with('success', $submitAction === 'draft'

@@ -34,7 +34,7 @@ class EnsureAuthenticatedSessionIsActive
             }
 
             return redirect()
-                ->route('login')
+                ->guest(route('login'))
                 ->with('error', 'Sesi Anda sudah berakhir karena tidak ada aktivitas. Silakan masuk kembali.');
         }
 

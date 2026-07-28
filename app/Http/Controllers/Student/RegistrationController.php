@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRegistrationRequest;
 use App\Models\Extracurricular;
+use App\Models\NotificationPreference;
 use App\Models\Registration;
+use App\Models\User;
+use App\Support\NotificationCenter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\UploadedFile;
@@ -87,7 +90,7 @@ class RegistrationController extends Controller
         }
 
         DB::transaction(function () use ($request, $student, $extracurricular): void {
-            Registration::updateOrCreate(
+            $registration = Registration::updateOrCreate(
                 [
                     'student_id' => $student->id,
                     'extracurricular_id' => $extracurricular->id,
@@ -112,6 +115,30 @@ class RegistrationController extends Controller
                     'verified_at' => null,
                 ]
             );
+
+            app(NotificationCenter::class)->notifyUser($student->user, [
+                'title' => 'Pendaftaran berhasil dikirim',
+                'message' => "Pendaftaran Anda untuk {$extracurricular->name} berhasil dikirim dan menunggu verifikasi.",
+                'url' => route('student.registrations.index'),
+                'category' => NotificationPreference::CATEGORY_REGISTRATION_STATUS,
+                'icon' => 'bi-clipboard-check',
+                'tag' => 'registration-submitted-'.$registration->id,
+            ], false);
+
+            $reviewers = User::query()
+                ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])
+                ->get()
+                ->merge($extracurricular->coaches()->with('user')->get()->pluck('user'))
+                ->filter();
+
+            app(NotificationCenter::class)->notifyUsers($reviewers, [
+                'title' => 'Pendaftaran baru memerlukan perhatian',
+                'message' => "{$student->user->name} mengajukan pendaftaran baru ke {$extracurricular->name}.",
+                'url' => route('admin.registrations.index'),
+                'category' => NotificationPreference::CATEGORY_ADMIN_ALERT,
+                'icon' => 'bi-person-plus',
+                'tag' => 'registration-review-'.$registration->id,
+            ]);
         });
 
         return redirect()
@@ -184,6 +211,17 @@ class RegistrationController extends Controller
                 'verified_by' => null,
                 'verified_at' => null,
             ]);
+
+            $registration->loadMissing(['student.user', 'extracurricular']);
+
+            app(NotificationCenter::class)->notifyUser($registration->student->user, [
+                'title' => 'Pendaftaran diperbarui',
+                'message' => "Perubahan pendaftaran untuk {$registration->extracurricular->name} berhasil disimpan.",
+                'url' => route('student.registrations.index'),
+                'category' => NotificationPreference::CATEGORY_REGISTRATION_STATUS,
+                'icon' => 'bi-pencil-square',
+                'tag' => 'registration-updated-'.$registration->id,
+            ], false);
         });
 
         return redirect()->route('student.registrations.index')->with('success', 'Data pendaftaran berhasil diperbarui.');

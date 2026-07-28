@@ -29,7 +29,7 @@
                             <div class="auth-form-header">
                                 <span class="auth-section-kicker">Informasi</span>
                                 <h2>Pemeliharaan Sedang Berlangsung</h2>
-                                <p>Fitur publik dan dashboard non-super-admin untuk sementara tidak tersedia agar perubahan sistem tetap aman.</p>
+                              
                             </div>
 
                             <div class="auth-footer-links mt-4">

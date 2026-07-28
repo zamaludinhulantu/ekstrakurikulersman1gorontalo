@@ -102,6 +102,16 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasOne(Coach::class);
     }
 
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     public function verifiedRegistrations(): HasMany
     {
         return $this->hasMany(Registration::class, 'verified_by');

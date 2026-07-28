@@ -18,13 +18,13 @@ class RoleMiddleware
         $user = $request->user();
 
         if (! $user) {
-            return redirect()->route('login')->with('error', 'Silakan login terlebih dahulu.');
+            return redirect()->guest(route('login'))->with('error', 'Silakan login terlebih dahulu.');
         }
 
         if (! $user->is_active) {
             auth()->logout();
 
-            return redirect()->route('login')->with('error', 'Akun Anda tidak aktif.');
+            return redirect()->guest(route('login'))->with('error', 'Akun Anda tidak aktif.');
         }
 
         if ($roles !== [] && ! in_array($user->role, $roles, true)) {

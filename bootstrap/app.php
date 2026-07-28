@@ -9,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,7 +33,25 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return redirect()
-                ->route('login')
+                ->guest(route('login'))
                 ->with('error', 'Sesi Anda sudah berakhir karena tidak ada aktivitas. Silakan masuk kembali.');
+        });
+
+        $exceptions->render(function (\Throwable $exception, Request $request) {
+            if (! $request->boolean('_notification_redirect')) {
+                return null;
+            }
+
+            $statusCode = $exception instanceof HttpExceptionInterface
+                ? $exception->getStatusCode()
+                : null;
+
+            if (! in_array($statusCode, [403, 404], true)) {
+                return null;
+            }
+
+            return redirect()
+                ->route('dashboard')
+                ->with('error', 'Halaman tujuan notifikasi tidak tersedia atau Anda tidak memiliki akses.');
         });
     })->create();

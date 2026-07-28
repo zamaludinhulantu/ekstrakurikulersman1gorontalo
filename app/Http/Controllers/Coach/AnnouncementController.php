@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Coach;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\NotificationPreference;
+use App\Models\Registration;
+use App\Support\NotificationCenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -83,6 +86,7 @@ class AnnouncementController extends Controller
         abort_unless($coach, 404, 'Data pembina tidak ditemukan.');
 
         $announcement = Announcement::create($this->validatedPayload($request, $coach->extracurriculars()->pluck('extracurriculars.id')->all()));
+        $this->notifyAnnouncementAudience($announcement);
 
         return redirect()->route('coach.announcements.index')->with('success', 'Pengumuman berhasil disimpan.');
     }
@@ -105,6 +109,7 @@ class AnnouncementController extends Controller
 
         $payload = $this->validatedPayload($request, $coach->extracurriculars()->pluck('extracurriculars.id')->all(), $announcement);
         $announcement->update($payload);
+        $this->notifyAnnouncementAudience($announcement);
 
         return redirect()->route('coach.announcements.index')->with('success', 'Pengumuman berhasil diperbarui.');
     }
@@ -120,6 +125,7 @@ class AnnouncementController extends Controller
         }
 
         $announcement->update($payload);
+        $this->notifyAnnouncementAudience($announcement);
 
         return redirect()->route('coach.announcements.index')->with('success', 'Pengumuman berhasil dipublikasikan.');
     }
@@ -237,5 +243,33 @@ class AnnouncementController extends Controller
         }
 
         return $payload;
+    }
+
+    private function notifyAnnouncementAudience(Announcement $announcement): void
+    {
+        if (! $announcement->is_active) {
+            return;
+        }
+
+        if (Announcement::supportsEnhancedSchema() && $announcement->publication_status !== Announcement::STATUS_PUBLISHED) {
+            return;
+        }
+
+        $users = Registration::query()
+            ->with('student.user')
+            ->where('status', Registration::STATUS_APPROVED)
+            ->when($announcement->extracurricular_id, fn ($query, $id) => $query->where('extracurricular_id', $id))
+            ->get()
+            ->pluck('student.user')
+            ->filter();
+
+        app(NotificationCenter::class)->notifyUsers($users, [
+            'title' => 'Pengumuman baru tersedia',
+            'message' => $announcement->title,
+            'url' => route('public.announcements'),
+            'category' => NotificationPreference::CATEGORY_ANNOUNCEMENTS,
+            'icon' => 'bi-megaphone',
+            'tag' => 'announcement-'.$announcement->id,
+        ]);
     }
 }

@@ -24,7 +24,11 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Principal\DashboardController as PrincipalDashboardController;
 use App\Http\Controllers\Principal\AttendanceController as PrincipalAttendanceController;
 use App\Http\Controllers\Principal\ReportController as PrincipalReportController;
+use App\Http\Controllers\PwaAssetController;
+use App\Http\Controllers\PwaSettingsController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\PublicLandingController;
 use App\Http\Controllers\RegistrationAchievementProofController;
 use App\Http\Controllers\RegistrationProfilePreviewController;
@@ -37,6 +41,10 @@ use App\Http\Controllers\Student\TalentTestController as StudentTalentTestContro
 use App\Http\Controllers\Coach\TalentTestController as CoachTalentTestController;
 use App\Http\Controllers\SuperAdmin\SystemController as SuperAdminSystemController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/manifest.webmanifest', [PwaAssetController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/sw.js', [PwaAssetController::class, 'serviceWorker'])->name('pwa.service-worker');
+Route::get('/offline', [PwaAssetController::class, 'offline'])->name('offline');
 
 Route::get('/sitemap.xml', [PublicLandingController::class, 'sitemap'])->name('public.sitemap');
 Route::get('/robots.txt', [PublicLandingController::class, 'robots'])->name('public.robots');
@@ -78,6 +86,16 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('/settings/pwa-notifications', [PwaSettingsController::class, 'show'])->name('settings.pwa-notifications');
+    Route::put('/settings/pwa-notifications', [PwaSettingsController::class, 'update'])->name('settings.pwa-notifications.update');
+    Route::post('/push/subscriptions/status', [PushSubscriptionController::class, 'status'])->name('push-subscriptions.status');
+    Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
+    Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');
+    Route::delete('/push/subscriptions/all', [PushSubscriptionController::class, 'destroyAll'])->name('push-subscriptions.destroy-all');
     Route::get('/registrations/{registration}/profile-preview', [RegistrationProfilePreviewController::class, 'show'])
         ->name('registrations.profile-preview');
     Route::get('/registrations/{registration}/achievement-proof', [RegistrationAchievementProofController::class, 'show'])

@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo')</title>
     <link rel="icon" type="image/jpeg" href="{{ asset('images/brand/sman1-gorontalo-logo.jpg') }}">
+    @include('partials.pwa-meta')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="public-body">
+<body class="public-body" data-pwa-enabled="true" data-service-worker-url="{{ route('pwa.service-worker') }}">
 @php
     $publicCategories = collect(\App\Models\Extracurricular::categoryDefinitions())
         ->map(fn (array $definition) => [
@@ -178,5 +179,6 @@
 </div>
 
 @stack('scripts')
+@include('partials.pwa-ui')
 </body>
 </html>

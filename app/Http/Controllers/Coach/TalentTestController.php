@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveTalentTestResultsRequest;
 use App\Http\Requests\StoreTalentTestRequest;
 use App\Models\Extracurricular;
+use App\Models\NotificationPreference;
 use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\TalentTestAspect;
 use App\Models\TalentTestParticipant;
 use App\Models\TalentTestResult;
+use App\Support\NotificationCenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -138,6 +140,7 @@ class TalentTestController extends Controller
             ]);
 
             $this->syncParticipants($schedule, $request->input('participant_registration_ids', []));
+            $this->notifyTalentParticipants($schedule, 'Jadwal tes bakat baru telah dibuat untuk Anda.', 'talent-test-created-'.$schedule->id);
         });
 
         return redirect()->route('coach.talent-tests.index')->with('success', 'Jadwal tes bakat berhasil dibuat.');
@@ -181,6 +184,7 @@ class TalentTestController extends Controller
             ]);
 
             $this->syncParticipants($talentTest, $request->input('participant_registration_ids', []));
+            $this->notifyTalentParticipants($talentTest, 'Jadwal tes bakat Anda telah diperbarui. Periksa detail terbaru.', 'talent-test-updated-'.$talentTest->id);
         });
 
         return redirect()->route('coach.talent-tests.index')->with('success', 'Jadwal tes bakat berhasil diperbarui.');
@@ -464,6 +468,25 @@ class TalentTestController extends Controller
                 : 'Keputusan massal peserta berhasil disimpan.';
         }
 
+        if ($request->boolean('publish')) {
+            $participantIds = $submittedParticipants->pluck('participant_id')->all();
+            $users = $talentTest->talentTestParticipants()
+                ->with('student.user')
+                ->whereIn('id', $participantIds)
+                ->get()
+                ->pluck('student.user')
+                ->filter();
+
+            app(NotificationCenter::class)->notifyUsers($users, [
+                'title' => 'Hasil tes bakat tersedia',
+                'message' => "Hasil tes bakat untuk {$talentTest->extracurricular->name} telah tersedia.",
+                'url' => route('student.talent-tests.index'),
+                'category' => NotificationPreference::CATEGORY_TALENT_TEST,
+                'icon' => 'bi-clipboard2-pulse',
+                'tag' => 'talent-result-'.$talentTest->id,
+            ]);
+        }
+
         return back()->with('success', $successMessage);
     }
 
@@ -481,6 +504,8 @@ class TalentTestController extends Controller
             'cancelled_at' => now(),
             'description' => trim(($talentTest->description ? $talentTest->description.PHP_EOL.PHP_EOL : '').'Dibatalkan: '.($request->input('reason') ?: 'Tanpa alasan tambahan')),
         ]);
+
+        $this->notifyTalentParticipants($talentTest, 'Jadwal tes bakat dibatalkan. Silakan tunggu pembaruan berikutnya dari pembina.', 'talent-test-cancelled-'.$talentTest->id, NotificationPreference::CATEGORY_SCHEDULE_CHANGES);
 
         return back()->with('success', 'Jadwal tes bakat berhasil dibatalkan.');
     }
@@ -734,5 +759,27 @@ class TalentTestController extends Controller
     private function guardTalentTest(Schedule $schedule): void
     {
         abort_unless($schedule->schedule_type === 'talent_test', 404);
+    }
+
+    private function notifyTalentParticipants(
+        Schedule $schedule,
+        string $message,
+        string $tag,
+        string $category = NotificationPreference::CATEGORY_TALENT_TEST
+    ): void {
+        $users = $schedule->talentTestParticipants()
+            ->with('student.user')
+            ->get()
+            ->pluck('student.user')
+            ->filter();
+
+        app(NotificationCenter::class)->notifyUsers($users, [
+            'title' => $schedule->title ?: 'Pembaruan tes bakat',
+            'message' => $message,
+            'url' => route('student.talent-tests.index'),
+            'category' => $category,
+            'icon' => 'bi-clipboard2-pulse',
+            'tag' => $tag,
+        ]);
     }
 }

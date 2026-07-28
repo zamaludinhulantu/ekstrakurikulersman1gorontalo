@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Coach;
 
 use App\Http\Controllers\Controller;
 use App\Models\Extracurricular;
+use App\Models\NotificationPreference;
 use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\Student;
+use App\Support\NotificationCenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -265,38 +267,53 @@ class RegistrationController extends Controller
                 'verified_at' => now(),
             ]);
 
-            if ($decision !== 'schedule_test') {
-                return;
+            if ($decision === 'schedule_test') {
+                if (! empty($validated['existing_schedule_id'])) {
+                    $schedule = Schedule::query()->findOrFail($validated['existing_schedule_id']);
+                } else {
+                    $schedule = Schedule::create([
+                        'extracurricular_id' => $registration->extracurricular_id,
+                        'coach_id' => $coach->id,
+                        'schedule_type' => 'talent_test',
+                        'title' => $validated['schedule_title'],
+                        'activity_date' => $validated['schedule_date'],
+                        'start_time' => $validated['schedule_start_time'],
+                        'end_time' => $validated['schedule_end_time'],
+                        'location' => $validated['schedule_location'],
+                        'description' => $validated['schedule_description'] ?? $validated['notes'] ?? null,
+                        'status' => 'scheduled',
+                    ]);
+                }
+
+                $schedule->talentTestParticipants()->firstOrCreate(
+                    [
+                        'registration_id' => $registration->id,
+                        'student_id' => $registration->student_id,
+                    ],
+                    [
+                        'assigned_by' => auth()->id(),
+                        'attendance_status' => 'pending',
+                        'attendance_notes' => null,
+                    ]
+                );
             }
 
-            if (! empty($validated['existing_schedule_id'])) {
-                $schedule = Schedule::query()->findOrFail($validated['existing_schedule_id']);
-            } else {
-                $schedule = Schedule::create([
-                    'extracurricular_id' => $registration->extracurricular_id,
-                    'coach_id' => $coach->id,
-                    'schedule_type' => 'talent_test',
-                    'title' => $validated['schedule_title'],
-                    'activity_date' => $validated['schedule_date'],
-                    'start_time' => $validated['schedule_start_time'],
-                    'end_time' => $validated['schedule_end_time'],
-                    'location' => $validated['schedule_location'],
-                    'description' => $validated['schedule_description'] ?? $validated['notes'] ?? null,
-                    'status' => 'scheduled',
-                ]);
-            }
+            $registration->loadMissing(['student.user', 'extracurricular']);
 
-            $schedule->talentTestParticipants()->firstOrCreate(
-                [
-                    'registration_id' => $registration->id,
-                    'student_id' => $registration->student_id,
-                ],
-                [
-                    'assigned_by' => auth()->id(),
-                    'attendance_status' => 'pending',
-                    'attendance_notes' => null,
-                ]
-            );
+            $message = match ($decision) {
+                'approve' => "Pendaftaran Anda untuk {$registration->extracurricular->name} telah diterima oleh pembina.",
+                'reject' => "Pendaftaran Anda untuk {$registration->extracurricular->name} ditolak. Buka detail untuk melihat catatan pembina.",
+                default => "Tes bakat untuk {$registration->extracurricular->name} telah dijadwalkan. Silakan cek jadwal terbaru Anda.",
+            };
+
+            app(NotificationCenter::class)->notifyUser($registration->student->user, [
+                'title' => 'Status pendaftaran diperbarui',
+                'message' => $message,
+                'url' => route('student.registrations.index'),
+                'category' => NotificationPreference::CATEGORY_REGISTRATION_STATUS,
+                'icon' => $decision === 'reject' ? 'bi-x-circle' : 'bi-check2-circle',
+                'tag' => 'registration-status-'.$registration->id,
+            ]);
         });
 
         return back()->with('success', 'Status pendaftaran berhasil diperbarui.');

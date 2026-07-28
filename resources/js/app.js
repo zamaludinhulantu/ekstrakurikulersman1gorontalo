@@ -1241,6 +1241,15 @@ document.addEventListener('DOMContentLoaded', () => {
     bindPublicMobileMenu();
     bindRevealAnimations();
     bindCounters();
+    if (document.body?.dataset.pwaEnabled === 'true' || document.querySelector('[data-pwa-settings-root]')) {
+        import('./pwa')
+            .then(({ initPwaFeatures }) => {
+                initPwaFeatures();
+            })
+            .catch(() => {
+                // Ignore deferred PWA bootstrap failures and keep the page usable.
+            });
+    }
 
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', (event) => {

@@ -32,6 +32,8 @@ class Schedule extends Model
         return [
             'activity_date' => 'date',
             'cancelled_at' => 'datetime',
+            'reminder_sent_day_before_at' => 'datetime',
+            'reminder_sent_hours_before_at' => 'datetime',
         ];
     }
 

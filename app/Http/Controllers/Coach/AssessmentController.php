@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\Coach;
 use App\Models\Extracurricular;
+use App\Models\NotificationPreference;
 use App\Models\Registration;
+use App\Support\NotificationCenter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
@@ -134,6 +136,25 @@ class AssessmentController extends Controller
 
         Assessment::create($validated);
 
+        if ($validated['assessment_type'] === 'assessment' && ! empty($validated['student_id'])) {
+            $registration = Registration::query()
+                ->with(['student.user', 'extracurricular'])
+                ->where('student_id', $validated['student_id'])
+                ->where('extracurricular_id', $validated['extracurricular_id'])
+                ->first();
+
+            if ($registration?->student?->user) {
+                app(NotificationCenter::class)->notifyUser($registration->student->user, [
+                    'title' => 'Penilaian baru tersedia',
+                    'message' => "Penilaian {$validated['title']} untuk {$registration->extracurricular->name} telah dipublikasikan.",
+                    'url' => route('student.assessments.index'),
+                    'category' => NotificationPreference::CATEGORY_ASSESSMENT,
+                    'icon' => 'bi-award',
+                    'tag' => 'assessment-'.$registration->student_id.'-'.$validated['assessment_date'].'-'.$validated['title'],
+                ]);
+            }
+        }
+
         $redirectParameters = $request->filled('active_tab')
             ? ['tab' => $request->input('active_tab')]
             : [];
@@ -170,6 +191,20 @@ class AssessmentController extends Controller
 
         $validated = $this->validateSinglePayload($request, $coach->id);
         $assessment->update($validated);
+
+        if ($validated['assessment_type'] === 'assessment') {
+            $assessment->loadMissing(['student.user', 'extracurricular']);
+            if ($assessment->student?->user) {
+                app(NotificationCenter::class)->notifyUser($assessment->student->user, [
+                    'title' => 'Penilaian diperbarui',
+                    'message' => "Penilaian {$assessment->title} untuk {$assessment->extracurricular->name} telah diperbarui.",
+                    'url' => route('student.assessments.index'),
+                    'category' => NotificationPreference::CATEGORY_ASSESSMENT,
+                    'icon' => 'bi-award',
+                    'tag' => 'assessment-'.$assessment->id,
+                ]);
+            }
+        }
 
         return redirect()->route('coach.assessments.index')->with('success', 'Data prestasi kegiatan / penilaian siswa berhasil diperbarui.');
     }
@@ -395,6 +430,26 @@ class AssessmentController extends Controller
                 Assessment::query()->whereKey($id)->update($payload);
             }
         });
+
+        $studentIds = $rows->pluck('student_id')->all();
+        $recipients = Registration::query()
+            ->with('student.user')
+            ->where('extracurricular_id', $validated['extracurricular_id'])
+            ->whereIn('student_id', $studentIds)
+            ->get()
+            ->pluck('student.user')
+            ->filter();
+
+        if ($status === Assessment::STATUS_PUBLISHED) {
+            app(NotificationCenter::class)->notifyUsers($recipients, [
+                'title' => 'Penilaian baru tersedia',
+                'message' => "Penilaian {$title} telah dipublikasikan. Silakan cek hasil terbaru Anda.",
+                'url' => route('student.assessments.index'),
+                'category' => NotificationPreference::CATEGORY_ASSESSMENT,
+                'icon' => 'bi-award',
+                'tag' => 'assessment-mass-'.$validated['extracurricular_id'].'-'.$validated['assessment_date'].'-'.$title,
+            ]);
+        }
 
         return count($insertRows) + count($updateRows);
     }
