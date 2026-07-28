@@ -15,4 +15,8 @@ Artisan::command('notifications:send-schedule-reminders', function (ScheduleRemi
     $this->info("Pengingat jadwal terkirim untuk {$count} jadwal.");
 })->purpose('Kirim pengingat jadwal ekstrakurikuler yang mendekati waktu kegiatan.');
 
+Schedule::command('queue:work --stop-when-empty --tries=1 --max-time=50')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('notifications:send-schedule-reminders')->hourly();
