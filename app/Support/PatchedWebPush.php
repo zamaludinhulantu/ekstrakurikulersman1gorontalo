@@ -72,7 +72,7 @@ class PatchedWebPush extends WebPush
                     throw new \ErrorException('Audience "'.$audience.'"" could not be generated.');
                 }
 
-                $vapidHeaders = $this->getVAPIDHeaders($audience, $contentEncoding, $auth['VAPID']);
+                $vapidHeaders = $this->resolveVapidHeaders($audience, $contentEncoding, $auth['VAPID']);
                 $headers['Authorization'] = $vapidHeaders['Authorization'];
 
                 if ($contentEncoding === 'aesgcm') {
@@ -88,5 +88,40 @@ class PatchedWebPush extends WebPush
         }
 
         return $requests;
+    }
+
+    private function resolveVapidHeaders(string $audience, string $contentEncoding, array $vapid): ?array
+    {
+        $method = new \ReflectionMethod(WebPush::class, 'getVAPIDHeaders');
+        $parameter = $method->getParameters()[1] ?? null;
+        $parameterType = $parameter?->getType();
+
+        if (! $parameterType instanceof \ReflectionNamedType || $parameterType->isBuiltin()) {
+            /** @var array<string, string>|null $headers */
+            $headers = $method->invoke($this, $audience, $contentEncoding, $vapid);
+
+            return $headers;
+        }
+
+        $typeName = $parameterType->getName();
+        $resolvedEncoding = $this->resolveContentEncodingArgument($typeName, $contentEncoding);
+
+        /** @var array<string, string>|null $headers */
+        $headers = $method->invoke($this, $audience, $resolvedEncoding, $vapid);
+
+        return $headers;
+    }
+
+    private function resolveContentEncodingArgument(string $typeName, string $contentEncoding): mixed
+    {
+        if (enum_exists($typeName) && method_exists($typeName, 'from')) {
+            return $typeName::from($contentEncoding);
+        }
+
+        if (class_exists($typeName) && method_exists($typeName, 'from')) {
+            return $typeName::from($contentEncoding);
+        }
+
+        return $contentEncoding;
     }
 }
