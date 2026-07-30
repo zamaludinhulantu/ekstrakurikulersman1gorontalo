@@ -92,6 +92,7 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::get('/settings/pwa-notifications', [PwaSettingsController::class, 'show'])->name('settings.pwa-notifications');
     Route::put('/settings/pwa-notifications', [PwaSettingsController::class, 'update'])->name('settings.pwa-notifications.update');
+    Route::post('/settings/pwa-notifications/test', [PwaSettingsController::class, 'testPush'])->name('settings.pwa-notifications.test');
     Route::post('/push/subscriptions/status', [PushSubscriptionController::class, 'status'])->name('push-subscriptions.status');
     Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store');
     Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy');

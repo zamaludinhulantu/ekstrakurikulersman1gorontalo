@@ -4,8 +4,6 @@ namespace App\Support;
 
 use App\Models\PushSubscription;
 use Minishlink\WebPush\Subscription;
-use Minishlink\WebPush\WebPush;
-use Throwable;
 
 class PushNotificationSender
 {
@@ -21,7 +19,7 @@ class PushNotificationSender
             ],
         ];
 
-        $webPush = new WebPush($auth);
+        $webPush = new PatchedWebPush($auth);
         $webPush->setAutomaticPadding(true);
 
         $webPush->queueNotification(
@@ -61,6 +59,18 @@ class PushNotificationSender
             && filled(config('services.webpush.private_key'));
     }
 
+    public function diagnosticSummary(): array
+    {
+        return [
+            'configured' => $this->configured(),
+            'openssl_extension_loaded' => extension_loaded('openssl'),
+            'openssl_conf' => (string) config('services.webpush.openssl_conf'),
+            'openssl_conf_runtime' => getenv('OPENSSL_CONF') ?: '',
+            'app_url' => (string) config('app.url'),
+            'queue_connection' => (string) config('queue.default'),
+        ];
+    }
+
     private function configureOpenSsl(): void
     {
         $opensslConfigPath = (string) config('services.webpush.openssl_conf');
@@ -69,7 +79,57 @@ class PushNotificationSender
             return;
         }
 
-        putenv('OPENSSL_CONF='.$opensslConfigPath);
+        putenv('OPENSSL_CONF='.$this->prepareOpenSslConfig($opensslConfigPath));
+    }
+
+    private function prepareOpenSslConfig(string $opensslConfigPath): string
+    {
+        if (! is_file($opensslConfigPath)) {
+            return $opensslConfigPath;
+        }
+
+        $contents = @file_get_contents($opensslConfigPath);
+        if (! is_string($contents) || $contents === '') {
+            return $opensslConfigPath;
+        }
+
+        if (
+            ! str_contains($contents, '[default_sect]')
+            || preg_match('/^\[default_sect\](?:(?!^\[).)*^\s*activate\s*=\s*1\s*$/ms', $contents) === 1
+        ) {
+            return $opensslConfigPath;
+        }
+
+        $patched = preg_replace(
+            '/^\[default_sect\]\R#\s*activate\s*=\s*1\s*$/m',
+            "[default_sect]\nactivate = 1",
+            $contents,
+            1,
+            $replacements
+        );
+
+        if (! is_string($patched)) {
+            return $opensslConfigPath;
+        }
+
+        if (($replacements ?? 0) === 0) {
+            $patched = preg_replace('/^\[default_sect\]\R/m', "[default_sect]\nactivate = 1\n", $contents, 1);
+            if (! is_string($patched)) {
+                return $opensslConfigPath;
+            }
+        }
+
+        $runtimeDir = storage_path('app/runtime');
+        if (! is_dir($runtimeDir) && ! @mkdir($runtimeDir, 0777, true) && ! is_dir($runtimeDir)) {
+            return $opensslConfigPath;
+        }
+
+        $runtimePath = $runtimeDir.DIRECTORY_SEPARATOR.'openssl-webpush.cnf';
+        if (@file_put_contents($runtimePath, $patched) === false) {
+            return $opensslConfigPath;
+        }
+
+        return $runtimePath;
     }
 
     private function extractStatusCode(?string $reason): ?int

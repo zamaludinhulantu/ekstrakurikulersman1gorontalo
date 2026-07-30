@@ -29,7 +29,7 @@ class NotificationCenter
             && ($preference->mergedPushPreferences()[$category] ?? false)
             && $user->pushSubscriptions()->exists()
         ) {
-            SendPushNotificationJob::dispatch($user->id, $notification->id);
+            SendPushNotificationJob::dispatchSync($user->id, $notification->id);
         }
     }
 

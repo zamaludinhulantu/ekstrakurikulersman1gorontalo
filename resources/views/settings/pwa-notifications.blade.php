@@ -29,6 +29,10 @@
                         <button type="button" class="btn btn-primary" id="settingsEnablePushButton">Aktifkan Notifikasi</button>
                         <button type="button" class="btn btn-outline-danger" id="settingsDisablePushButton">Nonaktifkan Notifikasi di Perangkat Ini</button>
                         <button type="button" class="btn btn-outline-danger" id="settingsDisableAllPushButton">Nonaktifkan Notifikasi di Semua Perangkat</button>
+                        <form method="post" action="{{ route('settings.pwa-notifications.test') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-primary w-100" data-loading-text="Mengirim tes...">Kirim Test Push</button>
+                        </form>
                     </div>
                     <div class="small text-muted mt-2" id="pwaPushHelpText">
                         Izin notifikasi baru akan diminta setelah Anda menekan tombol aktivasi.
