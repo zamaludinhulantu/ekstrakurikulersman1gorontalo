@@ -182,7 +182,6 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('participant_count')
             ->orderBy('name')
-            ->limit(5)
             ->get(['id', 'name']);
 
         $maximum = max(1, (int) $items->max('participant_count'));
@@ -213,7 +212,6 @@ class DashboardController extends Controller
             ])
             ->orderByDesc('registration_count')
             ->orderBy('name')
-            ->limit(5)
             ->get(['id', 'name']);
 
         $items = $items->filter(
