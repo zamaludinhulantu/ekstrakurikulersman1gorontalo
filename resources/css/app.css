@@ -5670,6 +5670,26 @@ textarea.form-control {
     gap: 1rem;
 }
 
+.admin-ranking-chart--scroll {
+    max-height: min(19rem, calc(100vh - 24rem));
+    overflow-y: auto;
+    padding-right: 0.2rem;
+}
+
+.admin-ranking-chart--scroll::-webkit-scrollbar {
+    width: 0.45rem;
+}
+
+.admin-ranking-chart--scroll::-webkit-scrollbar-thumb {
+    background: #c8d6ea;
+    border-radius: 999px;
+}
+
+.admin-ranking-chart--scroll::-webkit-scrollbar-track {
+    background: #eef4fb;
+    border-radius: 999px;
+}
+
 .admin-popularity-chart:focus-visible {
     outline: 2px solid rgba(31, 94, 255, 0.35);
     outline-offset: 4px;
@@ -6137,6 +6157,12 @@ textarea.form-control {
 
 @media (max-width: 575.98px) {
     .dashboard-compact-list--scroll {
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+
+    .admin-ranking-chart--scroll {
         max-height: none;
         overflow-y: visible;
         padding-right: 0;

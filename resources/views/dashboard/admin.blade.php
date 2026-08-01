@@ -165,7 +165,7 @@
                 </div>
                 <div class="card-body">
                     @if($popularExtracurriculars !== [])
-                        <div class="admin-popularity-chart" role="img" aria-label="Lima kegiatan dengan anggota aktif terbanyak">
+                        <div class="admin-popularity-chart admin-ranking-chart--scroll" role="img" aria-label="Lima kegiatan dengan anggota aktif terbanyak">
                             @foreach($popularExtracurriculars as $index => $item)
                                 <div class="admin-popularity-chart__row">
                                     <div class="admin-popularity-chart__meta">
@@ -193,7 +193,7 @@
                 </div>
                 <div class="card-body">
                     @if($popularRegistrations !== [])
-                        <div class="admin-registrants-chart" role="img" aria-label="Lima kegiatan dengan pendaftar menunggu terbanyak">
+                        <div class="admin-registrants-chart admin-ranking-chart--scroll" role="img" aria-label="Lima kegiatan dengan pendaftar menunggu terbanyak">
                             @foreach($popularRegistrations as $index => $item)
                                 <div class="admin-registrants-chart__row">
                                     <div class="admin-registrants-chart__meta">
