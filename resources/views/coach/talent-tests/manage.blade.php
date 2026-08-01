@@ -143,16 +143,15 @@
 
         .talent-participant-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 0.75rem;
+            gap: 0.55rem;
         }
 
         .talent-participant-item {
             width: 100%;
             border: 1px solid #e3eaf2;
-            border-radius: 16px;
+            border-radius: 14px;
             background: #fff;
-            padding: 0.82rem 0.88rem;
+            padding: 0.72rem 0.8rem;
             text-align: left;
             transition: 0.2s ease;
         }
@@ -160,7 +159,7 @@
         .talent-participant-item.is-active {
             border-color: #9ec0ff;
             background: #f7fbff;
-            box-shadow: 0 10px 22px rgba(40, 97, 204, 0.08);
+            box-shadow: 0 8px 18px rgba(40, 97, 204, 0.08);
         }
 
         .talent-participant-item.is-hidden {
@@ -170,9 +169,12 @@
         .talent-participant-item__top {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 0.75rem;
-            margin-bottom: 0.55rem;
+        }
+
+        .talent-participant-item__identity {
+            min-width: 0;
         }
 
         .talent-participant-item__title {
@@ -202,11 +204,40 @@
             display: flex;
             flex-wrap: wrap;
             gap: 0.38rem;
-            margin-bottom: 0.5rem;
+            justify-content: flex-end;
         }
 
         .talent-chip-row .badge {
             font-size: 0.72rem;
+        }
+
+        .talent-participant-item__summary {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) auto;
+            gap: 0.85rem;
+            align-items: center;
+        }
+
+        .talent-participant-item__stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem 0.9rem;
+            color: #5d7490;
+            font-size: 0.78rem;
+        }
+
+        .talent-participant-item__stats strong {
+            color: #1f3555;
+            font-weight: 700;
+        }
+
+        .talent-participant-item__hint {
+            color: #7b8da3;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
         .talent-panel-stack {
@@ -592,7 +623,8 @@
             }
 
             .talent-participant-item__top,
-            .talent-aspect-card__head {
+            .talent-aspect-card__head,
+            .talent-participant-item__summary {
                 flex-direction: column;
                 align-items: stretch;
             }
@@ -612,6 +644,10 @@
 
             .talent-participant-list {
                 grid-template-columns: 1fr;
+            }
+
+            .talent-chip-row {
+                justify-content: flex-start;
             }
 
             .page-summary-banner .row {
@@ -887,21 +923,22 @@
                                         data-reason="{{ $participant->publish_block_reason }}"
                                     >
                                         <div class="talent-participant-item__top">
-                                            <div>
+                                            <div class="talent-participant-item__identity">
                                                 <div class="talent-participant-item__title">{{ $participant->student->user->name ?? '-' }}</div>
                                                 <span class="talent-participant-item__subtitle">{{ $participant->student->class_name ?: 'Kelas belum diatur' }}</span>
                                             </div>
                                             <span class="badge {{ $attendanceClassMap[$participant->attendance_label] ?? 'badge-status-secondary' }}">{{ $participant->attendance_label }}</span>
                                         </div>
-                                        <div class="talent-chip-row">
-                                            <span class="badge {{ $participant->result_status_class }}">{{ $participant->result_status_label }}</span>
-                                            @if($participant->overall_score_label)
-                                                <span class="badge badge-status-secondary">Nilai {{ $participant->overall_score_label }}</span>
-                                            @endif
-                                        </div>
-                                        <div class="talent-participant-item__meta">
-                                            <span>Aspek terisi: <strong>{{ $participant->filled_aspect_count }}/{{ $participant->total_aspect_count }}</strong></span>
-                                            <span>{{ $participant->missing_aspect_count > 0 ? $participant->missing_aspect_count.' aspek belum diisi' : 'Semua aspek sudah diisi' }}</span>
+                                        <div class="talent-participant-item__summary">
+                                            <div class="talent-participant-item__stats">
+                                                <span>Status: <strong>{{ $participant->result_status_label }}</strong></span>
+                                                <span>Aspek: <strong>{{ $participant->filled_aspect_count }}/{{ $participant->total_aspect_count }}</strong></span>
+                                                <span>Nilai: <strong>{{ $participant->overall_score_label ?? '-' }}</strong></span>
+                                            </div>
+                                            <div class="talent-chip-row">
+                                                <span class="badge {{ $participant->result_status_class }}">{{ $participant->result_status_label }}</span>
+                                                <span class="talent-participant-item__hint">Klik untuk menilai</span>
+                                            </div>
                                         </div>
                                     </button>
                                 @endforeach
