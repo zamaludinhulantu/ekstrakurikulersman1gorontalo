@@ -67,6 +67,31 @@
             align-items: start;
         }
 
+        .talent-workspace {
+            border: 1px solid #dfe7f1;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.97);
+            box-shadow: 0 10px 24px rgba(17, 38, 68, 0.04);
+            overflow: hidden;
+        }
+
+        .talent-workspace .talent-manage-layout {
+            gap: 0;
+        }
+
+        .talent-pane {
+            min-width: 0;
+        }
+
+        .talent-pane--aside {
+            border-right: 1px solid #ebf0f5;
+            background: #fbfdff;
+        }
+
+        .talent-pane--detail {
+            background: rgba(255, 255, 255, 0.98);
+        }
+
         .talent-panel-card {
             border: 1px solid #dfe7f1;
             border-radius: 22px;
@@ -82,6 +107,16 @@
         .talent-panel-card .card-header {
             background: transparent;
             border-bottom: 1px solid #ebf0f5;
+        }
+
+        .talent-pane .card-header {
+            background: transparent;
+            border-bottom: 1px solid #ebf0f5;
+            padding: 0.95rem 1.05rem;
+        }
+
+        .talent-pane .card-body {
+            padding: 0.95rem 1.05rem;
         }
 
         .talent-panel-card .card-header h2,
@@ -177,6 +212,7 @@
         .talent-panel-stack {
             display: grid;
             gap: 1rem;
+            padding: 1.05rem;
         }
 
         .talent-panel-section {
@@ -497,6 +533,15 @@
                 grid-template-columns: 1fr;
             }
 
+            .talent-workspace .talent-manage-layout {
+                gap: 0;
+            }
+
+            .talent-pane--aside {
+                border-right: 0;
+                border-bottom: 1px solid #ebf0f5;
+            }
+
             .talent-participant-list {
                 max-height: none;
             }
@@ -526,6 +571,11 @@
 
             .talent-panel-card .card-body,
             .talent-panel-card .card-header {
+                padding-inline: 0.95rem;
+            }
+
+            .talent-pane .card-body,
+            .talent-pane .card-header {
                 padding-inline: 0.95rem;
             }
 
@@ -624,8 +674,18 @@
                 border-radius: 20px;
             }
 
+            .talent-workspace {
+                border-radius: 20px;
+            }
+
             .talent-panel-card .card-body,
             .talent-panel-card .card-header {
+                padding: 0.85rem;
+            }
+
+            .talent-pane .card-body,
+            .talent-pane .card-header,
+            .talent-panel-stack {
                 padding: 0.85rem;
             }
 
@@ -781,8 +841,9 @@
             </div>
         @endif
 
+            <div class="talent-workspace">
             <div class="talent-manage-layout">
-                <aside class="talent-panel-card card">
+                <aside class="talent-pane talent-pane--aside">
                     <div class="card-header">
                         <h2>Daftar Peserta</h2>
                         <p>Cari dan pilih peserta untuk mulai mengisi hasil tes bakat.</p>
@@ -854,6 +915,7 @@
                     </div>
                 </aside>
 
+                <div class="talent-pane talent-pane--detail">
                 <div class="talent-panel-stack">
                     @if($participants->isEmpty())
                         <div class="talent-panel-card card">
@@ -1153,6 +1215,8 @@
                         </div>
                     @endif
                 </div>
+                </div>
+            </div>
             </div>
         </form>
         </div>
