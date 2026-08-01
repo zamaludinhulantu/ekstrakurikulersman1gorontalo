@@ -516,6 +516,56 @@ class FullRegressionTest extends TestCase
         $this->assertSame('081200000003', $studentUser->phone);
     }
 
+    public function test_student_attendance_history_uses_talent_test_participant_status(): void
+    {
+        $studentUser = $this->userByEmail('siswa3@gmail.com');
+        $student = $studentUser->student;
+        $coach = $this->userByEmail('pembina1@gmail.com')->coach;
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
+
+        $registration = Registration::query()->firstOrCreate(
+            [
+                'student_id' => $student->id,
+                'extracurricular_id' => $extracurricular->id,
+            ],
+            [
+                'registration_date' => now()->toDateString(),
+                'status' => Registration::STATUS_APPROVED,
+            ]
+        );
+
+        if ($registration->status !== Registration::STATUS_APPROVED) {
+            $registration->update(['status' => Registration::STATUS_APPROVED]);
+        }
+
+        $talentTest = Schedule::query()->create([
+            'extracurricular_id' => $extracurricular->id,
+            'coach_id' => $coach->id,
+            'schedule_type' => 'talent_test',
+            'title' => 'Tes Bakat Presensi Siswa',
+            'activity_date' => now()->toDateString(),
+            'start_time' => '08:00',
+            'end_time' => '09:00',
+            'location' => 'Ruang Presensi',
+            'status' => 'scheduled',
+        ]);
+
+        $talentTest->talentTestParticipants()->create([
+            'registration_id' => $registration->id,
+            'student_id' => $student->id,
+            'assigned_by' => $coach->user_id,
+            'attendance_status' => 'present',
+            'attendance_notes' => 'Hadir tepat waktu.',
+        ]);
+
+        $this->actingAs($studentUser)
+            ->get(route('student.attendances.index'))
+            ->assertOk()
+            ->assertSee('Tes Bakat Presensi Siswa')
+            ->assertSee('Hadir')
+            ->assertSee('Hadir tepat waktu.');
+    }
+
     public function test_public_and_student_activity_filters_keep_osn_and_o2sn_visible(): void
     {
         $studentUser = $this->userByEmail('siswa3@gmail.com');

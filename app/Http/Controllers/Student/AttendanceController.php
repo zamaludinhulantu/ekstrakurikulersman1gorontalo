@@ -8,6 +8,7 @@ use App\Models\Attendance;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
+use App\Models\TalentTestParticipant;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -202,13 +203,25 @@ class AttendanceController extends Controller
             ->get()
             ->keyBy('schedule_id');
 
-        return $schedules->map(function (Schedule $schedule) use ($attendanceMap): Schedule {
-            $attendance = $attendanceMap->get($schedule->id);
-            $status = $attendance?->display_status ?: 'pending';
+        $talentAttendanceMap = TalentTestParticipant::where('student_id', $studentId)
+            ->whereIn('schedule_id', $schedules->pluck('id'))
+            ->get()
+            ->keyBy('schedule_id');
+
+        return $schedules->map(function (Schedule $schedule) use ($attendanceMap, $talentAttendanceMap): Schedule {
+            if ($schedule->isTalentTest()) {
+                $talentParticipant = $talentAttendanceMap->get($schedule->id);
+                $status = $talentParticipant?->attendance_status ?: 'pending';
+                $notes = $talentParticipant?->attendance_notes;
+            } else {
+                $attendance = $attendanceMap->get($schedule->id);
+                $status = $attendance?->display_status ?: 'pending';
+                $notes = $attendance?->notes;
+            }
 
             $schedule->setAttribute('student_attendance_status', $status);
             $schedule->setAttribute('student_attendance_label', $this->mapStatusLabel($status));
-            $schedule->setAttribute('student_attendance_notes', $attendance?->notes);
+            $schedule->setAttribute('student_attendance_notes', $notes);
 
             return $schedule;
         });

@@ -5,77 +5,89 @@
 
 @push('styles')
     <style>
+        .talent-manage-shell {
+            max-width: 1460px;
+            margin: 0 auto;
+            padding-inline: clamp(0.15rem, 1.4vw, 0.9rem);
+        }
+
         .talent-manage-grid {
             display: grid;
-            gap: 1rem;
+            gap: 1.2rem;
+        }
+
+        .talent-overview-card {
+            border: 1px solid #dfe7f1;
+            border-radius: 22px;
+            box-shadow: 0 10px 24px rgba(17, 38, 68, 0.04);
         }
 
         .talent-manage-summary {
             display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 0.85rem;
+            grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+            gap: 0.8rem;
         }
 
         .talent-manage-stat {
-            border: 1px solid #dbe5f0;
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.97);
-            box-shadow: 0 16px 32px rgba(17, 38, 68, 0.05);
-            padding: 0.95rem 1rem;
+            border: 1px solid #e2eaf3;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 8px 20px rgba(17, 38, 68, 0.035);
+            padding: 0.82rem 0.92rem;
         }
 
         .talent-manage-stat span {
             display: block;
-            font-size: 0.76rem;
+            font-size: 0.7rem;
             font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             color: #71849b;
-            margin-bottom: 0.42rem;
+            margin-bottom: 0.3rem;
         }
 
         .talent-manage-stat strong {
             display: block;
-            font-size: 1.55rem;
+            font-size: 1.35rem;
             line-height: 1;
             color: #1e3454;
         }
 
         .talent-manage-stat small {
             display: block;
-            margin-top: 0.4rem;
+            margin-top: 0.28rem;
             color: #69809a;
-            font-size: 0.8rem;
+            font-size: 0.76rem;
         }
 
         .talent-manage-layout {
             display: grid;
-            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
-            gap: 1rem;
+            grid-template-columns: minmax(280px, 0.92fr) minmax(0, 2.08fr);
+            gap: 1.2rem;
             align-items: start;
         }
 
         .talent-panel-card {
-            border: 1px solid #dbe5f0;
-            border-radius: 24px;
+            border: 1px solid #dfe7f1;
+            border-radius: 22px;
             background: rgba(255, 255, 255, 0.97);
-            box-shadow: 0 16px 32px rgba(17, 38, 68, 0.05);
+            box-shadow: 0 10px 24px rgba(17, 38, 68, 0.04);
         }
 
         .talent-panel-card .card-body,
         .talent-panel-card .card-header {
-            padding: 1rem 1.1rem;
+            padding: 0.95rem 1.05rem;
         }
 
         .talent-panel-card .card-header {
             background: transparent;
-            border-bottom: 1px solid #e7eef6;
+            border-bottom: 1px solid #ebf0f5;
         }
 
         .talent-panel-card .card-header h2,
         .talent-panel-card .card-header h3 {
             margin: 0 0 0.2rem;
-            font-size: 1rem;
+            font-size: 0.98rem;
             font-weight: 800;
         }
 
@@ -87,14 +99,14 @@
 
         .talent-participant-tools {
             display: grid;
-            gap: 0.75rem;
-            margin-bottom: 0.95rem;
+            gap: 0.7rem;
+            margin-bottom: 0.85rem;
         }
 
         .talent-participant-list {
             display: grid;
-            gap: 0.7rem;
-            max-height: calc(100dvh - 310px);
+            gap: 0.6rem;
+            max-height: calc(100dvh - 290px);
             overflow-y: auto;
             overscroll-behavior-y: contain;
             padding-right: 0.2rem;
@@ -102,18 +114,18 @@
 
         .talent-participant-item {
             width: 100%;
-            border: 1px solid #dde6f1;
-            border-radius: 20px;
+            border: 1px solid #e3eaf2;
+            border-radius: 16px;
             background: #fff;
-            padding: 0.9rem 0.95rem;
+            padding: 0.82rem 0.88rem;
             text-align: left;
             transition: 0.2s ease;
         }
 
         .talent-participant-item.is-active {
-            border-color: #8fb6ff;
-            background: linear-gradient(180deg, rgba(236, 244, 255, 0.98), rgba(250, 252, 255, 0.98));
-            box-shadow: 0 14px 28px rgba(40, 97, 204, 0.12);
+            border-color: #9ec0ff;
+            background: #f7fbff;
+            box-shadow: 0 10px 22px rgba(40, 97, 204, 0.08);
         }
 
         .talent-participant-item.is-hidden {
@@ -154,12 +166,12 @@
         .talent-chip-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.45rem;
-            margin-bottom: 0.55rem;
+            gap: 0.38rem;
+            margin-bottom: 0.5rem;
         }
 
         .talent-chip-row .badge {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
         }
 
         .talent-panel-stack {
@@ -184,7 +196,7 @@
             gap: 0.65rem;
             overflow-x: auto;
             padding-bottom: 0.1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.9rem;
         }
 
         .talent-tab-button {
@@ -192,8 +204,8 @@
             background: #fff;
             color: #36506f;
             border-radius: 999px;
-            padding: 0.62rem 1rem;
-            font-size: 0.84rem;
+            padding: 0.56rem 0.92rem;
+            font-size: 0.8rem;
             font-weight: 700;
             white-space: nowrap;
         }
@@ -205,14 +217,43 @@
         }
 
         .talent-help-text {
-            margin: -0.2rem 0 0.9rem;
+            margin: -0.08rem 0 0.8rem;
             color: #6d8198;
-            font-size: 0.82rem;
+            font-size: 0.79rem;
         }
 
         .talent-field-grid {
             display: grid;
             gap: 0.9rem;
+        }
+
+        .page-summary-banner {
+            border: 1px solid #ebf0f5;
+            border-radius: 18px;
+            background: #fbfdff;
+            padding: 0.85rem 0.9rem;
+        }
+
+        .page-summary-banner .data-point {
+            border: 1px solid #edf2f7;
+            border-radius: 14px;
+            background: #fff;
+            padding: 0.7rem 0.8rem;
+        }
+
+        .page-summary-banner .data-point-label {
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #7488a0;
+            font-weight: 800;
+            margin-bottom: 0.2rem;
+        }
+
+        .page-summary-banner .data-point-value {
+            color: #203655;
+            font-size: 0.95rem;
+            font-weight: 700;
         }
 
         .talent-aspect-list {
@@ -222,9 +263,9 @@
 
         .talent-aspect-card {
             border: 1px solid #e2eaf3;
-            border-radius: 18px;
+            border-radius: 16px;
             background: #fbfdff;
-            padding: 0.9rem;
+            padding: 0.85rem;
         }
 
         .talent-aspect-card__head {
@@ -253,9 +294,9 @@
 
         .talent-summary-box {
             border: 1px solid #e1e9f3;
-            border-radius: 18px;
+            border-radius: 16px;
             background: #fbfdff;
-            padding: 0.85rem 0.95rem;
+            padding: 0.78rem 0.88rem;
         }
 
         .talent-summary-box span {
@@ -282,10 +323,10 @@
 
         .talent-sticky-bar__inner {
             border: 1px solid #d7e3f2;
-            border-radius: 22px;
+            border-radius: 18px;
             background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 20px 40px rgba(18, 40, 70, 0.12);
-            padding: 0.9rem 1rem;
+            box-shadow: 0 14px 28px rgba(18, 40, 70, 0.08);
+            padding: 0.78rem 0.9rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -309,7 +350,12 @@
         .talent-sticky-bar__actions {
             display: flex;
             align-items: center;
-            gap: 0.7rem;
+            gap: 0.55rem;
+        }
+
+        .talent-sticky-bar__actions .btn {
+            min-height: 40px;
+            padding-inline: 0.95rem;
         }
 
         .talent-block-reason {
@@ -320,9 +366,9 @@
         .talent-optional-panel {
             margin-top: 1rem;
             border: 1px dashed #d8e2ef;
-            border-radius: 18px;
+            border-radius: 16px;
             background: #fcfdff;
-            padding: 0.9rem 1rem;
+            padding: 0.82rem 0.92rem;
         }
 
         .talent-optional-panel summary {
@@ -360,10 +406,10 @@
 
         .talent-bulk-toolbar {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(220px, 260px) minmax(0, 1.3fr) auto;
-            gap: 0.85rem;
+            grid-template-columns: minmax(0, 0.9fr) minmax(200px, 240px) minmax(260px, 1.15fr) auto;
+            gap: 0.75rem;
             align-items: end;
-            padding: 1rem 1.1rem 0;
+            padding: 0.9rem 1rem 0;
         }
 
         .talent-bulk-count {
@@ -371,9 +417,78 @@
             font-size: 0.83rem;
         }
 
+        .talent-recap-table .table {
+            min-width: 760px;
+        }
+
+        .talent-recap-table .table {
+            margin-bottom: 0;
+        }
+
+        .talent-recap-table thead th {
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #6f839b;
+            font-weight: 800;
+            padding: 0.75rem 0.85rem;
+            background: #fbfdff;
+            border-bottom-color: #eaf0f6;
+        }
+
+        .talent-recap-table tbody td {
+            padding: 0.72rem 0.85rem;
+            vertical-align: middle;
+            border-bottom-color: #edf2f7;
+            font-size: 0.88rem;
+        }
+
+        .talent-recap-table .badge {
+            font-size: 0.72rem;
+        }
+
+        .talent-panel-header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.55rem;
+        }
+
+        .talent-overview-title {
+            font-size: 1.02rem;
+            font-weight: 800;
+            color: #1f3555;
+            margin-bottom: 0.15rem;
+        }
+
+        .talent-overview-subtitle,
+        .talent-overview-meta-label {
+            color: #70839b;
+            font-size: 0.76rem;
+        }
+
+        .talent-overview-meta-value {
+            color: #1f3555;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .talent-form-cluster {
+            display: grid;
+            gap: 0.9rem;
+        }
+
         @media (max-width: 1199.98px) {
-            .talent-manage-summary {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+            .talent-manage-layout {
+                grid-template-columns: minmax(260px, 0.95fr) minmax(0, 1.95fr);
+            }
+
+            .talent-bulk-toolbar {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .talent-bulk-toolbar > div:last-child {
+                grid-column: span 2;
             }
         }
 
@@ -389,6 +504,10 @@
             .talent-bulk-toolbar {
                 grid-template-columns: 1fr;
             }
+
+            .talent-bulk-toolbar > div:last-child {
+                grid-column: auto;
+            }
         }
 
         @media (max-width: 767.98px) {
@@ -397,9 +516,66 @@
                 gap: 0.75rem;
             }
 
+            .talent-overview-card {
+                border-radius: 20px;
+            }
+
+            .talent-manage-shell {
+                padding-inline: 0;
+            }
+
             .talent-panel-card .card-body,
             .talent-panel-card .card-header {
                 padding-inline: 0.95rem;
+            }
+
+            .talent-manage-stat strong {
+                font-size: 1.25rem;
+            }
+
+            .talent-bulk-toolbar {
+                padding: 0.95rem 0.95rem 0;
+                gap: 0.75rem;
+            }
+
+            .talent-recap-table .table th,
+            .talent-recap-table .table td {
+                white-space: nowrap;
+                font-size: 0.84rem;
+                vertical-align: middle;
+            }
+
+            .talent-participant-item {
+                border-radius: 18px;
+                padding: 0.8rem 0.85rem;
+            }
+
+            .talent-participant-item__top,
+            .talent-aspect-card__head {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .talent-panel-header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .talent-panel-header-actions .btn {
+                width: 100%;
+            }
+
+            .talent-form-cluster {
+                gap: 0.78rem;
+            }
+
+            .page-summary-banner .row {
+                --bs-gutter-x: 0.65rem;
+                --bs-gutter-y: 0.65rem;
+            }
+
+            .page-summary-banner .data-point {
+                height: 100%;
             }
 
             .talent-mobile-back {
@@ -418,6 +594,55 @@
 
             .talent-summary-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .talent-overview-card .row > div {
+                width: 100%;
+            }
+
+            .talent-manage-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .talent-tab-bar {
+                gap: 0.5rem;
+                margin-bottom: 0.85rem;
+            }
+
+            .talent-tab-button {
+                padding: 0.58rem 0.85rem;
+                font-size: 0.8rem;
+            }
+
+            .talent-help-text {
+                font-size: 0.78rem;
+            }
+
+            .talent-panel-card {
+                border-radius: 20px;
+            }
+
+            .talent-panel-card .card-body,
+            .talent-panel-card .card-header {
+                padding: 0.85rem;
+            }
+
+            .talent-sticky-bar {
+                bottom: 0.65rem;
+            }
+
+            .talent-sticky-bar__inner {
+                border-radius: 18px;
+                padding: 0.85rem;
+            }
+
+            .talent-optional-panel,
+            .talent-summary-box,
+            .talent-aspect-card {
+                border-radius: 16px;
+                padding: 0.8rem;
             }
         }
     </style>
@@ -439,25 +664,26 @@
         ];
     @endphp
 
-    <div class="talent-manage-grid" data-talent-manage>
-        <div class="card">
+    <div class="talent-manage-shell">
+        <div class="talent-manage-grid" data-talent-manage>
+        <div class="card talent-overview-card">
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-lg-4">
-                        <strong>{{ $talentTest->title }}</strong>
-                        <div class="small text-muted">{{ $talentTest->extracurricular->name ?? '-' }}</div>
+                        <div class="talent-overview-title">{{ $talentTest->title }}</div>
+                        <div class="talent-overview-subtitle">{{ $talentTest->extracurricular->name ?? '-' }}</div>
                     </div>
                     <div class="col-lg-3">
-                        <div class="small text-muted">Jadwal</div>
-                        <div>{{ optional($talentTest->activity_date)->translatedFormat('d M Y') }} | {{ \Illuminate\Support\Str::substr((string) $talentTest->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr((string) $talentTest->end_time, 0, 5) }}</div>
+                        <div class="talent-overview-meta-label">Jadwal</div>
+                        <div class="talent-overview-meta-value">{{ optional($talentTest->activity_date)->translatedFormat('d M Y') }} | {{ \Illuminate\Support\Str::substr((string) $talentTest->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr((string) $talentTest->end_time, 0, 5) }}</div>
                     </div>
                     <div class="col-lg-3">
-                        <div class="small text-muted">Lokasi</div>
-                        <div>{{ $talentTest->location ?: 'Belum ditentukan' }}</div>
+                        <div class="talent-overview-meta-label">Lokasi</div>
+                        <div class="talent-overview-meta-value">{{ $talentTest->location ?: 'Belum ditentukan' }}</div>
                     </div>
                     <div class="col-lg-2">
-                        <div class="small text-muted">Status</div>
-                        <div>{{ $talentTest->status === 'completed' ? 'Selesai' : ($talentTest->status === 'cancelled' ? 'Dibatalkan' : 'Dijadwalkan') }}</div>
+                        <div class="talent-overview-meta-label">Status</div>
+                        <div class="talent-overview-meta-value">{{ $talentTest->status === 'completed' ? 'Selesai' : ($talentTest->status === 'cancelled' ? 'Dibatalkan' : 'Dijadwalkan') }}</div>
                     </div>
                 </div>
             </div>
@@ -469,7 +695,7 @@
             <div class="talent-manage-stat"><span>Belum Dinilai</span><strong>{{ $summary['pending'] }}</strong><small>Belum memiliki hasil.</small></div>
             <div class="talent-manage-stat"><span>Draft</span><strong>{{ $summary['draft'] }}</strong><small>Masih perlu dilengkapi.</small></div>
             <div class="talent-manage-stat"><span>Dipublikasikan</span><strong>{{ $summary['published'] }}</strong><small>Sudah terlihat untuk siswa.</small></div>
-            <div class="talent-manage-stat"><span>Nilai Rata-rata</span><strong>{{ $summary['average'] ?? '—' }}</strong><small>Berdasarkan hasil yang sudah tersimpan.</small></div>
+            <div class="talent-manage-stat"><span>Nilai Rata-rata</span><strong>{{ $summary['average'] ?? '-' }}</strong><small>Berdasarkan hasil yang sudah tersimpan.</small></div>
         </div>
 
         <form method="post" action="{{ route('coach.talent-tests.results.save', $talentTest) }}" id="talentManageForm">
@@ -498,7 +724,7 @@
                         <label class="form-label" for="bulkDecisionNotes">Catatan keputusan massal</label>
                         <input id="bulkDecisionNotes" type="text" name="bulk_decision_notes" class="form-control" value="{{ old('bulk_decision_notes') }}" placeholder="Opsional, diterapkan ke peserta yang belum punya catatan keputusan">
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap justify-content-start justify-content-lg-end">
                         <button type="button" class="btn btn-outline-secondary" id="bulkSelectVisibleButton">Pilih Semua</button>
                         <button type="submit" class="btn btn-outline-primary" name="apply_bulk_decision" value="1" id="applyBulkDecisionButton" disabled>
                             <i class="bi bi-check2-square"></i>Terapkan
@@ -506,7 +732,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive talent-recap-table">
                         <table class="table table-striped mb-0">
                             <thead>
                             <tr>
@@ -656,9 +882,9 @@
                                             <button type="button" class="btn btn-sm btn-outline-secondary talent-mobile-back" data-mobile-back><i class="bi bi-arrow-left"></i></button>
                                             <h3 class="mb-0">{{ $participant->student->user->name ?? '-' }}</h3>
                                         </div>
-                                        <p>{{ $participant->student->class_name ?: 'Kelas belum diatur' }} • {{ $participant->attendance_label }}</p>
+                                        <p>{{ $participant->student->class_name ?: 'Kelas belum diatur' }} | {{ $participant->attendance_label }}</p>
                                     </div>
-                                    <div class="form-actions">
+                                    <div class="talent-panel-header-actions">
                                         <span class="badge {{ $participant->result_status_class }}">{{ $participant->result_status_label }}</span>
                                         <button type="button" class="btn btn-outline-primary btn-sm profile-preview-trigger" data-profile-url="{{ route('registrations.profile-preview', $participant->registration) }}">
                                             <i class="bi bi-person-badge"></i>Lihat Profil
@@ -717,18 +943,19 @@
 
                                     <div data-panel-tab="scoring-{{ $participant->id }}" class="d-none">
                                         <p class="talent-help-text">Isi penilaian inti untuk peserta yang hadir. Kategori kemampuan tetap wajib sebelum hasil dipublikasikan.</p>
-                                        <div class="row g-3 mb-3">
-                                            <div class="col-md-4">
+                                        <div class="talent-form-cluster mb-3">
+                                            <div class="row g-3">
+                                            <div class="col-lg-4 col-md-6">
                                                 <label class="form-label">Nilai Umum</label>
                                                 <input type="number" step="0.01" min="0" max="100" name="participants[{{ $index }}][overall_score]" class="form-control" value="{{ $overallScoreInput }}" placeholder="Contoh: 87.50">
                                                 <div class="form-text">Nilai umum non-aspek. Jika diisi, nilai ini dipakai sebagai nilai akhir peserta.</div>
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-lg-4 col-md-6">
                                                 <label class="form-label">Kategori Kemampuan</label>
                                                 <input type="text" name="participants[{{ $index }}][ability_category]" class="form-control" value="{{ old("participants.$index.ability_category", $result->ability_category ?? '') }}" placeholder="Contoh: Dasar, Menengah" data-ability-category>
                                                 <div class="form-text">Wajib diisi untuk peserta yang hadir sebelum publikasi hasil.</div>
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-lg-4 col-md-6">
                                                 <label class="form-label">Keputusan Akhir</label>
                                                 <select name="participants[{{ $index }}][decision_status]" class="form-select" data-decision-status>
                                                     <option value="">Belum diputuskan</option>
@@ -737,13 +964,16 @@
                                                 </select>
                                                 <div class="form-text">Wajib dipilih sebelum publikasi, kecuali peserta ditandai tes ulang.</div>
                                             </div>
-                                            <div class="col-md-4">
+                                            </div>
+                                            <div class="row g-3">
+                                            <div class="col-12">
                                                 <label class="form-label">Catatan Pembina</label>
                                                 <textarea name="participants[{{ $index }}][coach_notes]" class="form-control" rows="2" placeholder="Catatan inti hasil peserta">{{ old("participants.$index.coach_notes", $result->coach_notes ?? '') }}</textarea>
                                             </div>
                                             <div class="col-12">
                                                 <label class="form-label">Catatan Keputusan</label>
                                                 <textarea name="participants[{{ $index }}][decision_notes]" class="form-control" rows="2" placeholder="Opsional, jelaskan alasan diterima atau tidak diterima">{{ old("participants.$index.decision_notes", $result->decision_notes ?? '') }}</textarea>
+                                            </div>
                                             </div>
                                         </div>
                                         @if($aspects->isEmpty())
@@ -925,6 +1155,7 @@
                 </div>
             </div>
         </form>
+        </div>
     </div>
 @endsection
 
