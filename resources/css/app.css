@@ -619,9 +619,10 @@ svg {
     width: 298px;
     padding: 1.1rem 0.9rem 1.25rem;
     border-radius: 0;
-    background:
-        radial-gradient(circle at top right, rgba(135, 206, 250, 0.2) 0%, rgba(135, 206, 250, 0) 28%),
-        linear-gradient(180deg, #12305b 0%, #163f7a 44%, #0f2749 100%);
+    background-color: #12355f;
+    background-image:
+        radial-gradient(circle at top right, rgba(135, 206, 250, 0.16) 0%, rgba(135, 206, 250, 0) 26%),
+        radial-gradient(circle at left top, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 24%);
     color: #edf4ff;
     box-shadow: inset -1px 0 0 rgba(196, 220, 255, 0.12);
     position: sticky;
@@ -5071,9 +5072,10 @@ textarea.form-control {
     width: min(300px, 88vw);
     max-width: 100%;
     border-right: 1px solid rgba(196, 220, 255, 0.12);
-    background:
-        radial-gradient(circle at top right, rgba(135, 206, 250, 0.2) 0%, rgba(135, 206, 250, 0) 28%),
-        linear-gradient(180deg, #12305b 0%, #163f7a 44%, #0f2749 100%);
+    background-color: #12355f;
+    background-image:
+        radial-gradient(circle at top right, rgba(135, 206, 250, 0.16) 0%, rgba(135, 206, 250, 0) 26%),
+        radial-gradient(circle at left top, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 24%);
     scrollbar-width: thin;
     scrollbar-color: rgba(186, 212, 255, 0.7) rgba(12, 33, 63, 0.45);
     box-shadow: 0 20px 36px rgba(8, 22, 44, 0.24);
