@@ -916,6 +916,60 @@ class FullRegressionTest extends TestCase
         ]);
     }
 
+    public function test_talent_test_publish_without_aspects_still_allows_complete_core_result(): void
+    {
+        $coachUser = $this->userByEmail('pembina1@gmail.com');
+        $coach = $coachUser->coach;
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
+        $extracurricular->talentTestAspects()->delete();
+
+        $registration = Registration::query()
+            ->where('extracurricular_id', $extracurricular->id)
+            ->whereIn('status', [Registration::STATUS_PENDING, Registration::STATUS_APPROVED])
+            ->firstOrFail();
+
+        $this->actingAs($coachUser)
+            ->post(route('coach.talent-tests.store'), [
+                'extracurricular_id' => $extracurricular->id,
+                'title' => 'Tes Bakat Tanpa Aspek',
+                'activity_date' => now()->addDays(5)->toDateString(),
+                'start_time' => '10:00',
+                'end_time' => '11:00',
+                'location' => 'Aula Uji',
+                'description' => 'Tes tanpa aspek terpisah.',
+                'equipment' => 'Tidak ada',
+                'instructions' => 'Ikuti instruksi pembina',
+                'participant_registration_ids' => [$registration->id],
+            ])
+            ->assertRedirect(route('coach.talent-tests.index'));
+
+        $talentTest = Schedule::query()->where('title', 'Tes Bakat Tanpa Aspek')->firstOrFail();
+        $participant = $talentTest->talentTestParticipants()->firstOrFail();
+
+        $this->actingAs($coachUser)
+            ->post(route('coach.talent-tests.results.save', $talentTest), [
+                'publish' => '1',
+                'participants' => [[
+                    'participant_id' => $participant->id,
+                    'attendance_status' => 'present',
+                    'ability_category' => 'Menengah',
+                    'decision_status' => 'accepted',
+                    'decision_notes' => 'Lulus tanpa aspek tambahan.',
+                    'coach_notes' => 'Data inti lengkap.',
+                    'scores' => [],
+                ]],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('talent_test_results', [
+            'schedule_id' => $talentTest->id,
+            'student_id' => $participant->student_id,
+            'status' => 'published',
+            'ability_category' => 'Menengah',
+            'decision_status' => 'accepted',
+        ]);
+    }
+
     public function test_coach_can_apply_bulk_decision_to_selected_talent_test_participants(): void
     {
         $coachUser = $this->userByEmail('pembina1@gmail.com');

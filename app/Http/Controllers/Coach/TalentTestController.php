@@ -246,15 +246,17 @@ class TalentTestController extends Controller
                 $result = $resultsByStudent->get($participant->student_id);
                 $items = $result?->items ?? collect();
                 $filledAspectCount = $items->filter(fn ($item) => $item->score !== null)->count();
-                $missingAspectCount = max($aspects->count() - $filledAspectCount, 0);
+                $totalAspectCount = $aspects->count();
+                $missingAspectCount = max($totalAspectCount - $filledAspectCount, 0);
                 $attendanceStatus = $participant->attendance_status ?? 'pending';
                 $isPresent = $attendanceStatus === 'present';
                 $isPublished = $result?->status === 'published' || (bool) $result?->published_at;
                 $isDraft = $result && ! $isPublished;
                 $isAbsent = in_array($attendanceStatus, ['absent', 'sick', 'permission'], true);
                 $hasDecision = filled($result?->decision_status);
+                $hasRequiredAspectScore = $totalAspectCount === 0 || $filledAspectCount > 0;
                 $hasCompleteResult = $isAbsent
-                    || ($isPresent && $filledAspectCount > 0 && filled($result?->ability_category) && ($result?->needs_retest || $hasDecision));
+                    || ($isPresent && $hasRequiredAspectScore && filled($result?->ability_category) && ($result?->needs_retest || $hasDecision));
                 $statusFilter = $isAbsent
                     ? 'absent'
                     : ($isPublished ? 'published' : ($isDraft ? 'draft' : 'pending'));
@@ -266,12 +268,13 @@ class TalentTestController extends Controller
                 $participant->setAttribute('overall_score_label', $result?->overall_score !== null ? number_format((float) $result->overall_score, 2, ',', '.') : null);
                 $participant->setAttribute('filled_aspect_count', $filledAspectCount);
                 $participant->setAttribute('missing_aspect_count', $missingAspectCount);
-                $participant->setAttribute('total_aspect_count', $aspects->count());
+                $participant->setAttribute('total_aspect_count', $totalAspectCount);
                 $participant->setAttribute('decision_label', $result?->decisionLabel() ?? 'Belum diputuskan');
                 $participant->setAttribute('is_publish_ready', $hasCompleteResult);
                 $participant->setAttribute('publish_block_reason', $hasCompleteResult ? null : $this->buildPublishBlockReason(
                     $attendanceStatus,
                     $filledAspectCount,
+                    $totalAspectCount,
                     (string) ($result?->ability_category ?? ''),
                     (string) ($result?->decision_status ?? ''),
                     (bool) ($result?->needs_retest ?? false),
@@ -650,7 +653,7 @@ class TalentTestController extends Controller
             return (float) $value >= 0 && (float) $value <= (float) $aspect->max_score;
         })->count();
 
-        if ($filledAspectCount === 0) {
+        if ($aspectMap->isNotEmpty() && $filledAspectCount === 0) {
             throw ValidationException::withMessages([
                 'publish' => 'Isi minimal satu aspek penilaian sebelum hasil peserta dipublikasikan.',
             ]);
@@ -704,6 +707,7 @@ class TalentTestController extends Controller
     private function buildPublishBlockReason(
         string $attendanceStatus,
         int $filledAspectCount,
+        int $totalAspectCount,
         string $abilityCategory,
         string $decisionStatus,
         bool $needsRetest
@@ -717,7 +721,7 @@ class TalentTestController extends Controller
             return 'Tentukan status kehadiran peserta terlebih dahulu.';
         }
 
-        if ($filledAspectCount === 0) {
+        if ($totalAspectCount > 0 && $filledAspectCount === 0) {
             return 'Isi minimal satu aspek penilaian.';
         }
 

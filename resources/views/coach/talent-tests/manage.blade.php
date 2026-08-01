@@ -976,7 +976,7 @@
                     ready = true;
                 } else if (attendanceStatus !== 'present') {
                     reason = 'Tentukan status kehadiran peserta terlebih dahulu.';
-                } else if (filledAspectCount === 0) {
+                } else if (totalAspectCount > 0 && filledAspectCount === 0) {
                     reason = 'Isi minimal satu aspek penilaian.';
                 } else if (!abilityCategory) {
                     reason = 'Kategori kemampuan belum diisi.';
