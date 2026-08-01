@@ -418,6 +418,11 @@
                                                         data-participants="{{ $test->participant_count_label }}"
                                                         data-equipment="{{ $test->equipment ?: 'Belum ada peralatan khusus' }}"
                                                         data-instructions="{{ $test->instructions ?: 'Belum ada instruksi tambahan' }}"
+                                                        data-manage-url="{{ route('coach.talent-tests.manage', $test) }}"
+                                                        data-edit-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.edit', $test) : '' }}"
+                                                        data-cancel-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.cancel', $test) : '' }}"
+                                                        data-can-edit="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
+                                                        data-can-cancel="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
                                                     >
                                                         <i class="bi bi-eye me-2"></i>Lihat Detail
                                                     </button>
@@ -516,6 +521,11 @@
                                                 data-participants="{{ $test->participant_count_label }}"
                                                 data-equipment="{{ $test->equipment ?: 'Belum ada peralatan khusus' }}"
                                                 data-instructions="{{ $test->instructions ?: 'Belum ada instruksi tambahan' }}"
+                                                data-manage-url="{{ route('coach.talent-tests.manage', $test) }}"
+                                                data-edit-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.edit', $test) : '' }}"
+                                                data-cancel-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.cancel', $test) : '' }}"
+                                                data-can-edit="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
+                                                data-can-cancel="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
                                             >Lihat Detail</button>
                                         </li>
                                         @if(in_array($test->coach_status_key, ['draft', 'scheduled'], true))
@@ -557,8 +567,8 @@
     </div>
 
     <div class="modal fade" id="talentTestDetailModal" tabindex="-1" aria-labelledby="talentTestDetailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content verification-modal">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content verification-modal talent-detail-modal">
                 <div class="modal-header border-0 pb-0">
                     <div>
                         <h2 class="h5 mb-1" id="talentTestDetailModalLabel">Detail Tes Bakat</h2>
@@ -566,7 +576,7 @@
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body pt-3">
                     <div class="verification-modal__summary mb-3">
                         <div class="data-point"><div class="data-point-label">Ekstrakurikuler</div><p class="data-point-value mb-0" id="talentTestDetailExtracurricular">-</p></div>
                         <div class="data-point"><div class="data-point-label">Tanggal</div><p class="data-point-value mb-0" id="talentTestDetailDate">-</p></div>
@@ -585,6 +595,13 @@
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
+                    <a href="#" class="btn btn-primary" id="talentTestDetailManageAction"><i class="bi bi-clipboard-data"></i>Kelola</a>
+                    <a href="#" class="btn btn-outline-primary" id="talentTestDetailEditAction" hidden><i class="bi bi-pencil-square"></i>Edit Jadwal</a>
+                    <form method="post" id="talentTestDetailCancelForm" hidden onsubmit="return confirm('Batalkan tes bakat ini?')">
+                        @csrf
+                        @method('patch')
+                        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle"></i>Batalkan Tes</button>
+                    </form>
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
@@ -619,6 +636,30 @@
                         node.textContent = trigger.dataset[key] || '-';
                     }
                 });
+
+                const manageAction = document.getElementById('talentTestDetailManageAction');
+                const editAction = document.getElementById('talentTestDetailEditAction');
+                const cancelForm = document.getElementById('talentTestDetailCancelForm');
+
+                if (manageAction) {
+                    manageAction.href = trigger.dataset.manageUrl || '#';
+                }
+
+                if (editAction) {
+                    const canEdit = trigger.dataset.canEdit === '1';
+                    editAction.hidden = !canEdit;
+                    editAction.href = canEdit ? (trigger.dataset.editUrl || '#') : '#';
+                }
+
+                if (cancelForm) {
+                    const canCancel = trigger.dataset.canCancel === '1';
+                    cancelForm.hidden = !canCancel;
+                    if (canCancel) {
+                        cancelForm.action = trigger.dataset.cancelUrl || '';
+                    } else {
+                        cancelForm.removeAttribute('action');
+                    }
+                }
             });
         });
     </script>
