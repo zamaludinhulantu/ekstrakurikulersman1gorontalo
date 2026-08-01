@@ -62,7 +62,7 @@
 
         .talent-manage-layout {
             display: grid;
-            grid-template-columns: minmax(290px, 0.95fr) minmax(0, 2.15fr);
+            grid-template-columns: 1fr;
             gap: 1rem;
             align-items: start;
         }
@@ -151,9 +151,6 @@
         .talent-participant-list {
             display: grid;
             gap: 0.55rem;
-            max-height: calc(100dvh - 320px);
-            overflow-y: auto;
-            padding-right: 0.15rem;
         }
 
         .talent-participant-item {
@@ -477,32 +474,37 @@
 
         .talent-bulk-toolbar {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: minmax(220px, 0.9fr) repeat(3, minmax(160px, 1fr)) auto auto;
             gap: 0.75rem;
             align-items: end;
-            padding: 0.9rem 1rem;
+            padding: 0.9rem 1rem 0;
         }
 
         .talent-bulk-count {
             color: #647b95;
             font-size: 0.83rem;
+            white-space: nowrap;
         }
 
         .talent-bulk-fields {
-            display: none;
-            grid-template-columns: repeat(3, minmax(180px, 1fr));
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 0.75rem;
             padding: 0 1rem 1rem;
-        }
-
-        .talent-bulk-fields.is-visible {
-            display: grid;
         }
 
         .talent-bulk-state {
             display: flex;
             align-items: center;
             gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .talent-bulk-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            justify-content: flex-end;
             flex-wrap: wrap;
         }
 
@@ -577,30 +579,26 @@
         }
 
         @media (max-width: 1199.98px) {
-            .talent-manage-layout {
-                grid-template-columns: minmax(270px, 0.95fr) minmax(0, 1.9fr);
+            .talent-bulk-toolbar {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .talent-bulk-state {
+                grid-column: 1 / -1;
             }
         }
 
         @media (max-width: 991.98px) {
-            .talent-manage-layout {
-                grid-template-columns: 1fr;
-            }
-
             .talent-workspace .talent-manage-layout {
                 padding: 0.9rem;
             }
 
-            .talent-participant-list {
-                max-height: none;
-            }
-
             .talent-bulk-toolbar {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .talent-bulk-fields {
-                grid-template-columns: 1fr;
+            .talent-bulk-actions {
+                justify-content: flex-start;
             }
 
             .talent-participant-tools {
@@ -641,8 +639,14 @@
             }
 
             .talent-bulk-toolbar {
+                grid-template-columns: 1fr;
                 padding: 0.95rem 0.95rem 0;
                 gap: 0.75rem;
+            }
+
+            .talent-bulk-state,
+            .talent-bulk-actions {
+                justify-content: flex-start;
             }
 
             .talent-recap-table .table th,
@@ -744,6 +748,10 @@
                 border-radius: 16px;
                 padding: 0.8rem;
             }
+
+            .talent-bulk-count {
+                white-space: normal;
+            }
         }
     </style>
 @endpush
@@ -801,6 +809,95 @@
         <form method="post" action="{{ route('coach.talent-tests.results.save', $talentTest) }}" id="talentManageForm">
             @csrf
             <input type="hidden" name="target_participant_id" id="targetParticipantId" value="{{ $activeParticipantId }}">
+
+            @if($participants->isNotEmpty())
+                <div class="talent-panel-card card">
+                    <div class="card-header">
+                        <h2>Rekap Hasil Peserta</h2>
+                        <p>Gunakan penilaian massal untuk update cepat, lalu cek rekap peserta di tabel bawah.</p>
+                    </div>
+                    <div class="talent-bulk-toolbar">
+                        <div class="talent-bulk-state">
+                            <strong id="bulkSelectionCount" class="talent-bulk-count">0 peserta dipilih untuk aksi massal.</strong>
+                        </div>
+                        <div>
+                            <label class="form-label" for="bulkOverallScore">Nilai Umum</label>
+                            <input id="bulkOverallScore" type="number" step="0.01" min="0" max="100" name="bulk_overall_score" class="form-control" value="{{ old('bulk_overall_score') }}" placeholder="Contoh: 80">
+                        </div>
+                        <div>
+                            <label class="form-label" for="bulkAbilityCategory">Kategori</label>
+                            <input id="bulkAbilityCategory" type="text" name="bulk_ability_category" class="form-control" value="{{ old('bulk_ability_category') }}" placeholder="Contoh: Menengah">
+                        </div>
+                        <div>
+                            <label class="form-label" for="bulkDecisionStatus">Keputusan</label>
+                            <select id="bulkDecisionStatus" name="bulk_decision_status" class="form-select">
+                                <option value="">Pilih keputusan</option>
+                                <option value="accepted" @selected(old('bulk_decision_status') === 'accepted')>Diterima ke ekskul</option>
+                                <option value="rejected" @selected(old('bulk_decision_status') === 'rejected')>Tidak diterima</option>
+                            </select>
+                        </div>
+                        <div class="talent-bulk-actions">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="bulkSelectVisibleButton">Pilih Semua</button>
+                            <button type="submit" class="btn btn-outline-primary btn-sm" name="apply_bulk_decision" value="1" id="applyBulkDecisionButton" disabled>
+                                <i class="bi bi-check2-square"></i>Terapkan
+                            </button>
+                        </div>
+                    </div>
+                    <div class="talent-bulk-fields">
+                        <div>
+                            <label class="form-label" for="bulkDecisionNotes">Catatan keputusan massal</label>
+                            <input id="bulkDecisionNotes" type="text" name="bulk_decision_notes" class="form-control" value="{{ old('bulk_decision_notes') }}" placeholder="Opsional, diterapkan ke peserta yang dipilih">
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive talent-recap-table">
+                            <table class="table table-striped mb-0">
+                                <thead>
+                                <tr>
+                                    <th style="width: 48px;">
+                                        <input type="checkbox" class="form-check-input" id="bulkSelectAllRows">
+                                    </th>
+                                    <th>Peserta</th>
+                                    <th>Kehadiran</th>
+                                    <th>Aspek</th>
+                                    <th>Nilai</th>
+                                    <th>Kategori</th>
+                                    <th>Keputusan</th>
+                                    <th>Status</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($participants as $participant)
+                                    @php $result = $resultsByStudent[$participant->student_id] ?? null; @endphp
+                                    <tr>
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                class="form-check-input"
+                                                name="selected_participant_ids[]"
+                                                value="{{ $participant->id }}"
+                                                data-bulk-select-row
+                                                @checked(in_array((string) $participant->id, array_map('strval', old('selected_participant_ids', [])), true))
+                                            >
+                                        </td>
+                                        <td>
+                                            <strong>{{ $participant->student->user->name ?? '-' }}</strong>
+                                            <div class="small text-muted">{{ $participant->student->class_name ?: 'Kelas belum diatur' }}</div>
+                                        </td>
+                                        <td><span class="badge {{ $attendanceClassMap[$participant->attendance_label] ?? 'badge-status-secondary' }}">{{ $participant->attendance_label }}</span></td>
+                                        <td>{{ $participant->filled_aspect_count }}/{{ $participant->total_aspect_count }}</td>
+                                        <td>{{ $participant->overall_score_label ?? 'Belum ada' }}</td>
+                                        <td>{{ $result?->ability_category ?: 'Belum ditentukan' }}</td>
+                                        <td><span class="badge {{ $decisionClassMap[$participant->decision_label] ?? 'badge-status-secondary' }}">{{ $participant->decision_label }}</span></td>
+                                        <td><span class="badge {{ $participant->result_status_class }}">{{ $participant->result_status_label }}</span></td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <div class="talent-workspace">
             <div class="talent-manage-layout">
@@ -984,8 +1081,6 @@
                                                 </select>
                                                 <div class="form-text">Wajib dipilih sebelum publikasi, kecuali peserta ditandai tes ulang.</div>
                                             </div>
-                                            </div>
-                                            </div>
                                         </div>
                                     </div>
 
@@ -1127,92 +1222,6 @@
             </div>
             </div>
 
-        @if($participants->isNotEmpty())
-            <details class="talent-panel-card card talent-collapsible">
-                <summary class="card-header">
-                    <h2>Lihat Rekap Semua Peserta</h2>
-                    <p>Statistik rinci, aksi massal, dan tabel rekap lengkap tersedia di sini.</p>
-                </summary>
-                <div class="talent-bulk-toolbar">
-                    <div class="talent-bulk-state">
-                        <strong id="bulkSelectionCount">0 peserta dipilih</strong>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="bulkSelectVisibleButton">Pilih Semua</button>
-                        <button type="submit" class="btn btn-outline-primary btn-sm" name="apply_bulk_decision" value="1" id="applyBulkDecisionButton" disabled>
-                            <i class="bi bi-check2-square"></i>Terapkan Aksi Massal
-                        </button>
-                    </div>
-                </div>
-                <div class="talent-bulk-fields" id="bulkFieldsPanel">
-                    <div>
-                        <label class="form-label" for="bulkOverallScore">Nilai Umum massal</label>
-                        <input id="bulkOverallScore" type="number" step="0.01" min="0" max="100" name="bulk_overall_score" class="form-control" value="{{ old('bulk_overall_score') }}" placeholder="Contoh: 80">
-                    </div>
-                    <div>
-                        <label class="form-label" for="bulkAbilityCategory">Kategori Kemampuan massal</label>
-                        <input id="bulkAbilityCategory" type="text" name="bulk_ability_category" class="form-control" value="{{ old('bulk_ability_category') }}" placeholder="Contoh: Menengah">
-                    </div>
-                    <div>
-                        <label class="form-label" for="bulkDecisionStatus">Keputusan Akhir massal</label>
-                        <select id="bulkDecisionStatus" name="bulk_decision_status" class="form-select">
-                            <option value="">Pilih keputusan</option>
-                            <option value="accepted" @selected(old('bulk_decision_status') === 'accepted')>Diterima ke ekskul</option>
-                            <option value="rejected" @selected(old('bulk_decision_status') === 'rejected')>Tidak diterima</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label" for="bulkDecisionNotes">Catatan keputusan massal</label>
-                        <input id="bulkDecisionNotes" type="text" name="bulk_decision_notes" class="form-control" value="{{ old('bulk_decision_notes') }}" placeholder="Opsional, diterapkan ke peserta yang dipilih">
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive talent-recap-table">
-                        <table class="table table-striped mb-0">
-                            <thead>
-                            <tr>
-                                <th style="width: 48px;">
-                                    <input type="checkbox" class="form-check-input" id="bulkSelectAllRows">
-                                </th>
-                                <th>Peserta</th>
-                                <th>Kehadiran</th>
-                                <th>Aspek</th>
-                                <th>Nilai</th>
-                                <th>Kategori</th>
-                                <th>Keputusan</th>
-                                <th>Status</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @foreach($participants as $participant)
-                                @php $result = $resultsByStudent[$participant->student_id] ?? null; @endphp
-                                <tr>
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            name="selected_participant_ids[]"
-                                            value="{{ $participant->id }}"
-                                            data-bulk-select-row
-                                            @checked(in_array((string) $participant->id, array_map('strval', old('selected_participant_ids', [])), true))
-                                        >
-                                    </td>
-                                    <td>
-                                        <strong>{{ $participant->student->user->name ?? '-' }}</strong>
-                                        <div class="small text-muted">{{ $participant->student->class_name ?: 'Kelas belum diatur' }}</div>
-                                    </td>
-                                    <td><span class="badge {{ $attendanceClassMap[$participant->attendance_label] ?? 'badge-status-secondary' }}">{{ $participant->attendance_label }}</span></td>
-                                    <td>{{ $participant->filled_aspect_count }}/{{ $participant->total_aspect_count }}</td>
-                                    <td>{{ $participant->overall_score_label ?? 'Belum ada' }}</td>
-                                    <td>{{ $result?->ability_category ?: 'Belum ditentukan' }}</td>
-                                    <td><span class="badge {{ $decisionClassMap[$participant->decision_label] ?? 'badge-status-secondary' }}">{{ $participant->decision_label }}</span></td>
-                                    <td><span class="badge {{ $participant->result_status_class }}">{{ $participant->result_status_label }}</span></td>
-                                </tr>
-                            @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </details>
-        @endif
         </form>
         </div>
     </div>
@@ -1239,7 +1248,6 @@
             const bulkSelectVisibleButton = document.getElementById('bulkSelectVisibleButton');
             const bulkSelectionCount = document.getElementById('bulkSelectionCount');
             const applyBulkDecisionButton = document.getElementById('applyBulkDecisionButton');
-            const bulkFieldsPanel = document.getElementById('bulkFieldsPanel');
             const attendanceBadgeClassMap = {
                 present: 'badge-status-success',
                 absent: 'badge-status-danger',
@@ -1416,16 +1424,12 @@
 
                 if (bulkSelectionCount) {
                     bulkSelectionCount.textContent = selectedCount > 0
-                        ? `${selectedCount} peserta dipilih`
-                        : 'Pilih peserta untuk membuka aksi massal';
+                        ? `${selectedCount} peserta dipilih untuk aksi massal.`
+                        : '0 peserta dipilih untuk aksi massal.';
                 }
 
                 if (applyBulkDecisionButton) {
                     applyBulkDecisionButton.disabled = selectedCount === 0;
-                }
-
-                 if (bulkFieldsPanel) {
-                    bulkFieldsPanel.classList.toggle('is-visible', selectedCount > 0);
                 }
 
                 if (bulkSelectAllRows) {
