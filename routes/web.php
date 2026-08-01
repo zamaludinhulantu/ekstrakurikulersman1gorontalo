@@ -220,6 +220,7 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:coach'])->pr
     Route::post('/talent-tests/{talentTest}/duplicate', [CoachTalentTestController::class, 'duplicate'])->name('talent-tests.duplicate');
     Route::post('/talent-tests/{talentTest}/results', [CoachTalentTestController::class, 'saveResults'])->name('talent-tests.results.save');
     Route::patch('/talent-tests/{talentTest}/cancel', [CoachTalentTestController::class, 'cancel'])->name('talent-tests.cancel');
+    Route::delete('/talent-tests/{talentTest}', [CoachTalentTestController::class, 'destroy'])->name('talent-tests.destroy');
 
     Route::get('/attendances', [CoachAttendanceController::class, 'index'])->name('attendances.index');
     Route::get('/attendances/export', [CoachAttendanceController::class, 'export'])->name('attendances.export');

@@ -510,6 +510,20 @@ class TalentTestController extends Controller
         return back()->with('success', 'Jadwal tes bakat berhasil dibatalkan.');
     }
 
+    public function destroy(Schedule $talentTest): RedirectResponse
+    {
+        $this->guardTalentTest($talentTest);
+        $this->authorize('manageByCoach', $talentTest);
+
+        if (! in_array($talentTest->status, ['draft', 'scheduled', 'cancelled'], true)) {
+            return back()->with('error', 'Tes bakat yang sudah selesai diproses tidak dapat dihapus.');
+        }
+
+        $talentTest->delete();
+
+        return redirect()->route('coach.talent-tests.index')->with('success', 'Tes bakat berhasil dihapus.');
+    }
+
     public function aspectIndex(Request $request): View
     {
         $coach = auth()->user()->coach;

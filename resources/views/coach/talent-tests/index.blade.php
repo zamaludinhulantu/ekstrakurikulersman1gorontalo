@@ -421,8 +421,10 @@
                                                         data-manage-url="{{ route('coach.talent-tests.manage', $test) }}"
                                                         data-edit-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.edit', $test) : '' }}"
                                                         data-cancel-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.cancel', $test) : '' }}"
+                                                        data-delete-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled', 'cancelled'], true) ? route('coach.talent-tests.destroy', $test) : '' }}"
                                                         data-can-edit="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
                                                         data-can-cancel="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
+                                                        data-can-delete="{{ in_array($test->coach_status_key, ['draft', 'scheduled', 'cancelled'], true) ? '1' : '0' }}"
                                                     >
                                                         <i class="bi bi-eye me-2"></i>Lihat Detail
                                                     </button>
@@ -439,6 +441,15 @@
                                                         <button class="dropdown-item" type="submit"><i class="bi bi-files me-2"></i>Duplikasi Tes</button>
                                                     </form>
                                                 </li>
+                                                @if(in_array($test->coach_status_key, ['draft', 'scheduled', 'cancelled'], true))
+                                                    <li>
+                                                        <form method="post" action="{{ route('coach.talent-tests.destroy', $test) }}" onsubmit="return confirm('Hapus tes bakat ini?')">
+                                                            @csrf
+                                                            @method('delete')
+                                                            <button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash3 me-2"></i>Hapus Tes</button>
+                                                        </form>
+                                                    </li>
+                                                @endif
                                                 @if(in_array($test->coach_status_key, ['draft', 'scheduled'], true))
                                                     <li>
                                                         <form method="post" action="{{ route('coach.talent-tests.cancel', $test) }}" onsubmit="return confirm('Batalkan tes bakat ini?')">
@@ -524,8 +535,10 @@
                                                 data-manage-url="{{ route('coach.talent-tests.manage', $test) }}"
                                                 data-edit-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.edit', $test) : '' }}"
                                                 data-cancel-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? route('coach.talent-tests.cancel', $test) : '' }}"
+                                                data-delete-url="{{ in_array($test->coach_status_key, ['draft', 'scheduled', 'cancelled'], true) ? route('coach.talent-tests.destroy', $test) : '' }}"
                                                 data-can-edit="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
                                                 data-can-cancel="{{ in_array($test->coach_status_key, ['draft', 'scheduled'], true) ? '1' : '0' }}"
+                                                data-can-delete="{{ in_array($test->coach_status_key, ['draft', 'scheduled', 'cancelled'], true) ? '1' : '0' }}"
                                             >Lihat Detail</button>
                                         </li>
                                         @if(in_array($test->coach_status_key, ['draft', 'scheduled'], true))
@@ -540,6 +553,15 @@
                                                 <button class="dropdown-item" type="submit">Duplikasi Tes</button>
                                             </form>
                                         </li>
+                                        @if(in_array($test->coach_status_key, ['draft', 'scheduled', 'cancelled'], true))
+                                            <li>
+                                                <form method="post" action="{{ route('coach.talent-tests.destroy', $test) }}" onsubmit="return confirm('Hapus tes bakat ini?')">
+                                                    @csrf
+                                                    @method('delete')
+                                                    <button class="dropdown-item text-danger" type="submit">Hapus Tes</button>
+                                                </form>
+                                            </li>
+                                        @endif
                                         @if(in_array($test->coach_status_key, ['draft', 'scheduled'], true))
                                             <li>
                                                 <form method="post" action="{{ route('coach.talent-tests.cancel', $test) }}" onsubmit="return confirm('Batalkan tes bakat ini?')">
@@ -602,6 +624,11 @@
                         @method('patch')
                         <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle"></i>Batalkan Tes</button>
                     </form>
+                    <form method="post" id="talentTestDetailDeleteForm" hidden onsubmit="return confirm('Hapus tes bakat ini?')">
+                        @csrf
+                        @method('delete')
+                        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash3"></i>Hapus Tes</button>
+                    </form>
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
@@ -640,6 +667,7 @@
                 const manageAction = document.getElementById('talentTestDetailManageAction');
                 const editAction = document.getElementById('talentTestDetailEditAction');
                 const cancelForm = document.getElementById('talentTestDetailCancelForm');
+                const deleteForm = document.getElementById('talentTestDetailDeleteForm');
 
                 if (manageAction) {
                     manageAction.href = trigger.dataset.manageUrl || '#';
@@ -658,6 +686,16 @@
                         cancelForm.action = trigger.dataset.cancelUrl || '';
                     } else {
                         cancelForm.removeAttribute('action');
+                    }
+                }
+
+                if (deleteForm) {
+                    const canDelete = trigger.dataset.canDelete === '1';
+                    deleteForm.hidden = !canDelete;
+                    if (canDelete) {
+                        deleteForm.action = trigger.dataset.deleteUrl || '';
+                    } else {
+                        deleteForm.removeAttribute('action');
                     }
                 }
             });

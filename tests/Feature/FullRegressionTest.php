@@ -1177,6 +1177,34 @@ class FullRegressionTest extends TestCase
         ]);
     }
 
+    public function test_coach_can_delete_talent_test(): void
+    {
+        $coachUser = $this->userByEmail('pembina1@gmail.com');
+        $coach = $coachUser->coach;
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
+
+        $talentTest = Schedule::query()->create([
+            'extracurricular_id' => $extracurricular->id,
+            'coach_id' => $coach->id,
+            'schedule_type' => 'talent_test',
+            'title' => 'Tes Bakat Hapus',
+            'activity_date' => now()->addDays(3)->toDateString(),
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'location' => 'Aula',
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($coachUser)
+            ->delete(route('coach.talent-tests.destroy', $talentTest))
+            ->assertRedirect(route('coach.talent-tests.index'))
+            ->assertSessionHas('success', 'Tes bakat berhasil dihapus.');
+
+        $this->assertDatabaseMissing('schedules', [
+            'id' => $talentTest->id,
+        ]);
+    }
+
     public function test_student_cannot_add_fourth_active_registration_but_old_data_stays_intact(): void
     {
         $studentUser = $this->userByEmail('siswa1@gmail.com');
