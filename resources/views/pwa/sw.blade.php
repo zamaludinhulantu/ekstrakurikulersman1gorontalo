@@ -5,7 +5,7 @@ const OFFLINE_URL = @json($offlineUrl);
 const APP_ROOT = @json($appRoot);
 const NOTIFICATION_FALLBACK_URL = `${APP_ROOT}/notifications`;
 const STATIC_PATH_PATTERNS = [/\/build\//, /\/pwa\//, /\/images\/brand\//, /\/favicon\.ico$/];
-const PRIVATE_PREFIXES = ['/dashboard', '/profile', '/student', '/coach', '/admin', '/super-admin', '/principal', '/notifications', '/settings', '/push'];
+const PRIVATE_PREFIXES = ['/dashboard', '/profile', '/student', '/coach', '/admin', '/super-admin', '/principal', '/notifications', '/settings', '/push', '/registrations'];
 const NETWORK_ONLY_PREFIXES = ['/login', '/logout', '/register', '/forgot-password', '/reset-password', '/email/verify'];
 
 self.addEventListener('install', (event) => {

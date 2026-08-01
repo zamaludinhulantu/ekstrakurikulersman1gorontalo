@@ -1,4 +1,8 @@
 {
+  "_bootstrap.esm-BwEUgG41.js": {
+    "file": "assets/bootstrap.esm-BwEUgG41.js",
+    "name": "bootstrap.esm"
+  },
   "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff": {
     "file": "assets/bootstrap-icons-BeopsB42.woff",
     "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff"
@@ -8,7 +12,7 @@
     "src": "node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DmF77le5.css",
+    "file": "assets/app-D_5TwTwe.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -17,16 +21,31 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-Rl0olh0C.js",
+    "file": "assets/app-Cnu4Ivb7.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
+    "imports": [
+      "_bootstrap.esm-BwEUgG41.js"
+    ],
+    "dynamicImports": [
+      "resources/js/pwa.js"
+    ]
+  },
+  "resources/js/public.js": {
+    "file": "assets/public-y8qmEm-0.js",
+    "name": "public",
+    "src": "resources/js/public.js",
+    "isEntry": true,
+    "imports": [
+      "_bootstrap.esm-BwEUgG41.js"
+    ],
     "dynamicImports": [
       "resources/js/pwa.js"
     ]
   },
   "resources/js/pwa.js": {
-    "file": "assets/pwa-CxMo_4ef.js",
+    "file": "assets/pwa-DozNjouN.js",
     "name": "pwa",
     "src": "resources/js/pwa.js",
     "isDynamicEntry": true

@@ -230,6 +230,10 @@
                         alt="{{ $article->image_alt_text_label }}"
                         class="article-detail-cover"
                         loading="eager"
+                        decoding="async"
+                        fetchpriority="high"
+                        width="1200"
+                        height="675"
                     >
                 @endif
 

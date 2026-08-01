@@ -9,14 +9,25 @@
 
 <article class="public-announcement-card">
     <div class="public-announcement-card-meta">
-        <span><i class="bi bi-calendar-event"></i>{{ $announcement->created_at?->translatedFormat('d M Y') ?? '-' }}</span>
+        <span><i class="bi bi-calendar-event"></i>{{ optional($announcement->publish_at ?? $announcement->created_at)->translatedFormat('d M Y') ?? '-' }}</span>
         <span><i class="bi bi-diagram-3"></i>{{ $announcement->extracurricular?->catalog_item_name ?? $announcement->extracurricular?->name ?? 'Semua kegiatan' }}</span>
         <span class="{{ $priorityClass }}"><i class="bi bi-flag"></i>{{ $priorityLabel }}</span>
     </div>
     <h3>{{ $announcement->title }}</h3>
     <p>{{ \Illuminate\Support\Str::limit($announcement->content, 140) }}</p>
+    @if($expandable ?? false)
+        <div class="collapse" id="announcementContent{{ $announcement->id }}">
+            <p class="public-announcement-full-content">{{ $announcement->content }}</p>
+        </div>
+    @endif
     <div class="public-announcement-card-footer">
         <span>Dipublikasikan oleh {{ $announcement->publisher?->name ?? 'Admin' }}</span>
-        <a href="{{ route('public.announcements') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-right-circle"></i>Baca Selengkapnya</a>
+        @if($expandable ?? false)
+            <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#announcementContent{{ $announcement->id }}" aria-expanded="false" aria-controls="announcementContent{{ $announcement->id }}">
+                <i class="bi bi-arrow-down-circle"></i>Baca Selengkapnya
+            </button>
+        @else
+            <a href="{{ route('public.announcements') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-right-circle"></i>Baca Selengkapnya</a>
+        @endif
     </div>
 </article>

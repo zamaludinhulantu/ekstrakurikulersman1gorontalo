@@ -39,4 +39,16 @@ class Coach extends Model
     {
         return $this->hasMany(Assessment::class);
     }
+
+    public function talentTestResults(): HasMany
+    {
+        return $this->hasMany(TalentTestResult::class);
+    }
+
+    public function hasCompleteProfile(): bool
+    {
+        return filled($this->nip)
+            && filled($this->user?->name)
+            && filled($this->user?->email);
+    }
 }

@@ -66,10 +66,14 @@
             $actionClass = 'btn-outline-success';
             $actionDisabled = true;
             $actionHref = null;
-        } else {
+        } elseif (in_array($registration->status, [\App\Models\Registration::STATUS_REJECTED, \App\Models\Registration::STATUS_CANCELLED], true)) {
             $actionLabel = 'Daftar';
             $actionClass = 'btn-primary';
             $actionHref = route('student.extracurriculars.register', $activity);
+        } else {
+            $actionLabel = 'Lihat Status';
+            $actionClass = 'btn-outline-secondary';
+            $actionHref = route('student.registrations.index');
         }
     } elseif ($isStudent) {
         $actionHref = route('student.extracurriculars.register', $activity);

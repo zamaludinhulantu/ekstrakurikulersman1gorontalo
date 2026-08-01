@@ -6,8 +6,10 @@ use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\Extracurricular;
 use App\Models\Registration;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,28 +21,66 @@ class PublicLandingController extends Controller
 {
     public function index(): View
     {
-        $activityCounts = Extracurricular::activeCategoryCounts();
-        $categorySummaries = $this->baseCategorySummaries($activityCounts);
+        $landingPayload = Cache::remember(
+            'public.landing.payload.v2',
+            now()->addMinutes(10),
+            function (): array {
+                $activityCounts = Extracurricular::activeCategoryCounts();
+                $categorySummaries = $this->baseCategorySummaries($activityCounts);
+
+                return [
+                    'categorySummaries' => $this->decorateCategorySummaries($categorySummaries),
+                    'statistics' => [
+                        'totalActivities' => $activityCounts['total'],
+                        'categories' => $categorySummaries->count(),
+                    ],
+                    'registrationStatus' => $this->resolveRegistrationStatus(),
+                    'recentAnnouncements' => Announcement::query()
+                        ->select(['id', 'title', 'content', 'priority', 'extracurricular_id', 'published_by', 'publish_at', 'created_at'])
+                        ->with([
+                            'publisher:id,name',
+                            'extracurricular:id,name',
+                        ])
+                        ->visibleToStudents()
+                        ->latest('publish_at')
+                        ->latest('id')
+                        ->limit(3)
+                        ->get(),
+                    'recentArticles' => Article::query()
+                        ->select([
+                            'id',
+                            'title',
+                            'slug',
+                            'excerpt',
+                            'content',
+                            'content_category',
+                            'extracurricular_id',
+                            'published_by',
+                            'image_path',
+                            'image_alt_text',
+                            'publish_at',
+                            'created_at',
+                            'is_featured',
+                        ])
+                        ->with([
+                            'publisher:id,name',
+                            'extracurricular:id,name',
+                        ])
+                        ->visibleToPublic()
+                        ->orderByDesc('is_featured')
+                        ->latest('publish_at')
+                        ->limit(3)
+                        ->get(),
+                ];
+            }
+        );
 
         return view('public.landing', [
-            'categorySummaries' => $this->decorateCategorySummaries($categorySummaries),
-            'statistics' => [
-                'totalActivities' => $activityCounts['total'],
-                'openActivities' => $activityCounts['total'],
-                'categories' => $categorySummaries->count(),
-                'onlineRegistration' => '24/7',
-            ],
-            'recentAnnouncements' => Announcement::with(['publisher', 'extracurricular'])
-                ->visibleToStudents()
-                ->latest()
-                ->limit(3)
-                ->get(),
-            'recentArticles' => Article::with(['publisher', 'extracurricular'])
-                ->visibleToPublic()
-                ->orderByDesc('is_featured')
-                ->latest('publish_at')
-                ->limit(3)
-                ->get(),
+            'categorySummaries' => $landingPayload['categorySummaries'],
+            'statistics' => $landingPayload['statistics'],
+            'registrationStatus' => $landingPayload['registrationStatus'],
+            'recentAnnouncements' => $landingPayload['recentAnnouncements'],
+            'recentArticles' => $landingPayload['recentArticles'],
         ]);
     }
 
@@ -71,21 +111,63 @@ class PublicLandingController extends Controller
 
     public function show(Extracurricular $extracurricular): View
     {
+        $today = now()->toDateString();
+
         $extracurricular->load([
-            'coach.user',
-            'coaches.user',
-            'schedules' => fn ($query) => $query->orderBy('activity_date')->orderBy('start_time'),
-            'achievements' => fn ($query) => $query->limit(6),
+            'coach.user:id,name',
+            'coaches.user:id,name',
+            'schedules' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'extracurricular_id',
+                    'schedule_type',
+                    'title',
+                    'activity_date',
+                    'start_time',
+                    'end_time',
+                    'location',
+                    'status',
+                    'cancelled_at',
+                ])
+                ->orderByRaw('case when activity_date >= ? then 0 else 1 end', [$today])
+                ->orderBy('activity_date')
+                ->orderBy('start_time'),
+            'achievements' => fn ($query) => $query
+                ->select(['id', 'extracurricular_id', 'title', 'description', 'achievement_date'])
+                ->limit(6),
+        ])->loadCount([
+            'registrations as participants_count' => fn ($query) => $query->where('status', Registration::STATUS_APPROVED),
         ]);
+
+        $user = request()->user();
+        $currentRegistration = null;
+
+        if ($user?->hasRole(User::ROLE_STUDENT) && $user->student) {
+            $currentRegistration = Registration::query()
+                ->with([
+                    'talentTestResults:id,registration_id,status,published_at',
+                    'talentTestParticipants:id,registration_id,schedule_id',
+                    'talentTestParticipants.schedule:id,activity_date',
+                ])
+                ->where('student_id', $user->student->id)
+                ->where('extracurricular_id', $extracurricular->id)
+                ->latest('registration_date')
+                ->latest('id')
+                ->first();
+        }
 
         $extracurricular = $this->decorateExtracurricular($extracurricular);
 
         return view('public.extracurricular-detail', [
             'extracurricular' => $extracurricular,
-            'relatedAnnouncements' => Announcement::with('publisher')
+            'detailPage' => $this->buildDetailPageData($extracurricular, $currentRegistration, $user),
+            'relatedAnnouncements' => Announcement::query()
+                ->select(['id', 'title', 'content', 'published_by', 'publish_at', 'created_at'])
+                ->with('publisher:id,name')
                 ->visibleToStudents()
                 ->where('extracurricular_id', $extracurricular->id)
-                ->latest()
+                ->latest('publish_at')
+                ->latest('id')
                 ->limit(3)
                 ->get(),
             'backToActivitiesUrl' => $this->backToActivityUrl($extracurricular),
@@ -97,15 +179,46 @@ class PublicLandingController extends Controller
         return view('public.information');
     }
 
-    public function announcements(): View
+    public function announcements(Request $request): View
     {
-        $announcements = Announcement::with(['publisher', 'extracurricular'])
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'extracurricular_id' => ['nullable', 'integer', 'exists:extracurriculars,id'],
+            'priority' => ['nullable', 'string', 'in:normal,important,urgent'],
+        ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $extracurricularId = isset($filters['extracurricular_id']) ? (int) $filters['extracurricular_id'] : null;
+        $priority = (string) ($filters['priority'] ?? '');
+
+        $announcements = Announcement::query()
+            ->select(['id', 'title', 'content', 'priority', 'extracurricular_id', 'published_by', 'publish_at', 'created_at'])
+            ->with(['publisher:id,name', 'extracurricular:id,name'])
             ->visibleToStudents()
-            ->latest()
-            ->get();
+            ->when($search, function ($query, string $value): void {
+                $query->where(function ($searchQuery) use ($value): void {
+                    $searchQuery->where('title', 'like', "%{$value}%")
+                        ->orWhere('content', 'like', "%{$value}%");
+                });
+            })
+            ->when($extracurricularId, fn ($query, int $id) => $query->where('extracurricular_id', $id))
+            ->when($priority, fn ($query, string $value) => $query->where('priority', $value))
+            ->latest('publish_at')
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString();
 
         return view('public.announcements', [
             'announcements' => $announcements,
+            'extracurriculars' => Extracurricular::query()
+                ->where('is_active', true)
+                ->whereHas('announcements', fn ($query) => $query->visibleToStudents())
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'filters' => [
+                'search' => $search,
+                'extracurricular_id' => $extracurricularId,
+                'priority' => $priority,
+            ],
         ]);
     }
 
@@ -130,6 +243,21 @@ class PublicLandingController extends Controller
         }
 
         $baseQuery = Article::query()
+            ->select([
+                'id',
+                'title',
+                'slug',
+                'excerpt',
+                'content',
+                'content_category',
+                'extracurricular_id',
+                'published_by',
+                'image_path',
+                'image_alt_text',
+                'publish_at',
+                'created_at',
+                'is_featured',
+            ])
             ->with(['publisher:id,name', 'extracurricular:id,name'])
             ->visibleToPublic()
             ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
@@ -173,14 +301,45 @@ class PublicLandingController extends Controller
 
     public function articleShow(string $slug): View
     {
-        $article = Article::with(['publisher', 'extracurricular'])
+        $article = Article::query()
+            ->select([
+                'id',
+                'title',
+                'slug',
+                'excerpt',
+                'content',
+                'content_category',
+                'extracurricular_id',
+                'published_by',
+                'image_path',
+                'image_alt_text',
+                'publish_at',
+                'created_at',
+            ])
+            ->with(['publisher:id,name', 'extracurricular:id,name'])
             ->visibleToPublic()
             ->where('slug', $slug)
             ->firstOrFail();
 
         return view('public.article-detail', [
             'article' => $article,
-            'relatedArticles' => Article::with(['publisher', 'extracurricular'])
+            'relatedArticles' => Article::query()
+                ->select([
+                    'id',
+                    'title',
+                    'slug',
+                    'excerpt',
+                    'content',
+                    'content_category',
+                    'extracurricular_id',
+                    'published_by',
+                    'image_path',
+                    'image_alt_text',
+                    'publish_at',
+                    'created_at',
+                    'is_featured',
+                ])
+                ->with(['publisher:id,name', 'extracurricular:id,name'])
                 ->visibleToPublic()
                 ->whereKeyNot($article->id)
                 ->when($article->content_category, fn ($query) => $query->where('content_category', $article->content_category))
@@ -390,6 +549,14 @@ class PublicLandingController extends Controller
         return $summaries->map(function (array $summary): array {
             $summary['slug'] = $summary['slug'] ?? str((string) ($summary['label'] ?? ''))->slug()->toString();
             $summary['route'] = route('public.activities.category', $summary['slug']);
+            $summary['display_label'] = $summary['key'] === Extracurricular::CATEGORY_MUSEUM
+                ? 'Kegiatan Museum'
+                : $summary['label'];
+            $summary['image_url'] = $summary['image'] ?? null;
+            $summary['has_image'] = filled($summary['image_url']);
+            $summary['count_label'] = $summary['count'] === 1
+                ? '1 kegiatan aktif'
+                : $summary['count'].' kegiatan aktif';
 
             return $summary;
         });
@@ -404,14 +571,28 @@ class PublicLandingController extends Controller
 
     private function catalogQuery(bool $activeOnly)
     {
-        return Extracurricular::with([
+        return Extracurricular::query()
+            ->select([
+                'id',
+                'coach_id',
+                'type',
+                'name',
+                'description',
+                'requirements',
+                'schedule_overview',
+                'branch_options',
+                'image_path',
+                'is_active',
+                'updated_at',
+            ])
+            ->with([
             'coach.user',
             'coaches.user',
             'schedules' => fn ($query) => $query->select('id', 'extracurricular_id', 'title', 'activity_date', 'start_time', 'location')
                 ->orderBy('activity_date')
                 ->orderBy('start_time')
                 ->limit(1),
-        ])
+            ])
             ->withCount([
                 'registrations as participants_count' => fn ($query) => $query->where('status', 'approved'),
             ])
@@ -484,10 +665,369 @@ class PublicLandingController extends Controller
     private function resolvePreviewImage(Extracurricular $extracurricular): string
     {
         if ($extracurricular->image_path) {
-            return Extracurricular::assetUrl($extracurricular->image_path, $extracurricular->updated_at?->timestamp)
-                ?? asset($extracurricular->image_path);
+            $imageUrl = Extracurricular::assetUrl($extracurricular->image_path, $extracurricular->updated_at?->timestamp);
+
+            if ($imageUrl) {
+                return $imageUrl;
+            }
         }
 
         return Extracurricular::makePreviewImage($extracurricular->name);
+    }
+
+    private function resolveRegistrationStatus(): ?array
+    {
+        $isOpen = filter_var(SystemSetting::getValue('registration_open', null), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+        if ($isOpen === null) {
+            return null;
+        }
+
+        $label = $isOpen ? 'Pendaftaran sedang dibuka' : 'Pendaftaran saat ini ditutup';
+        $description = $isOpen
+            ? 'Siswa dapat menjelajahi kegiatan dan melanjutkan pendaftaran melalui akun masing-masing.'
+            : 'Pantau pengumuman terbaru dari sekolah untuk mengetahui jadwal pembukaan berikutnya.';
+
+        return [
+            'is_open' => $isOpen,
+            'label' => $label,
+            'description' => $description,
+        ];
+    }
+
+    private function buildDetailPageData(Extracurricular $extracurricular, ?Registration $currentRegistration, ?User $user): array
+    {
+        $coachItems = $this->resolveCoachItems($extracurricular);
+        $visibleCoaches = $coachItems->take(3)->values();
+        $remainingCoachCount = max(0, $coachItems->count() - $visibleCoaches->count());
+        $primaryLocation = $extracurricular->schedules
+            ->pluck('location')
+            ->filter(fn (?string $location) => filled($location))
+            ->first();
+        $quotaValue = $this->resolveQuotaValue($extracurricular);
+        $participantCount = (int) ($extracurricular->participants_count ?? 0);
+        $isQuotaFull = $quotaValue !== null && $participantCount >= $quotaValue;
+        $requirements = $this->parseRequirements($extracurricular->requirements);
+        $activityBadge = $this->makeStatusBadge(
+            $extracurricular->is_active ? 'Kegiatan Aktif' : 'Kegiatan Tidak Aktif',
+            $extracurricular->is_active ? 'success' : 'secondary'
+        );
+        $registrationBadge = $this->resolvePublicRegistrationBadge($extracurricular->is_active, $isQuotaFull);
+        $studentBadge = $this->resolveStudentRegistrationBadge($currentRegistration);
+        $schedules = $extracurricular->schedules
+            ->map(fn ($schedule) => $this->mapScheduleForDetail($schedule))
+            ->values();
+        $scheduleSectionTitle = $schedules->count() <= 2 ? 'Jadwal terdekat' : 'Jadwal latihan';
+
+        return [
+            'user' => $user,
+            'is_student' => $user?->hasRole(User::ROLE_STUDENT) ?? false,
+            'coach_items' => $coachItems,
+            'visible_coaches' => $visibleCoaches,
+            'remaining_coach_count' => $remainingCoachCount,
+            'primary_location' => $primaryLocation ?: 'Lokasi belum ditentukan.',
+            'quota_value' => $quotaValue,
+            'quota_text' => $quotaValue !== null ? "{$participantCount} / {$quotaValue} peserta" : ($participantCount > 0 ? "{$participantCount} peserta aktif" : 'Kuota belum ditentukan'),
+            'quota_badge' => $this->makeStatusBadge(
+                $isQuotaFull ? 'Kuota Penuh' : ($quotaValue !== null ? 'Kuota Tersedia' : 'Kuota Belum Ditentukan'),
+                $isQuotaFull ? 'warning' : ($quotaValue !== null ? 'info' : 'secondary')
+            ),
+            'is_quota_full' => $isQuotaFull,
+            'participant_count' => $participantCount,
+            'requirements' => $requirements,
+            'activity_badge' => $activityBadge,
+            'registration_badge' => $registrationBadge,
+            'student_badge' => $studentBadge,
+            'cta' => $this->resolveDetailCta($extracurricular, $currentRegistration, $user, $isQuotaFull),
+            'short_description' => Str::of((string) ($extracurricular->description ?: 'Informasi kegiatan ini akan diperbarui oleh sekolah.'))
+                ->squish()
+                ->limit(180)
+                ->toString(),
+            'schedule_section_title' => $scheduleSectionTitle,
+            'schedules' => $schedules,
+            'information_rows' => [
+                [
+                    'label' => 'Status Pendaftaran',
+                    'value' => $registrationBadge['label'],
+                    'icon' => 'bi-door-open',
+                ],
+                [
+                    'label' => 'Kuota',
+                    'value' => $quotaValue !== null ? "{$quotaValue} peserta" : 'Belum ditentukan',
+                    'icon' => 'bi-people',
+                ],
+                [
+                    'label' => 'Lokasi',
+                    'value' => $primaryLocation ?: 'Belum ditentukan',
+                    'icon' => 'bi-geo-alt',
+                ],
+                [
+                    'label' => 'Pembina',
+                    'value' => $coachItems->isNotEmpty() ? $coachItems->count().' pembina' : 'Belum ditentukan',
+                    'icon' => 'bi-person-workspace',
+                ],
+                [
+                    'label' => 'Syarat',
+                    'value' => $requirements->isNotEmpty() ? $requirements->first() : 'Tidak ada syarat khusus yang ditentukan.',
+                    'icon' => 'bi-card-checklist',
+                ],
+                [
+                    'label' => 'Seleksi',
+                    'value' => $this->resolveSelectionText($currentRegistration),
+                    'icon' => 'bi-clipboard-check',
+                ],
+            ],
+            'breadcrumbs' => [
+                ['label' => 'Beranda', 'url' => route('landing')],
+                ['label' => $extracurricular->category_label, 'url' => $this->backToActivityUrl($extracurricular)],
+                ['label' => $extracurricular->name, 'url' => null],
+            ],
+        ];
+    }
+
+    private function resolveCoachItems(Extracurricular $extracurricular): Collection
+    {
+        $items = collect();
+
+        if ($extracurricular->relationLoaded('coaches')) {
+            $items = $extracurricular->coaches
+                ->map(fn ($coach) => [
+                    'id' => $coach->id,
+                    'name' => $coach->user->name ?? null,
+                ]);
+        }
+
+        if ($items->isEmpty() && $extracurricular->relationLoaded('coach') && $extracurricular->coach) {
+            $items = collect([[
+                'id' => $extracurricular->coach->id,
+                'name' => $extracurricular->coach->user->name ?? null,
+            ]]);
+        }
+
+        return $items
+            ->filter(fn (array $coach) => filled($coach['name'] ?? null))
+            ->unique(fn (array $coach) => ($coach['id'] ?? 'unknown').'-'.Str::lower((string) $coach['name']))
+            ->values();
+    }
+
+    private function resolveQuotaValue(Extracurricular $extracurricular): ?int
+    {
+        foreach (['quota', 'member_quota', 'capacity'] as $attribute) {
+            $value = $extracurricular->getAttribute($attribute);
+
+            if (is_numeric($value) && (int) $value > 0) {
+                return (int) $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function parseRequirements(?string $requirements): Collection
+    {
+        return collect(preg_split('/\r\n|\r|\n/', (string) $requirements))
+            ->map(fn (?string $item) => trim((string) preg_replace('/^[\-\*\d\.\)\s]+/u', '', (string) $item)))
+            ->filter()
+            ->values();
+    }
+
+    private function resolvePublicRegistrationBadge(bool $isActive, bool $isQuotaFull): array
+    {
+        if (! $isActive) {
+            return $this->makeStatusBadge('Pendaftaran Ditutup', 'secondary');
+        }
+
+        if ($isQuotaFull) {
+            return $this->makeStatusBadge('Kuota Penuh', 'warning');
+        }
+
+        return $this->makeStatusBadge('Pendaftaran Dibuka', 'success');
+    }
+
+    private function resolveStudentRegistrationBadge(?Registration $registration): ?array
+    {
+        if (! $registration) {
+            return null;
+        }
+
+        return match ($registration->displayStatus()) {
+            Registration::STATUS_APPROVED => $this->makeStatusBadge('Diterima', 'success'),
+            Registration::STATUS_REJECTED => $this->makeStatusBadge('Ditolak', 'danger'),
+            Registration::STATUS_CANCELLED => $this->makeStatusBadge('Dibatalkan', 'secondary'),
+            Registration::DISPLAY_STATUS_WAITING_TEST => $this->makeStatusBadge('Menunggu Tes', 'warning'),
+            Registration::DISPLAY_STATUS_SCHEDULED_TEST => $this->makeStatusBadge('Tes Terjadwal', 'warning'),
+            Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED => $this->makeStatusBadge('Menunggu Konfirmasi Pembatalan', 'warning'),
+            default => $this->makeStatusBadge('Menunggu Verifikasi', 'warning'),
+        };
+    }
+
+    private function resolveSelectionText(?Registration $registration): string
+    {
+        if ($registration?->willing_to_take_test) {
+            return 'Mengikuti tes jika dijadwalkan oleh pembina atau admin.';
+        }
+
+        return 'Mengikuti verifikasi pendaftaran sesuai alur yang berlaku.';
+    }
+
+    private function resolveDetailCta(Extracurricular $extracurricular, ?Registration $registration, ?User $user, bool $isQuotaFull): array
+    {
+        $base = [
+            'title' => 'Pendaftaran kegiatan',
+            'description' => 'Seluruh verifikasi tetap dilakukan di backend agar pendaftaran berjalan sesuai aturan sekolah.',
+            'primary' => null,
+            'secondary' => [
+                'label' => 'Lihat Alur Pendaftaran',
+                'href' => route('public.information'),
+                'variant' => 'outline-light',
+            ],
+            'status_note' => null,
+        ];
+
+        if (! $user) {
+            return [
+                ...$base,
+                'status_note' => 'Masuk sebagai siswa untuk melanjutkan pendaftaran kegiatan ini.',
+                'primary' => [
+                    'label' => 'Masuk untuk Mendaftar',
+                    'href' => route('public.extracurriculars.register', $extracurricular),
+                    'variant' => 'light',
+                    'icon' => 'bi-box-arrow-in-right',
+                ],
+                'secondary' => [
+                    'label' => 'Buat Akun',
+                    'href' => route('register'),
+                    'variant' => 'outline-light',
+                    'icon' => 'bi-person-plus',
+                ],
+            ];
+        }
+
+        $isStudent = $user->hasRole(User::ROLE_STUDENT);
+
+        if (! $isStudent) {
+            return [
+                ...$base,
+                'status_note' => 'Pendaftaran siswa hanya tersedia melalui akun siswa.',
+                'primary' => [
+                    'label' => 'Buka Dashboard',
+                    'href' => route('dashboard'),
+                    'variant' => 'light',
+                    'icon' => 'bi-arrow-right-circle',
+                ],
+            ];
+        }
+
+        if ($registration && ! in_array($registration->status, [Registration::STATUS_REJECTED, Registration::STATUS_CANCELLED], true)) {
+            return [
+                ...$base,
+                'status_note' => $this->resolveStudentRegistrationBadge($registration)['label'] ?? 'Status pendaftaran tersedia.',
+                'primary' => [
+                    'label' => 'Lihat Status Pendaftaran',
+                    'href' => route('student.registrations.index'),
+                    'variant' => 'light',
+                    'icon' => 'bi-clipboard-check',
+                ],
+            ];
+        }
+
+        if (! $extracurricular->is_active) {
+            return [
+                ...$base,
+                'status_note' => 'Kegiatan sedang tidak aktif sehingga pendaftaran belum tersedia.',
+                'primary' => [
+                    'label' => 'Pendaftaran Ditutup',
+                    'href' => null,
+                    'variant' => 'outline-light',
+                    'icon' => 'bi-lock',
+                    'disabled' => true,
+                ],
+            ];
+        }
+
+        if ($isQuotaFull) {
+            return [
+                ...$base,
+                'status_note' => 'Kuota peserta yang tersedia untuk kegiatan ini sudah penuh.',
+                'primary' => [
+                    'label' => 'Kuota Penuh',
+                    'href' => null,
+                    'variant' => 'outline-light',
+                    'icon' => 'bi-people-fill',
+                    'disabled' => true,
+                ],
+            ];
+        }
+
+        return [
+            ...$base,
+            'status_note' => 'Pendaftaran dilakukan melalui form siswa dan akan diverifikasi oleh pembina atau admin.',
+            'primary' => [
+                'label' => 'Daftar Kegiatan Ini',
+                'href' => route('student.extracurriculars.register', $extracurricular),
+                'variant' => 'light',
+                'icon' => 'bi-send-check',
+            ],
+        ];
+    }
+
+    private function mapScheduleForDetail($schedule): array
+    {
+        $date = $schedule->activity_date;
+        $start = $schedule->start_time ? Str::of((string) $schedule->start_time)->substr(0, 5)->toString() : null;
+        $end = $schedule->end_time ? Str::of((string) $schedule->end_time)->substr(0, 5)->toString() : null;
+        $status = $this->resolveScheduleStatusBadge($schedule);
+
+        return [
+            'title' => $schedule->title,
+            'type_label' => $schedule->schedule_type === 'talent_test' ? 'Tes' : 'Latihan',
+            'date_label' => $date ? $date->locale('id')->translatedFormat('j F Y') : 'Tanggal belum ditentukan',
+            'time_label' => $start ? trim($start.($end ? " - {$end}" : '')).' WITA' : 'Waktu belum ditentukan',
+            'location' => $schedule->location ?: 'Lokasi belum ditentukan',
+            'status' => $status,
+        ];
+    }
+
+    private function resolveScheduleStatusBadge($schedule): array
+    {
+        $isCancelled = $schedule->cancelled_at !== null || $schedule->status === 'cancelled';
+
+        if ($isCancelled) {
+            return $this->makeStatusBadge('Dibatalkan', 'danger');
+        }
+
+        $today = now()->toDateString();
+        $date = $schedule->activity_date?->toDateString();
+        $endTime = $schedule->end_time ? Str::of((string) $schedule->end_time)->substr(0, 5)->toString() : null;
+        $nowTime = now()->format('H:i');
+
+        if ($date && $date < $today) {
+            return $this->makeStatusBadge('Selesai', 'secondary');
+        }
+
+        if ($date === $today && $endTime !== null && $endTime < $nowTime) {
+            return $this->makeStatusBadge('Selesai', 'secondary');
+        }
+
+        if ($date === $today) {
+            return $this->makeStatusBadge('Hari Ini', 'warning');
+        }
+
+        return $this->makeStatusBadge('Akan Datang', 'success');
+    }
+
+    private function makeStatusBadge(string $label, string $tone): array
+    {
+        return [
+            'label' => $label,
+            'tone' => $tone,
+            'class' => match ($tone) {
+                'success' => 'badge-status-success',
+                'warning' => 'badge-status-warning',
+                'danger' => 'badge-status-danger',
+                'info' => 'badge-status-info',
+                default => 'badge-status-secondary',
+            },
+        ];
     }
 }

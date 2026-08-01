@@ -10,6 +10,7 @@ use App\Models\Coach;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -25,14 +26,36 @@ class ReportController extends Controller
         $filters = $request->validate([
             'extracurricular_id' => ['nullable', 'exists:extracurriculars,id'],
             'coach_id' => ['nullable', 'exists:coaches,id'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'class_name' => ['nullable', 'string', 'max:100'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'sort' => ['nullable', Rule::in(['name', 'nis', 'class_name', 'registration_date'])],
+            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 20, 50, 100])],
         ]);
+        $filters['class_name'] = Student::normalizeClassName($filters['class_name'] ?? null);
+        $filters['sort'] = $filters['sort'] ?? 'registration_date';
+        $filters['direction'] = $filters['direction'] ?? 'desc';
+        $filters['per_page'] = (int) ($filters['per_page'] ?? 20);
 
-        $participants = $this->participantsQuery($filters)
-            ->latest('registration_date')
-            ->latest('id')
-            ->paginate(15)
+        $participantQuery = $this->participantsQuery($filters);
+        $direction = $filters['direction'];
+        $participants = match ($filters['sort']) {
+            'name' => $participantQuery->orderByRaw(
+                "(SELECT users.name FROM users INNER JOIN students ON students.user_id = users.id WHERE students.id = registrations.student_id LIMIT 1) {$direction}"
+            ),
+            'nis' => $participantQuery->orderByRaw(
+                "(SELECT students.nis FROM students WHERE students.id = registrations.student_id LIMIT 1) {$direction}"
+            ),
+            'class_name' => $participantQuery->orderByRaw(
+                "(SELECT students.class_name FROM students WHERE students.id = registrations.student_id LIMIT 1) {$direction}"
+            ),
+            default => $participantQuery->orderBy('registration_date', $direction),
+        };
+        $participants = $participants
+            ->orderBy('registrations.id', $direction)
+            ->paginate($filters['per_page'])
             ->withQueryString();
 
         return view('admin.reports.participants', [
@@ -41,8 +64,14 @@ class ReportController extends Controller
             'coaches' => Coach::with('user')->orderBy('nip')->get(),
             'extracurricularId' => $filters['extracurricular_id'] ?? null,
             'coachId' => $filters['coach_id'] ?? null,
+            'search' => $filters['search'] ?? '',
+            'className' => $filters['class_name'] ?? '',
             'dateFrom' => $filters['date_from'] ?? null,
             'dateTo' => $filters['date_to'] ?? null,
+            'sort' => $filters['sort'],
+            'direction' => $filters['direction'],
+            'perPage' => $filters['per_page'],
+            'classOptions' => collect(array_keys(Student::registrationClassOptions())),
         ]);
     }
 
@@ -76,6 +105,8 @@ class ReportController extends Controller
         $filters = $request->validate([
             'extracurricular_id' => ['nullable', 'exists:extracurriculars,id'],
             'coach_id' => ['nullable', 'exists:coaches,id'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'class_name' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(['present', 'absent', 'sick', 'permission'])],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
@@ -139,7 +170,11 @@ class ReportController extends Controller
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'format' => ['nullable', Rule::in(['csv', 'xls'])],
+            'sort' => ['nullable', Rule::in(['name', 'nis', 'class_name', 'registration_date'])],
+            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 20, 50, 100])],
         ]);
+        $filters['class_name'] = Student::normalizeClassName($filters['class_name'] ?? null);
 
         $format = $filters['format'] ?? 'csv';
         $delimiter = $format === 'xls' ? "\t" : ',';
@@ -217,6 +252,23 @@ class ReportController extends Controller
             ->when($filters['extracurricular_id'] ?? null, fn ($query, $value) => $query->where('extracurricular_id', $value))
             ->when($filters['coach_id'] ?? null, function ($query, $value): void {
                 $query->whereHas('extracurricular.coaches', fn ($subQuery) => $subQuery->whereKey($value));
+            })
+            ->when($filters['class_name'] ?? null, function ($query, string $className): void {
+                $comparable = Student::normalizedClassComparable($className);
+                $query->whereHas('student', fn ($studentQuery) => $studentQuery
+                    ->whereRaw(Student::normalizedClassExpression('class_name').' = ?', [$comparable]));
+            })
+            ->when($filters['search'] ?? null, function ($query, string $search): void {
+                $query->where(function ($searchQuery) use ($search): void {
+                    $searchQuery->whereHas('student', function ($studentQuery) use ($search): void {
+                        $studentQuery->where('nis', 'like', "%{$search}%")
+                            ->orWhere('class_name', 'like', "%{$search}%")
+                            ->orWhereHas('user', function ($userQuery) use ($search): void {
+                                $userQuery->where('name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
+                            });
+                    })->orWhereHas('extracurricular', fn ($activityQuery) => $activityQuery->where('name', 'like', "%{$search}%"));
+                });
             })
             ->when($filters['date_from'] ?? null, fn ($query, $value) => $query->whereDate('registration_date', '>=', $value))
             ->when($filters['date_to'] ?? null, fn ($query, $value) => $query->whereDate('registration_date', '<=', $value));

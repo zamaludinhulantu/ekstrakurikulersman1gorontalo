@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Registration extends Model
 {
@@ -16,9 +17,13 @@ class Registration extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
     public const DISPLAY_STATUS_WAITING_TEST = 'waiting_test';
 
     public const DISPLAY_STATUS_SCHEDULED_TEST = 'scheduled_test';
+
+    public const DISPLAY_STATUS_CANCELLATION_REQUESTED = 'cancellation_requested';
 
     protected $fillable = [
         'student_id',
@@ -40,6 +45,7 @@ class Registration extends Model
         'allow_public_profile',
         'verified_by',
         'verified_at',
+        'cancellation_requested_at',
     ];
 
     protected function casts(): array
@@ -47,6 +53,7 @@ class Registration extends Model
         return [
             'registration_date' => 'date',
             'verified_at' => 'datetime',
+            'cancellation_requested_at' => 'datetime',
             'willing_to_take_test' => 'boolean',
             'allow_public_profile' => 'boolean',
         ];
@@ -70,6 +77,11 @@ class Registration extends Model
     public function talentTestParticipants()
     {
         return $this->hasMany(TalentTestParticipant::class);
+    }
+
+    public function scheduleParticipants(): HasMany
+    {
+        return $this->hasMany(ScheduleParticipant::class);
     }
 
     public function talentTestResults()
@@ -114,6 +126,10 @@ class Registration extends Model
 
     public function displayStatus(): string
     {
+        if ($this->isCancellationRequested()) {
+            return self::DISPLAY_STATUS_CANCELLATION_REQUESTED;
+        }
+
         if (
             $this->status !== self::STATUS_REJECTED
             && $this->willing_to_take_test
@@ -129,6 +145,10 @@ class Registration extends Model
 
     public function canStudentEdit(): bool
     {
+        if ($this->isCancellationRequested()) {
+            return false;
+        }
+
         if ($this->status === self::STATUS_REJECTED) {
             return ! $this->hasPublishedTalentTestResult();
         }
@@ -136,5 +156,26 @@ class Registration extends Model
         return $this->status === self::STATUS_PENDING
             && ! $this->willing_to_take_test
             && ! $this->hasScheduledTalentTest();
+    }
+
+    public function canStudentCancel(): bool
+    {
+        return ! $this->isCancellationRequested()
+            && ! in_array($this->status, [self::STATUS_REJECTED, self::STATUS_CANCELLED], true);
+    }
+
+    public function isCancellationRequested(): bool
+    {
+        return $this->cancellation_requested_at !== null;
+    }
+
+    public function requiresCancellationApproval(): bool
+    {
+        return $this->status === self::STATUS_APPROVED || $this->hasScheduledTalentTest();
+    }
+
+    public function canCoachRemoveParticipant(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
     }
 }

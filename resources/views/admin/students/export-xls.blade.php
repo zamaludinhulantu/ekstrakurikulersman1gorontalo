@@ -13,7 +13,7 @@
             <th colspan="8" style="text-align: left;">Kelas: {{ $filterSummary['class_name'] }} | Kategori: {{ $filterSummary['category'] }} | Kegiatan: {{ $filterSummary['extracurricular'] }}</th>
         </tr>
         <tr>
-            <th colspan="8" style="text-align: left;">Jenis Kelamin: {{ $filterSummary['gender'] }} | Status: {{ $filterSummary['status'] }}</th>
+            <th colspan="8" style="text-align: left;">Jenis Kelamin: {{ $filterSummary['gender'] }} | Status: {{ $filterSummary['status'] }} | Profil: {{ $filterSummary['profile_status'] }}</th>
         </tr>
         <tr>
             <th style="background: #eef5ff;">No</th>
@@ -31,7 +31,7 @@
             <tr>
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $controller->exportValue($student->user->name ?? '-') }}</td>
-                <td style="mso-number-format:'\@';">{{ $controller->exportValue($student->nis) }}</td>
+                <td style="mso-number-format:'\@';">{{ $controller->exportValue($student->nis ?: 'NIS belum diisi') }}</td>
                 <td>{{ $controller->exportValue($student->class_name) }}</td>
                 <td>{{ $controller->exportValue($student->user->email ?? '-') }}</td>
                 <td>{{ $controller->exportValue($controller->genderLabel($student->gender)) }}</td>

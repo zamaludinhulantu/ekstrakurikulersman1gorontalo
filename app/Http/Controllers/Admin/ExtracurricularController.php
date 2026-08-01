@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Coach;
 use App\Models\Extracurricular;
+use App\Support\UploadedImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -120,15 +121,25 @@ class ExtracurricularController extends Controller
 
     public function show(Extracurricular $extracurricular): View
     {
-        $extracurricular->load([
-            'coach.user',
-            'coaches.user',
-            'schedules' => fn ($query) => $query->orderByDesc('activity_date'),
-            'registrations.student.user',
-            'achievements',
-        ]);
+        $extracurricular
+            ->load(['coach.user', 'coaches.user'])
+            ->loadCount(['schedules', 'registrations', 'achievements']);
 
-        return view('admin.extracurriculars.show', compact('extracurricular'));
+        return view('admin.extracurriculars.show', [
+            'extracurricular' => $extracurricular,
+            'schedules' => $extracurricular->schedules()
+                ->latest('activity_date')
+                ->paginate(10, ['*'], 'schedules_page')
+                ->withQueryString(),
+            'registrations' => $extracurricular->registrations()
+                ->with('student.user:id,name')
+                ->latest('id')
+                ->paginate(20, ['*'], 'registrations_page')
+                ->withQueryString(),
+            'achievements' => $extracurricular->achievements()
+                ->paginate(10, ['*'], 'achievements_page')
+                ->withQueryString(),
+        ]);
     }
 
     public function edit(Extracurricular $extracurricular): View
@@ -155,8 +166,26 @@ class ExtracurricularController extends Controller
 
     public function destroy(Extracurricular $extracurricular): RedirectResponse
     {
-        $this->deleteImage($extracurricular->image_path);
-        $extracurricular->delete();
+        $hasOperationalHistory = $extracurricular->registrations()->exists()
+            || $extracurricular->schedules()->exists()
+            || $extracurricular->attendances()->exists()
+            || $extracurricular->assessments()->exists()
+            || $extracurricular->achievements()->exists()
+            || $extracurricular->reports()->exists()
+            || $extracurricular->talentTestAspects()->exists();
+
+        if ($hasOperationalHistory) {
+            return redirect()
+                ->route('admin.extracurriculars.index')
+                ->with(
+                    'error',
+                    'Kegiatan tidak dapat dihapus karena memiliki pendaftaran atau riwayat operasional. Nonaktifkan kegiatan agar data siswa dan laporan tetap utuh.'
+                );
+        }
+
+        $imagePath = $extracurricular->image_path;
+        DB::transaction(fn () => $extracurricular->delete());
+        $this->deleteImage($imagePath);
         Extracurricular::forgetCatalogCaches();
 
         return redirect()->route('admin.extracurriculars.index')->with('success', 'Data ekstrakurikuler berhasil dihapus.');
@@ -171,7 +200,7 @@ class ExtracurricularController extends Controller
             'requirements' => ['nullable', 'string'],
             'schedule_overview' => ['nullable', 'string'],
             'branch_options' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:3072', 'mimes:jpg,jpeg,png,webp'],
+            'image' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,webp', 'dimensions:max_width=5000,max_height=5000'],
             'remove_image' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -186,9 +215,10 @@ class ExtracurricularController extends Controller
         }
 
         if ($request->hasFile('image')) {
+            $newImagePath = $this->storeImage($request);
             $this->deleteImage($extracurricular->image_path);
 
-            return $this->storeImage($request);
+            return $newImagePath;
         }
 
         return $extracurricular->image_path;
@@ -200,17 +230,11 @@ class ExtracurricularController extends Controller
             return null;
         }
 
-        $file = $request->file('image');
-        $directory = public_path('uploads/extracurriculars');
-
-        if (! File::exists($directory)) {
-            File::makeDirectory($directory, 0755, true);
-        }
-
-        $filename = Str::uuid()->toString().'.'.$file->getClientOriginalExtension();
-        $file->move($directory, $filename);
-
-        return 'uploads/extracurriculars/'.$filename;
+        return app(UploadedImageOptimizer::class)->store(
+            $request->file('image'),
+            public_path('uploads/extracurriculars'),
+            'uploads/extracurriculars'
+        );
     }
 
     private function deleteImage(?string $imagePath): void

@@ -15,17 +15,19 @@
     ];
 
     $summaryCards = [
-        ['key' => 'total_extracurriculars', 'label' => 'Total ekstrakurikuler', 'icon' => 'bi-grid-1x2', 'hint' => 'Unit kegiatan yang tercatat'],
-        ['key' => 'total_students', 'label' => 'Total siswa', 'icon' => 'bi-people', 'hint' => 'Seluruh siswa pada sistem'],
-        ['key' => 'students_joined', 'label' => 'Sudah ikut ekskul', 'icon' => 'bi-person-check', 'hint' => 'Siswa dengan pendaftaran diterima'],
-        ['key' => 'students_not_joined', 'label' => 'Belum ikut ekskul', 'icon' => 'bi-person-x', 'hint' => 'Perlu pendampingan atau sosialisasi'],
-        ['key' => 'registrations_approved', 'label' => 'Pendaftar diterima', 'icon' => 'bi-patch-check', 'hint' => 'Pendaftaran berstatus diterima'],
-        ['key' => 'registrations_rejected', 'label' => 'Pendaftar ditolak', 'icon' => 'bi-x-octagon', 'hint' => 'Pendaftaran berstatus ditolak'],
-        ['key' => 'registrations_pending', 'label' => 'Masih diperiksa', 'icon' => 'bi-hourglass-split', 'hint' => 'Menunggu keputusan pembina/admin'],
+        ['key' => 'total_extracurriculars', 'label' => 'Total Ekstrakurikuler', 'icon' => 'bi-grid-1x2', 'hint' => 'Unit kegiatan yang tercatat', 'href' => route('principal.dashboard', array_merge(request()->query(), ['tab' => 'activities'])), 'tone' => 'primary'],
+        ['key' => 'total_students', 'label' => 'Total Siswa', 'icon' => 'bi-people', 'hint' => 'Seluruh siswa pada sistem', 'href' => route('principal.dashboard', array_merge(request()->query(), ['tab' => 'students'])), 'tone' => 'info'],
+        ['key' => 'students_joined', 'label' => 'Sudah Ikut Ekskul', 'icon' => 'bi-person-check', 'hint' => 'Siswa dengan pendaftaran diterima', 'href' => route('principal.dashboard', array_merge(request()->query(), ['tab' => 'students'])), 'tone' => 'success'],
+        ['key' => 'students_not_joined', 'label' => 'Belum Ikut Ekskul', 'icon' => 'bi-person-x', 'hint' => 'Perlu pendampingan atau sosialisasi', 'href' => route('principal.dashboard', array_merge(request()->query(), ['tab' => 'students'])), 'tone' => 'warning'],
+        ['key' => 'registrations_approved', 'label' => 'Pendaftaran Diterima', 'icon' => 'bi-patch-check', 'hint' => 'Record pendaftaran berstatus diterima', 'href' => $reportLinks['registrations'], 'tone' => 'success'],
+        ['key' => 'registrations_rejected', 'label' => 'Pendaftaran Ditolak', 'icon' => 'bi-x-octagon', 'hint' => 'Record pendaftaran berstatus ditolak', 'href' => $reportLinks['registrations'], 'tone' => 'danger'],
+        ['key' => 'registrations_pending', 'label' => 'Pendaftaran Diperiksa', 'icon' => 'bi-hourglass-split', 'hint' => 'Menunggu keputusan pembina/admin', 'href' => $reportLinks['registrations'], 'tone' => 'warning'],
     ];
 @endphp
 
 @section('content')
+    <x-dashboard.updated-at :value="$dashboardUpdatedAt" class="mb-3" />
+
     <div class="surface-card toolbar-card mb-3">
         <div class="section-header-inline">
             <div>
@@ -107,18 +109,17 @@
     </div>
 
     @if($activeTab === 'overview')
-        <div class="row g-3 mb-3">
+        <div class="dashboard-stat-grid dashboard-stat-grid--wide mb-3">
             @foreach($summaryCards as $card)
-                <div class="col-6 col-lg-4 col-xxl">
-                    <div class="card h-100">
-                        <div class="card-body stat-card">
-                            <span class="stat-icon"><i class="bi {{ $card['icon'] }}"></i></span>
-                            <p class="label">{{ $card['label'] }}</p>
-                            <p class="value" data-counter="{{ $summary[$card['key']] ?? 0 }}">{{ $summary[$card['key']] ?? 0 }}</p>
-                            <div class="trend">{{ $card['hint'] }}</div>
-                        </div>
-                    </div>
-                </div>
+                <x-dashboard.stat-card
+                    :label="$card['label']"
+                    :value="$summary[$card['key']] ?? 0"
+                    :hint="$card['hint']"
+                    :icon="$card['icon']"
+                    :tone="$card['tone']"
+                    :href="$card['href']"
+                    action-label="Lihat ringkasan"
+                />
             @endforeach
         </div>
 
@@ -240,15 +241,14 @@
                                     </thead>
                                     <tbody>
                                     @foreach($joinedStudents as $student)
+                                        @php
+                                            $approved = $student->registrations->where('status', \App\Models\Registration::STATUS_APPROVED);
+                                            $approvedActivities = $approved->pluck('extracurricular')->filter()->unique('id')->values();
+                                        @endphp
                                         <tr>
-                                            <td>{{ $student->user->name ?? '-' }}<div class="small text-muted">NIS: {{ $student->nis ?? '-' }}</div></td>
-                                            <td>{{ $student->class_name ?? '-' }}</td>
-                                            <td>
-                                                @php
-                                                    $approved = $student->registrations->where('status', \App\Models\Registration::STATUS_APPROVED);
-                                                @endphp
-                                                {{ $approved->pluck('extracurricular.name')->filter()->join(', ') ?: '-' }}
-                                            </td>
+                                            <td><x-student.identity :student="$student" :subtitle="$student->nis ?: 'NIS belum diisi'" /></td>
+                                            <td>{{ $student->class_name ?: 'Kelas belum diisi' }}</td>
+                                            <td><x-student.activity-badges :activities="$approvedActivities" /></td>
                                             <td><span class="badge badge-status-success">Aktif mengikuti</span></td>
                                         </tr>
                                     @endforeach
@@ -259,22 +259,21 @@
                                 @foreach($joinedStudents as $student)
                                     @php
                                         $approved = $student->registrations->where('status', \App\Models\Registration::STATUS_APPROVED);
+                                        $approvedActivities = $approved->pluck('extracurricular')->filter()->unique('id')->values();
                                     @endphp
                                     <article class="mobile-data-card">
                                         <div class="mobile-data-card-header">
-                                            <div>
-                                                <h3 class="mobile-data-card-title">{{ $student->user->name ?? '-' }}</h3>
-                                                <div class="small text-muted">NIS: {{ $student->nis ?? '-' }} | {{ $student->class_name ?? '-' }}</div>
-                                            </div>
+                                            <x-student.identity :student="$student" :subtitle="$student->class_name ?: 'Kelas belum diisi'" />
                                             <span class="badge badge-status-success">Aktif</span>
                                         </div>
                                         <div class="mobile-data-list">
-                                            <div><span class="mobile-data-item-label">Ekstrakurikuler</span><span class="mobile-data-item-value">{{ $approved->pluck('extracurricular.name')->filter()->join(', ') ?: '-' }}</span></div>
+                                            <div><span class="mobile-data-item-label">NIS</span><span class="mobile-data-item-value {{ $student->nis ? '' : 'student-missing-value' }}">{{ $student->nis ?: 'NIS belum diisi' }}</span></div>
+                                            <div><span class="mobile-data-item-label">Ekstrakurikuler</span><x-student.activity-badges :activities="$approvedActivities" :limit="1" /></div>
                                         </div>
                                     </article>
                                 @endforeach
                             </div>
-                            <div class="mt-3">{{ $joinedStudents->links() }}</div>
+                            <x-student.pagination :paginator="$joinedStudents" noun="siswa" class="mt-3" />
                         @else
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-people"></i></div>
@@ -292,15 +291,12 @@
                             <div class="principal-compact-list">
                                 @foreach($notJoinedStudents as $student)
                                     <div class="principal-compact-list__item">
-                                        <div>
-                                            <strong>{{ $student->user->name ?? '-' }}</strong>
-                                            <span>{{ $student->nis ?? '-' }} | {{ $student->class_name ?? '-' }}</span>
-                                        </div>
+                                        <x-student.identity :student="$student" :subtitle="($student->nis ?: 'NIS belum diisi') . ' | ' . ($student->class_name ?: 'Kelas belum diisi')" />
                                         <span class="badge badge-status-warning">Belum terdaftar</span>
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="mt-3">{{ $notJoinedStudents->links() }}</div>
+                            <x-student.pagination :paginator="$notJoinedStudents" noun="siswa" class="mt-3" />
                         @else
                             <div class="empty-state">
                                 <div class="icon"><i class="bi bi-person-check"></i></div>

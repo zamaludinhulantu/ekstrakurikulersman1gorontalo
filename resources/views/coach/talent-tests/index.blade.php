@@ -366,7 +366,7 @@
                             <th>Tanggal</th>
                             <th>Status</th>
                             <th>Peserta</th>
-                            <th class="text-end">Aksi</th>
+                            <th class="text-end table-action-col">Aksi</th>
                         </tr>
                         </thead>
                         <tbody>

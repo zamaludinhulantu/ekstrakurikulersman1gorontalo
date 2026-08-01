@@ -27,9 +27,8 @@ class StudentController extends Controller
     {
         $filters = $this->validateFilters($request);
 
-        $students = $this->filteredStudentsQuery($filters)
-            ->latest()
-            ->paginate(10)
+        $students = $this->applySorting($this->filteredStudentsQuery($filters), $filters)
+            ->paginate($filters['per_page'] ?? 20)
             ->withQueryString();
 
         $classOptions = collect(array_keys(Student::registrationClassOptions()));
@@ -49,6 +48,11 @@ class StudentController extends Controller
             'classOptions' => $classOptions,
             'extracurricularOptions' => $extracurricularOptions,
             'category' => $filters['category'] ?? 'all',
+            'profileStatus' => $filters['profile_status'] ?? '',
+            'sort' => $filters['sort'] ?? 'created_at',
+            'direction' => $filters['direction'] ?? 'desc',
+            'perPage' => $filters['per_page'] ?? 20,
+            'studentSummary' => $this->studentSummary(),
             'categories' => collect(Extracurricular::categoryDefinitions())
                 ->map(fn (array $definition) => ['key' => $definition['key'], 'label' => $definition['label']])
                 ->values(),
@@ -58,7 +62,7 @@ class StudentController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $filters = $this->validateFilters($request, true);
-        $students = $this->filteredStudentsQuery($filters)->latest()->get();
+        $students = $this->applySorting($this->filteredStudentsQuery($filters), $filters)->get();
         $timestamp = Carbon::now()->format('YmdHis');
         $filterSummary = $this->filterSummary($filters);
         $filenameBase = $this->exportFilenameBase($filters, $filterSummary);
@@ -110,6 +114,7 @@ class StudentController extends Controller
     {
         return view('admin.students.create', [
             'classOptions' => Student::registrationClassOptions(),
+            'canManageClassOptions' => $this->canManageClassOptions(),
         ]);
     }
 
@@ -157,6 +162,7 @@ class StudentController extends Controller
         return view('admin.students.edit', [
             'student' => $student,
             'classOptions' => Student::registrationClassOptions(),
+            'canManageClassOptions' => $this->canManageClassOptions(),
         ]);
     }
 
@@ -196,8 +202,25 @@ class StudentController extends Controller
 
     public function destroy(Student $student): RedirectResponse
     {
-        $student->load('user');
-        $student->user?->delete();
+        $hasHistory = $student->registrations()->exists()
+            || $student->attendances()->exists()
+            || $student->assessments()->exists()
+            || $student->talentTestParticipants()->exists()
+            || $student->talentTestResults()->exists();
+
+        if ($hasHistory) {
+            return redirect()
+                ->route('admin.students.index')
+                ->with(
+                    'error',
+                    'Siswa tidak dapat dihapus karena masih memiliki riwayat kegiatan. Nonaktifkan akun melalui menu Edit agar data laporan tetap utuh.'
+                );
+        }
+
+        DB::transaction(function () use ($student): void {
+            $student->load('user');
+            $student->user?->delete();
+        });
 
         return redirect()->route('admin.students.index')->with('success', 'Data siswa berhasil dihapus.');
     }
@@ -237,8 +260,7 @@ class StudentController extends Controller
     private function validatePayload(Request $request, ?Student $student = null): array
     {
         $userId = $student?->user_id;
-
-        return $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -246,12 +268,45 @@ class StudentController extends Controller
             'password' => [$student ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
             'is_active' => ['nullable', 'boolean'],
             'nis' => ['required', 'string', 'max:50', Rule::unique('students', 'nis')->ignore($student?->id)],
-            'class_name' => ['required', Rule::in(array_keys(Student::registrationClassOptions()))],
             'gender' => ['required', Rule::in(['L', 'P'])],
             'date_of_birth' => ['nullable', 'date'],
             'parent_name' => ['nullable', 'string', 'max:255'],
             'parent_phone' => ['nullable', 'string', 'max:30'],
-        ]);
+        ];
+
+        if ($this->canManageClassOptions()) {
+            $rules['class_name'] = ['nullable', Rule::in(array_keys(Student::registrationClassOptions()))];
+            $rules['custom_class_name'] = ['nullable', 'string', 'max:100'];
+        } else {
+            $rules['class_name'] = ['required', Rule::in(array_keys(Student::registrationClassOptions()))];
+        }
+
+        $validated = $request->validate($rules);
+
+        $resolvedClassName = null;
+        if ($this->canManageClassOptions() && filled($validated['custom_class_name'] ?? null)) {
+            $resolvedClassName = Student::addCustomRegistrationClassOption($validated['custom_class_name']);
+        }
+
+        if (! $resolvedClassName) {
+            $resolvedClassName = Student::normalizeClassName($validated['class_name'] ?? null);
+        }
+
+        if (! $resolvedClassName) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'class_name' => 'Kelas wajib dipilih atau ditambahkan.',
+            ]);
+        }
+
+        $validated['class_name'] = $resolvedClassName;
+
+        return $validated;
+    }
+
+    private function canManageClassOptions(): bool
+    {
+        return auth()->user()?->hasRole(User::ROLE_ADMIN)
+            || auth()->user()?->hasRole(User::ROLE_SUPER_ADMIN);
     }
 
     private function validateFilters(Request $request, bool $includeFormat = false): array
@@ -263,6 +318,10 @@ class StudentController extends Controller
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
             'extracurricular_id' => ['nullable', 'exists:extracurriculars,id'],
             'category' => ['nullable', 'string', Rule::in(['all', ...array_keys(Extracurricular::categoryDefinitions())])],
+            'profile_status' => ['nullable', Rule::in(['complete', 'incomplete'])],
+            'sort' => ['nullable', Rule::in(['name', 'nis', 'class_name', 'status', 'created_at'])],
+            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 20, 50, 100])],
         ];
 
         if ($includeFormat) {
@@ -272,6 +331,9 @@ class StudentController extends Controller
         $validated = $request->validate($rules);
         $validated['class_name'] = Student::normalizeClassName($validated['class_name'] ?? null);
         $validated['category'] = $validated['category'] ?? 'all';
+        $validated['sort'] = $validated['sort'] ?? 'created_at';
+        $validated['direction'] = $validated['direction'] ?? 'desc';
+        $validated['per_page'] = (int) ($validated['per_page'] ?? 20);
 
         return $validated;
     }
@@ -280,16 +342,21 @@ class StudentController extends Controller
     {
         $classComparable = Student::normalizedClassComparable($filters['class_name'] ?? null);
 
-        return Student::with([
-            'user',
+        return Student::query()
+            ->with([
+            'user:id,name,email,phone,is_active',
             'registrations' => function ($query): void {
                 $query->where('status', Registration::STATUS_APPROVED)
-                    ->with('extracurricular');
+                    ->with('extracurricular:id,name');
             },
         ])
-            ->whereHas('registrations', function ($query): void {
-                $query->where('status', Registration::STATUS_APPROVED);
-            })
+            ->withCount([
+                'registrations',
+                'attendances',
+                'assessments',
+                'talentTestParticipants',
+                'talentTestResults',
+            ])
             ->when($classComparable, function ($query, $value): void {
                 $query->whereRaw(Student::normalizedClassExpression('class_name').' = ?', [$value]);
             })
@@ -319,6 +386,25 @@ class StudentController extends Controller
                         ->whereIn('extracurricular_id', $ids);
                 });
             })
+            ->when(($filters['profile_status'] ?? '') !== '', function ($query) use ($filters): void {
+                $method = ($filters['profile_status'] ?? '') === 'incomplete'
+                    ? 'where'
+                    : 'whereNot';
+
+                $query->{$method}(function ($profileQuery): void {
+                    $profileQuery->whereNull('nis')
+                        ->orWhere('nis', '')
+                        ->orWhereNull('class_name')
+                        ->orWhere('class_name', '')
+                        ->orWhereNull('gender')
+                        ->orWhereDoesntHave('user', function ($userQuery): void {
+                            $userQuery->whereNotNull('name')
+                                ->where('name', '!=', '')
+                                ->whereNotNull('email')
+                                ->where('email', '!=', '');
+                        });
+                });
+            })
             ->when($filters['search'] ?? null, function ($query, $searchValue) {
                 $query->where(function ($studentQuery) use ($searchValue): void {
                     $studentQuery->where('nis', 'like', "%{$searchValue}%")
@@ -333,6 +419,55 @@ class StudentController extends Controller
                         });
                 });
             });
+    }
+
+    private function applySorting($query, array $filters)
+    {
+        $direction = $filters['direction'] ?? 'desc';
+
+        return match ($filters['sort'] ?? 'created_at') {
+            'name' => $query->orderBy(
+                User::select('name')->whereColumn('users.id', 'students.user_id')->limit(1),
+                $direction
+            ),
+            'nis' => $query->orderByRaw('CASE WHEN nis IS NULL OR nis = ? THEN 1 ELSE 0 END', [''])
+                ->orderBy('nis', $direction),
+            'class_name' => $query->orderBy('class_name', $direction),
+            'status' => $query->orderBy(
+                User::select('is_active')->whereColumn('users.id', 'students.user_id')->limit(1),
+                $direction
+            ),
+            default => $query->orderBy('created_at', $direction),
+        };
+    }
+
+    private function studentSummary(): array
+    {
+        $incompleteProfile = fn ($query) => $query
+            ->whereNull('nis')
+            ->orWhere('nis', '')
+            ->orWhereNull('class_name')
+            ->orWhere('class_name', '')
+            ->orWhereNull('gender')
+            ->orWhereDoesntHave('user', function ($userQuery): void {
+                $userQuery->whereNotNull('name')
+                    ->where('name', '!=', '')
+                    ->whereNotNull('email')
+                    ->where('email', '!=', '');
+            });
+
+        return [
+            'total' => Student::query()->count(),
+            'active' => Student::query()
+                ->whereHas('user', fn ($query) => $query->where('is_active', true))
+                ->count(),
+            'inactive' => Student::query()
+                ->whereHas('user', fn ($query) => $query->where('is_active', false))
+                ->count(),
+            'incomplete' => Student::query()
+                ->where($incompleteProfile)
+                ->count(),
+        ];
     }
 
     private function filterSummary(array $filters): array
@@ -357,6 +492,11 @@ class StudentController extends Controller
                 'inactive' => 'Tidak Aktif',
                 default => 'Semua status',
             },
+            'profile_status' => match ($filters['profile_status'] ?? null) {
+                'complete' => 'Lengkap',
+                'incomplete' => 'Belum lengkap',
+                default => 'Semua profil',
+            },
             'extracurricular' => $extracurricular?->name ?? 'Semua kegiatan',
             'category' => $categoryDefinition['label'] ?? 'Semua kategori',
         ];
@@ -380,6 +520,10 @@ class StudentController extends Controller
 
         if (! empty($filters['status']) && $summary['status'] !== 'Semua status') {
             $segments[] = $summary['status'];
+        }
+
+        if (! empty($filters['profile_status']) && $summary['profile_status'] !== 'Semua profil') {
+            $segments[] = 'profil-'.$summary['profile_status'];
         }
 
         return Str::slug(implode('-', $segments));

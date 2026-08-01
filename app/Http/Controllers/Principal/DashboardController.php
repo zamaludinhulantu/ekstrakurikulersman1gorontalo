@@ -69,6 +69,7 @@ class DashboardController extends Controller
                 'activities' => route('principal.reports.index', array_merge($request->query(), ['report_type' => 'activities'])),
             ],
             'windowLabel' => $this->windowLabel($schoolYear, $semester),
+            'dashboardUpdatedAt' => now(),
         ]);
     }
 

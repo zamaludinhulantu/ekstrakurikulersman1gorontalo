@@ -12,19 +12,13 @@
 @endpush
 
 @section('content')
-    <div class="row g-3 mb-3">
-        <div class="col-6 col-md-6 col-xl-3">
-            <div class="card h-100"><div class="card-body stat-card"><span class="stat-icon"><i class="bi bi-grid"></i></span><p class="label">Ekskul Tersedia</p><p class="value">{{ $availableExtracurriculars }}</p></div></div>
-        </div>
-        <div class="col-6 col-md-6 col-xl-3">
-            <div class="card h-100"><div class="card-body stat-card"><span class="stat-icon"><i class="bi bi-clipboard-check"></i></span><p class="label">Pendaftaran Saya</p><p class="value">{{ $totalRegistrations }}</p></div></div>
-        </div>
-        <div class="col-6 col-md-6 col-xl-3">
-            <div class="card h-100"><div class="card-body stat-card"><span class="stat-icon"><i class="bi bi-person-check"></i></span><p class="label">Sudah Diterima</p><p class="value">{{ $approvedRegistrations }}</p></div></div>
-        </div>
-        <div class="col-6 col-md-6 col-xl-3">
-            <div class="card h-100"><div class="card-body stat-card"><span class="stat-icon"><i class="bi bi-calendar-event"></i></span><p class="label">Jadwal Terdekat</p><p class="value">{{ $upcomingSchedules }}</p></div></div>
-        </div>
+    <x-dashboard.updated-at :value="$dashboardUpdatedAt" class="mb-3" />
+
+    <div class="dashboard-stat-grid mb-3">
+        <x-dashboard.stat-card label="Kegiatan Tersedia" :value="$availableExtracurriculars" hint="Kegiatan aktif yang dapat dipilih" icon="bi-grid" :href="route('student.extracurriculars.index')" action-label="Lihat kegiatan" />
+        <x-dashboard.stat-card label="Pendaftaran Aktif" :value="$totalRegistrations" hint="Tidak termasuk pendaftaran dibatalkan" icon="bi-clipboard-check" tone="info" :href="route('student.registrations.index')" action-label="Lihat status" />
+        <x-dashboard.stat-card label="Kegiatan Diikuti" :value="$approvedRegistrations" hint="Pendaftaran yang sudah diterima" icon="bi-person-check" tone="success" :href="route('student.registrations.index')" action-label="Lihat kegiatan" />
+        <x-dashboard.stat-card label="Agenda Mendatang" :value="$upcomingSchedules" hint="Jadwal kegiatan setelah waktu sekarang" icon="bi-calendar-event" tone="warning" :href="route('student.schedules.index')" action-label="Lihat jadwal" />
     </div>
 
     @if($totalRegistrations === 0)
@@ -41,8 +35,10 @@
     @endif
 
     @if($notifications !== [])
-        <div class="card mb-3">
-            <div class="card-header">Informasi Penting</div>
+        <div class="card dashboard-action-card mb-3">
+            <div class="card-header dashboard-panel-header">
+                <div><strong>Informasi Penting</strong><small>Status dan agenda yang perlu Anda perhatikan</small></div>
+            </div>
             <div class="card-body">
                 <div class="row g-2">
                     @foreach($notifications as $notification)
@@ -57,36 +53,57 @@
         </div>
     @endif
 
-    <div class="card">
-        <div class="card-header">Jadwal Tes Bakat</div>
-        <div class="card-body">
-            <div class="info-list">
-                @forelse($upcomingTalentTests as $test)
-                    <div class="info-item">
-                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+    <div class="row g-3">
+        <div class="col-12 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header dashboard-panel-header">
+                    <div><strong>Jadwal Kegiatan Terdekat</strong><small>Agenda dari kegiatan yang sudah menerima Anda</small></div>
+                    <a href="{{ route('student.schedules.index') }}" class="btn btn-outline-primary btn-sm">Semua jadwal</a>
+                </div>
+                <div class="card-body">
+                    @if($nextSchedule)
+                        <div class="dashboard-next-schedule">
+                            <span class="dashboard-date-tile is-large"><strong>{{ optional($nextSchedule->activity_date)->format('d') }}</strong><small>{{ optional($nextSchedule->activity_date)->translatedFormat('M') }}</small></span>
                             <div>
-                                <div class="title">{{ $test->schedule->title ?? '-' }}</div>
-                                <div class="small text-muted mt-1">{{ $test->schedule->extracurricular->name ?? '-' }} | {{ $test->schedule->location ?? '-' }}</div>
+                                <strong>{{ $nextSchedule->title }}</strong>
+                                <span>{{ $nextSchedule->extracurricular->name ?? '-' }}</span>
+                                <span>{{ substr((string) $nextSchedule->start_time, 0, 5) }} | {{ $nextSchedule->location ?: 'Lokasi belum diisi' }}</span>
                             </div>
-                            <span class="badge" data-status="{{ $test->attendance_status }}">{{ $test->attendance_status }}</span>
                         </div>
-                        <div class="small mt-2">{{ optional($test->schedule->activity_date)->format('d-m-Y') }} | {{ \Illuminate\Support\Str::substr($test->schedule->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr($test->schedule->end_time, 0, 5) }}</div>
-                    </div>
-                @empty
-                    <div class="empty-state py-3">
-                        <div class="icon"><i class="bi bi-clipboard2-pulse"></i></div>
-                        <p class="mb-0">Belum ada jadwal tes bakat terdekat.</p>
-                    </div>
-                @endforelse
+                    @else
+                        <div class="empty-state py-3"><div class="icon"><i class="bi bi-calendar-x"></i></div><p class="mb-0">Belum ada jadwal kegiatan mendatang.</p></div>
+                    @endif
+                </div>
             </div>
-            <div class="form-actions mt-3">
-                <a href="{{ route('student.talent-tests.index') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Semua Tes</a>
+        </div>
+        <div class="col-12 col-xl-7">
+            <div class="card h-100">
+                <div class="card-header dashboard-panel-header">
+                    <div><strong>Jadwal Tes Bakat</strong><small>Tes yang sudah dijadwalkan untuk Anda</small></div>
+                    <a href="{{ route('student.talent-tests.index') }}" class="btn btn-outline-primary btn-sm">Semua tes</a>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-compact-list">
+                        @forelse($upcomingTalentTests as $test)
+                            <a href="{{ route('student.talent-tests.index') }}" class="dashboard-compact-item">
+                                <span class="dashboard-date-tile"><strong>{{ optional($test->schedule?->activity_date)->format('d') }}</strong><small>{{ optional($test->schedule?->activity_date)->translatedFormat('M') }}</small></span>
+                                <span><strong>{{ $test->schedule?->title ?? '-' }}</strong><small>{{ $test->schedule?->extracurricular?->name ?? '-' }} | {{ substr((string) $test->schedule?->start_time, 0, 5) }} | {{ $test->schedule?->location ?: 'Lokasi belum diisi' }}</small></span>
+                                <span class="badge" data-status="{{ $test->attendance_status }}">{{ $test->attendance_status }}</span>
+                            </a>
+                        @empty
+                            <div class="empty-state py-3"><div class="icon"><i class="bi bi-clipboard2-pulse"></i></div><p class="mb-0">Belum ada jadwal tes bakat terdekat.</p></div>
+                        @endforelse
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="card mt-3">
-        <div class="card-header">Pengumuman Terbaru</div>
+        <div class="card-header dashboard-panel-header">
+            <div><strong>Pengumuman Terbaru</strong><small>Informasi sekolah dan kegiatan yang Anda ikuti</small></div>
+            <a href="{{ route('notifications.index') }}" class="btn btn-outline-primary btn-sm">Kotak masuk</a>
+        </div>
         <div class="card-body">
             <div class="info-list">
                 @forelse($recentAnnouncements as $announcement)

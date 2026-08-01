@@ -62,7 +62,7 @@
                     <th>Role</th>
                     <th>Telepon</th>
                     <th>Status</th>
-                    <th>Aksi</th>
+                    <th class="text-center table-action-col table-action-col--compact">Aksi</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -77,15 +77,23 @@
                         <td><span class="badge badge-status-secondary">{{ $user->roleLabel() }}</span></td>
                         <td>{{ $user->phone ?? '-' }}</td>
                         <td><span class="badge" data-status="{{ $user->is_active ? 'active' : 'inactive' }}">{{ $user->is_active ? 'Aktif' : 'Tidak Aktif' }}</span></td>
-                        <td>
-                            <div class="row-actions">
-                                <a href="{{ route($routePrefix.'.show', $user) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
-                                <a href="{{ route($routePrefix.'.edit', $user) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
-                                <form method="post" action="{{ route($routePrefix.'.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
-                                    @csrf
-                                    @method('delete')
-                                    <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i>Hapus</button>
-                                </form>
+                        <td class="text-center table-action-col table-action-col--compact">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary action-button-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu pengguna {{ $user->name }}">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-compact">
+                                    <li><a href="{{ route($routePrefix.'.show', $user) }}" class="dropdown-item"><i class="bi bi-eye me-2"></i>Detail</a></li>
+                                    <li><a href="{{ route($routePrefix.'.edit', $user) }}" class="dropdown-item"><i class="bi bi-pencil-square me-2"></i>Edit</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{{ route($routePrefix.'.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
+                                            @csrf
+                                            @method('delete')
+                                            <button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2"></i>Hapus</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -116,13 +124,23 @@
                         <div><span class="mobile-data-item-label">Alamat</span><p class="mobile-data-item-value">{{ $user->address ?? 'Alamat belum diisi' }}</p></div>
                     </div>
                     <div class="mobile-data-card-actions">
-                        <a href="{{ route($routePrefix.'.show', $user) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Detail</a>
-                        <a href="{{ route($routePrefix.'.edit', $user) }}" class="btn btn-outline-warning"><i class="bi bi-pencil-square"></i>Edit</a>
-                        <form method="post" action="{{ route($routePrefix.'.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
-                            @csrf
-                            @method('delete')
-                            <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-trash"></i>Hapus</button>
-                        </form>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary action-button-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu pengguna {{ $user->name }}">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-compact">
+                                <li><a href="{{ route($routePrefix.'.show', $user) }}" class="dropdown-item"><i class="bi bi-eye me-2"></i>Detail</a></li>
+                                <li><a href="{{ route($routePrefix.'.edit', $user) }}" class="dropdown-item"><i class="bi bi-pencil-square me-2"></i>Edit</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{{ route($routePrefix.'.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">
+                                        @csrf
+                                        @method('delete')
+                                        <button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2"></i>Hapus</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             @empty

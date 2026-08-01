@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -93,6 +94,14 @@ class Article extends Model
             return 'Dinonaktifkan';
         }
 
+        if (
+            $this->publication_status === self::STATUS_PUBLISHED
+            && $this->expires_at
+            && $this->expires_at->isPast()
+        ) {
+            return 'Berakhir';
+        }
+
         return static::publicationStatuses()[$this->publication_status] ?? 'Draft';
     }
 
@@ -119,7 +128,17 @@ class Article extends Model
             return $this->image_path;
         }
 
-        return Storage::disk('public')->url($this->image_path);
+        if (Storage::disk('public')->exists($this->image_path)) {
+            return Storage::disk('public')->url($this->image_path);
+        }
+
+        $publicPath = public_path($this->image_path);
+
+        if (File::exists($publicPath)) {
+            return asset($this->image_path).'?v='.File::lastModified($publicPath);
+        }
+
+        return null;
     }
 
     public function getImageAltTextLabelAttribute(): string

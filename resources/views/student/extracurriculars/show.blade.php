@@ -180,14 +180,18 @@
             'pending' => 'Menunggu Konfirmasi',
             'approved' => 'Sudah Mendaftar',
             'rejected' => 'Pendaftaran Ditolak',
+            'cancelled' => 'Keikutsertaan Dibatalkan',
             default => null,
         };
-        $limitReachedForNewRegistration = !$registration && ($hasReachedRegistrationLimit ?? false);
+        $limitReachedForNewRegistration = (
+            ! $registration
+            || in_array(strtolower((string) $registration?->status), ['rejected', 'cancelled'], true)
+        ) && ($hasReachedRegistrationLimit ?? false);
     @endphp
 
     <div class="split-actions mb-3">
         <a href="{{ route('student.extracurriculars.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali ke Daftar Kegiatan</a>
-        @if($registration)
+        @if($registration && ! in_array(strtolower((string) $registration->status), ['rejected', 'cancelled'], true))
             <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
         @elseif($limitReachedForNewRegistration)
             <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
@@ -229,7 +233,7 @@
                             </span>
                             <span class="badge badge-status-secondary">{{ $extracurricular->category_label }}</span>
                             @if($statusLabel)
-                                <span class="badge {{ strtolower((string) $registration?->status) === 'approved' ? 'badge-status-success' : (strtolower((string) $registration?->status) === 'rejected' ? 'badge-status-danger' : 'badge-status-warning') }}">
+                                <span class="badge {{ strtolower((string) $registration?->status) === 'approved' ? 'badge-status-success' : (in_array(strtolower((string) $registration?->status), ['rejected', 'cancelled'], true) ? 'badge-status-danger' : 'badge-status-warning') }}">
                                     {{ $statusLabel }}
                                 </span>
                             @endif
@@ -382,7 +386,7 @@
                     </div>
                 </div>
 
-                @if($registration)
+                @if($registration && ! in_array(strtolower((string) $registration->status), ['rejected', 'cancelled'], true))
                     <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>
                 @elseif($limitReachedForNewRegistration)
                     <a href="{{ route('student.registrations.index') }}" class="btn btn-outline-primary"><i class="bi bi-clipboard-check"></i>Lihat Status Pendaftaran</a>

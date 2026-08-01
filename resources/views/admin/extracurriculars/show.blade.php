@@ -24,7 +24,7 @@
                 <div class="col-md-6"><p class="text-muted small mb-1">Persyaratan</p><p class="mb-0">{{ $extracurricular->requirements ?? '-' }}</p></div>
                 <div class="col-12"><p class="text-muted small mb-1">Deskripsi</p><p class="mb-0">{{ $extracurricular->description }}</p></div>
                 <div class="col-md-6"><p class="text-muted small mb-1">Ringkasan Jadwal</p><p class="mb-0">{{ $extracurricular->schedule_overview ?? '-' }}</p></div>
-                <div class="col-md-6"><p class="text-muted small mb-1">Prestasi Tercatat</p><p class="mb-0">{{ $extracurricular->achievements->count() }} prestasi</p></div>
+                <div class="col-md-6"><p class="text-muted small mb-1">Prestasi Tercatat</p><p class="mb-0">{{ $extracurricular->achievements_count }} prestasi</p></div>
                 <div class="col-12"><p class="text-muted small mb-1">Pilihan Cabang</p><p class="mb-0">{{ collect($extracurricular->branch_options ?? [])->filter()->implode(', ') ?: '-' }}</p></div>
             </div>
         </div>
@@ -36,7 +36,7 @@
                 <div class="card-header">Jadwal Kegiatan</div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
-                        @forelse($extracurricular->schedules as $schedule)
+                        @forelse($schedules as $schedule)
                             <li class="list-group-item">
                                 <strong>{{ $schedule->title }}</strong>
                                 <div class="small text-muted mt-1">{{ optional($schedule->activity_date)->format('d-m-Y') }} | {{ \Illuminate\Support\Str::substr($schedule->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr($schedule->end_time, 0, 5) }} | {{ $schedule->location }}</div>
@@ -45,6 +45,9 @@
                             <li class="list-group-item text-muted">Belum ada jadwal.</li>
                         @endforelse
                     </ul>
+                    @if($schedules->hasPages())
+                        <div class="card-footer">{{ $schedules->links() }}</div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -72,7 +75,7 @@
                     </form>
 
                     <div class="info-list">
-                        @forelse($extracurricular->achievements as $achievement)
+                        @forelse($achievements as $achievement)
                             <div class="info-item">
                                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
                                     <div>
@@ -98,6 +101,9 @@
                             </div>
                         @endforelse
                     </div>
+                    @if($achievements->hasPages())
+                        <div class="mt-3">{{ $achievements->links() }}</div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -106,7 +112,7 @@
                 <div class="card-header">Data Pendaftaran</div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
-                        @forelse($extracurricular->registrations as $registration)
+                        @forelse($registrations as $registration)
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>{{ $registration->student->user->name ?? '-' }}@if($registration->selected_branch) <span class="text-muted">| {{ $registration->selected_branch }}</span>@endif</span>
                                 <span class="badge" data-status="{{ $registration->status }}">{{ $registration->status }}</span>
@@ -115,6 +121,9 @@
                             <li class="list-group-item text-muted">Belum ada pendaftaran.</li>
                         @endforelse
                     </ul>
+                    @if($registrations->hasPages())
+                        <div class="card-footer">{{ $registrations->links() }}</div>
+                    @endif
                 </div>
             </div>
         </div>

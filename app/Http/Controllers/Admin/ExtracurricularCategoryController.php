@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Extracurricular;
 use App\Models\ExtracurricularCategory;
+use App\Support\UploadedImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -42,7 +42,7 @@ class ExtracurricularCategoryController extends Controller
             'tone' => ['required', Rule::in(array_keys($this->tones()))],
             'sort_order' => ['required', 'integer', 'min:1'],
             'is_active' => ['nullable', 'boolean'],
-            'image' => ['nullable', 'image', 'max:3072', 'mimes:jpg,jpeg,png,webp'],
+            'image' => ['nullable', 'image', 'max:2048', 'mimes:jpg,jpeg,png,webp', 'dimensions:max_width=5000,max_height=5000'],
             'remove_image' => ['nullable', 'boolean'],
         ]);
 
@@ -51,7 +51,7 @@ class ExtracurricularCategoryController extends Controller
 
         $extracurricularCategory->update($validated);
         Extracurricular::forgetCatalogCaches();
-        Cache::forget('extracurricular.category-definitions.records.v1');
+        Cache::forget('extracurricular.category-definitions.records.v2');
 
         return redirect()->route('admin.extracurricular-categories.index')
             ->with('success', 'Kategori ekskul berhasil diperbarui.');
@@ -78,9 +78,10 @@ class ExtracurricularCategoryController extends Controller
             return $category->image_path;
         }
 
+        $newImagePath = $this->storeImage($request);
         $this->deleteImage($category->image_path);
 
-        return $this->storeImage($request);
+        return $newImagePath;
     }
 
     private function storeImage(Request $request): ?string
@@ -89,16 +90,11 @@ class ExtracurricularCategoryController extends Controller
             return null;
         }
 
-        $directory = public_path('uploads/extracurricular-categories');
-        if (! File::exists($directory)) {
-            File::makeDirectory($directory, 0755, true);
-        }
-
-        $file = $request->file('image');
-        $filename = Str::uuid()->toString().'.'.$file->getClientOriginalExtension();
-        $file->move($directory, $filename);
-
-        return 'uploads/extracurricular-categories/'.$filename;
+        return app(UploadedImageOptimizer::class)->store(
+            $request->file('image'),
+            public_path('uploads/extracurricular-categories'),
+            'uploads/extracurricular-categories'
+        );
     }
 
     private function deleteImage(?string $path): void

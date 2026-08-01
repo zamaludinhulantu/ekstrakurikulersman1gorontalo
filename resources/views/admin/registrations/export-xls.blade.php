@@ -76,11 +76,12 @@
 <body>
     <div class="title">Data Pendaftar Ekstrakurikuler</div>
     <div class="meta">Diekspor pada {{ now()->format('d-m-Y H:i') }}</div>
-    <div class="meta">Total data: {{ $students->count() }}</div>
+    <div class="meta">Total pendaftaran: {{ $registrations->count() }}</div>
     <div class="meta">Pencarian: {{ $filterSummary['search'] }}</div>
     <div class="meta">Kategori: {{ $filterSummary['category'] }}</div>
     <div class="meta">Kegiatan: {{ $filterSummary['extracurricular'] }}</div>
     <div class="meta">Kelas: {{ $filterSummary['class_name'] }}</div>
+    <div class="meta">Periode: {{ $filterSummary['date_from'] }} s.d. {{ $filterSummary['date_to'] }}</div>
     <div class="meta">Jenis kelamin: {{ $filterSummary['gender'] }}</div>
     <div class="meta">Status: {{ $filterSummary['status'] }}</div>
 
@@ -106,26 +107,11 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($students as $index => $student)
+            @forelse($registrations as $index => $registration)
                 @php
-                    $studentRegistrations = $student->registrations
-                        ->sortByDesc(fn ($item) => optional($item->registration_date)->timestamp ?? 0)
-                        ->values();
-                    $latestRegistration = $studentRegistrations->first();
-                    $activityNames = $studentRegistrations
-                        ->map(fn ($item) => $item->extracurricular->name ?? null)
-                        ->filter()
-                        ->unique()
-                        ->values()
-                        ->implode(', ');
-                    $statusLabels = $studentRegistrations
-                        ->map(function ($registration) use ($statusMap) {
-                            $displayStatus = $registration->displayStatus();
-                            return $statusMap[$displayStatus] ?? ucfirst($displayStatus);
-                        })
-                        ->unique()
-                        ->values()
-                        ->implode(', ');
+                    $student = $registration->student;
+                    $displayStatus = $registration->displayStatus();
+                    $statusLabel = $statusMap[$displayStatus] ?? ucfirst($displayStatus);
                 @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
@@ -147,9 +133,9 @@
                     <td>{{ $student->address ?: ($student->user->address ?? '-') }}</td>
                     <td>{{ $student->parent_name ?? '-' }}</td>
                     <td class="excel-text" style='mso-number-format:"\@";'>{{ $student->parent_phone ?? '-' }}</td>
-                    <td>{{ $activityNames !== '' ? $activityNames : '-' }}</td>
-                    <td class="date">{{ optional($latestRegistration?->registration_date)->format('d-m-Y') ?? '-' }}</td>
-                    <td class="status">{{ $statusLabels !== '' ? $statusLabels : '-' }}</td>
+                    <td>{{ $registration->extracurricular->name ?? '-' }}</td>
+                    <td class="date">{{ optional($registration->registration_date)->format('d-m-Y') ?? '-' }}</td>
+                    <td class="status">{{ $statusLabel }}</td>
                 </tr>
             @empty
                 <tr>

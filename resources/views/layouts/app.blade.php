@@ -54,7 +54,7 @@
                     ['label' => 'Data Ekskul', 'route' => route('admin.extracurriculars.index'), 'active' => 'admin.extracurriculars.*', 'icon' => 'bi-grid-1x2', 'caption' => 'Unit kegiatan'],
                     ['label' => 'Kategori Ekskul', 'route' => route('admin.extracurricular-categories.index'), 'active' => 'admin.extracurricular-categories.*', 'icon' => 'bi-collection', 'caption' => 'Kartu kategori publik'],
                     ['label' => 'Pendaftar', 'route' => route('admin.registrations.index'), 'active' => 'admin.registrations.*', 'icon' => 'bi-clipboard-check', 'caption' => 'Verifikasi siswa'],
-                    ['label' => 'Anggota', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Data peserta'],
+                    ['label' => 'Data Siswa', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Akun dan profil'],
                     ['label' => 'Pembina', 'route' => route('admin.coaches.index'), 'active' => 'admin.coaches.*', 'icon' => 'bi-person-workspace', 'caption' => 'Data pembina'],
                     ['label' => 'Pengumuman', 'route' => route('admin.announcements.index'), 'active' => 'admin.announcements.*', 'icon' => 'bi-megaphone', 'caption' => 'Info untuk siswa'],
                     ['label' => 'Berita / Artikel', 'route' => route('admin.articles.index'), 'active' => 'admin.articles.*', 'icon' => 'bi-newspaper', 'caption' => 'Konten publikasi'],
@@ -85,7 +85,7 @@
                     ['label' => 'Data Ekskul', 'route' => route('admin.extracurriculars.index'), 'active' => 'admin.extracurriculars.*', 'icon' => 'bi-grid-1x2', 'caption' => 'Unit kegiatan'],
                     ['label' => 'Kategori Ekskul', 'route' => route('admin.extracurricular-categories.index'), 'active' => 'admin.extracurricular-categories.*', 'icon' => 'bi-collection', 'caption' => 'Kartu kategori publik'],
                     ['label' => 'Pendaftar', 'route' => route('admin.registrations.index'), 'active' => 'admin.registrations.*', 'icon' => 'bi-clipboard-check', 'caption' => 'Verifikasi siswa'],
-                    ['label' => 'Anggota', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Data peserta'],
+                    ['label' => 'Data Siswa', 'route' => route('admin.students.index'), 'active' => 'admin.students.*', 'icon' => 'bi-person-badge', 'caption' => 'Akun dan profil'],
                     ['label' => 'Pembina', 'route' => route('admin.coaches.index'), 'active' => 'admin.coaches.*', 'icon' => 'bi-person-workspace', 'caption' => 'Data pembina'],
                     ['label' => 'Pengumuman', 'route' => route('admin.announcements.index'), 'active' => 'admin.announcements.*', 'icon' => 'bi-megaphone', 'caption' => 'Info untuk siswa'],
                     ['label' => 'Berita / Artikel', 'route' => route('admin.articles.index'), 'active' => 'admin.articles.*', 'icon' => 'bi-newspaper', 'caption' => 'Konten publikasi'],
@@ -271,11 +271,36 @@
                             <span>{{ now()->translatedFormat('l') }}</span>
                         </div>
                     </div>
-                    <div class="profile-chip">
-                        <span class="profile-chip-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($authUser->name ?? 'U', 0, 1)) }}</span>
-                        <div class="profile-chip-text">
-                            <strong>{{ $authUser->name ?? 'Pengguna' }}</strong>
-                            <span>{{ $roleLabel }}</span>
+                    <div class="dropdown">
+                        <button class="profile-chip topbar-account-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Buka menu akun {{ $authUser->name ?? 'Pengguna' }}">
+                            <span class="profile-chip-avatar">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($authUser->name ?? 'U', 0, 1)) }}</span>
+                            <span class="profile-chip-text">
+                                <strong>{{ $authUser->name ?? 'Pengguna' }}</strong>
+                                <span>{{ $roleLabel }}</span>
+                            </span>
+                            <i class="bi bi-chevron-down topbar-account-toggle__arrow" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end topbar-account-menu">
+                            <div class="topbar-account-menu__header">
+                                <strong>{{ $authUser->name ?? 'Pengguna' }}</strong>
+                                <span>{{ $roleLabel }}</span>
+                                <small>{{ $authUser->email ?? '' }}</small>
+                            </div>
+                            <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                                <i class="bi bi-person-circle"></i>Profil
+                            </a>
+                            <a href="{{ route('notifications.index') }}" class="dropdown-item">
+                                <i class="bi bi-bell"></i>Kotak masuk notifikasi
+                            </a>
+                            <a href="{{ route('settings.pwa-notifications') }}" class="dropdown-item">
+                                <i class="bi bi-gear"></i>Pengaturan notifikasi
+                            </a>
+                            <form action="{{ route('logout') }}" method="post">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger" data-loading-text="Keluar...">
+                                    <i class="bi bi-box-arrow-right"></i>Logout
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -294,10 +319,10 @@
                         <i class="bi bi-person-circle"></i>Profil
                     </a>
                     <a href="{{ route('notifications.index') }}" class="dropdown-item">
-                        <i class="bi bi-bell"></i>Notifikasi
+                        <i class="bi bi-bell"></i>Kotak masuk notifikasi
                     </a>
                     <a href="{{ route('settings.pwa-notifications') }}" class="dropdown-item">
-                        <i class="bi bi-phone"></i>PWA & Notifikasi
+                        <i class="bi bi-gear"></i>Pengaturan notifikasi
                     </a>
                     <form action="{{ route('logout') }}" method="post">
                         @csrf
@@ -306,14 +331,6 @@
                         </button>
                     </form>
                 </div>
-            </div>
-            <div class="page-actions page-actions-desktop mt-3">
-                <a href="{{ route('settings.pwa-notifications') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-phone"></i>PWA & Notifikasi</a>
-                <a href="{{ route('profile.edit') }}" class="btn btn-outline-primary btn-sm" aria-label="Buka halaman profil"><i class="bi bi-person-circle"></i>Profil</a>
-                <form action="{{ route('logout') }}" method="post" class="d-inline-flex">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-danger btn-sm" data-loading-text="Keluar..."><i class="bi bi-box-arrow-right"></i>Logout</button>
-                </form>
             </div>
         </header>
 
@@ -392,80 +409,5 @@
 
 @stack('scripts')
 @include('partials.pwa-ui')
-<script>
-    (function () {
-        const statusClassMap = {
-            pending: 'badge-status-warning',
-            menunggu: 'badge-status-warning',
-            waiting_test: 'badge-status-warning',
-            'menunggu tes': 'badge-status-warning',
-            scheduled_test: 'badge-status-info',
-            'tes dijadwalkan': 'badge-status-info',
-            scheduled: 'badge-status-info',
-            dijadwalkan: 'badge-status-info',
-            draft: 'badge-status-secondary',
-            approved: 'badge-status-success',
-            diterima: 'badge-status-success',
-            published: 'badge-status-success',
-            dipublikasikan: 'badge-status-success',
-            active: 'badge-status-success',
-            aktif: 'badge-status-success',
-            present: 'badge-status-success',
-            hadir: 'badge-status-success',
-            archived: 'badge-status-secondary',
-            arsip: 'badge-status-secondary',
-            diarsipkan: 'badge-status-secondary',
-            rejected: 'badge-status-danger',
-            ditolak: 'badge-status-danger',
-            absent: 'badge-status-danger',
-            alpa: 'badge-status-danger',
-            nonaktif: 'badge-status-secondary',
-            'tidak aktif': 'badge-status-secondary',
-            inactive: 'badge-status-secondary',
-            dinonaktifkan: 'badge-status-secondary',
-            sick: 'badge-status-warning',
-            sakit: 'badge-status-warning',
-            permission: 'badge-status-warning',
-            izin: 'badge-status-warning',
-        };
-
-        const cleanClasses = ['text-bg-secondary', 'text-bg-success', 'text-bg-danger', 'text-bg-warning', 'text-bg-info'];
-
-        const resolveStatus = function (text) {
-            const raw = String(text || '').trim().toLowerCase();
-            if (!raw) {
-                return null;
-            }
-
-            if (statusClassMap[raw]) {
-                return statusClassMap[raw];
-            }
-
-            const normalized = raw.replace(/^status\s*:\s*/i, '').trim();
-            return statusClassMap[normalized] || null;
-        };
-
-        document.querySelectorAll('[data-status], .badge, .status-badge').forEach(function (el) {
-            const resolvedClass = resolveStatus(el.dataset.status || el.textContent);
-            if (!resolvedClass) {
-                return;
-            }
-
-            el.classList.add('status-badge');
-            cleanClasses.forEach(function (cls) {
-                el.classList.remove(cls);
-            });
-            Object.values(statusClassMap).forEach(function (cls) {
-                el.classList.remove(cls);
-            });
-            el.classList.add(resolvedClass);
-        });
-
-        const successStatusModal = document.getElementById('successStatusModal');
-        if (successStatusModal && window.bootstrap?.Modal) {
-            window.bootstrap.Modal.getOrCreateInstance(successStatusModal).show();
-        }
-    })();
-</script>
 </body>
 </html>

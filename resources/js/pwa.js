@@ -227,9 +227,9 @@ const bindPushSettings = () => {
     const connectionState = document.getElementById('pwaConnectionState');
     const pushState = document.getElementById('pwaPushState');
     const pushHelpText = document.getElementById('pwaPushHelpText');
-    const enableButton = document.getElementById('settingsEnablePushButton');
-    const disableButton = document.getElementById('settingsDisablePushButton');
-    const disableAllButton = document.getElementById('settingsDisableAllPushButton');
+    const toggleButton = document.getElementById('settingsTogglePushButton');
+    const toggleStatus = document.getElementById('settingsTogglePushStatus');
+    const toggleText = document.getElementById('settingsTogglePushText');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
@@ -250,19 +250,65 @@ const bindPushSettings = () => {
         }
     };
 
+    const setToggleButtonState = (mode, disabled = false) => {
+        if (!toggleButton) {
+            return;
+        }
+
+        toggleButton.dataset.state = mode;
+        toggleButton.disabled = disabled;
+        toggleButton.classList.remove('is-enabled');
+        toggleButton.setAttribute('aria-pressed', 'false');
+
+        if (mode === 'enabled') {
+            toggleButton.classList.add('is-enabled');
+            toggleButton.setAttribute('aria-pressed', 'true');
+            toggleButton.setAttribute('aria-label', 'Nonaktifkan notifikasi');
+            toggleButton.setAttribute('title', 'Nonaktifkan notifikasi');
+            if (toggleText) {
+                toggleText.textContent = 'Nonaktifkan notifikasi';
+            }
+            if (toggleStatus) {
+                toggleStatus.textContent = 'Notifikasi aktif di perangkat ini.';
+                toggleStatus.classList.add('is-active');
+            }
+            return;
+        }
+
+        if (mode === 'unsupported') {
+            toggleButton.setAttribute('aria-label', 'Notifikasi tidak tersedia');
+            toggleButton.setAttribute('title', 'Notifikasi tidak tersedia');
+            toggleButton.disabled = true;
+            if (toggleText) {
+                toggleText.textContent = 'Notifikasi tidak tersedia';
+            }
+            if (toggleStatus) {
+                toggleStatus.textContent = 'Notifikasi tidak tersedia di browser ini.';
+                toggleStatus.classList.remove('is-active');
+            }
+            return;
+        }
+
+        toggleButton.setAttribute('aria-label', 'Aktifkan notifikasi');
+        toggleButton.setAttribute('title', 'Aktifkan notifikasi');
+        if (toggleText) {
+            toggleText.textContent = 'Aktifkan notifikasi';
+        }
+        if (toggleStatus) {
+            toggleStatus.textContent = 'Notifikasi belum aktif.';
+            toggleStatus.classList.remove('is-active');
+        }
+    };
+
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         setPushState('Browser tidak mendukung notifikasi.', 'Gunakan browser yang mendukung Push API dan Service Worker.');
-        enableButton?.setAttribute('disabled', 'disabled');
-        disableButton?.setAttribute('disabled', 'disabled');
-        disableAllButton?.setAttribute('disabled', 'disabled');
+        setToggleButtonState('unsupported');
         return;
     }
 
     if (!vapidPublicKey || !statusUrl || !subscribeUrl || !unsubscribeUrl || !unsubscribeAllUrl || !csrfToken) {
         setPushState('Konfigurasi push belum lengkap.', 'Isi VAPID key di server sebelum mengaktifkan notifikasi.');
-        enableButton?.setAttribute('disabled', 'disabled');
-        disableButton?.setAttribute('disabled', 'disabled');
-        disableAllButton?.setAttribute('disabled', 'disabled');
+        setToggleButtonState('unsupported');
         return;
     }
 
@@ -353,6 +399,7 @@ const bindPushSettings = () => {
             }
 
             setPushState('Izin notifikasi ditolak.', 'Aktifkan kembali izin notifikasi dari pengaturan browser untuk perangkat ini.');
+            setToggleButtonState('disabled');
             return null;
         }
 
@@ -360,35 +407,65 @@ const bindPushSettings = () => {
             setPushState('Notifikasi belum diaktifkan.', isStandalone || !/iphone|ipad/i.test(navigator.userAgent)
                 ? 'Tekan tombol aktivasi untuk menghubungkan perangkat ini ke push notification.'
                 : 'Di iPhone, dukungan paling baik tersedia setelah aplikasi dipasang ke layar utama.');
+            setToggleButtonState('disabled');
             return null;
         }
 
         const serverState = await readServerSubscriptionState(subscription);
         if (serverState.status === 'linked') {
             setPushState('Notifikasi aktif pada perangkat ini.', 'Perangkat ini sudah menerima push notification untuk akun yang sedang login.');
+            setToggleButtonState('enabled');
 
             return subscription;
         }
 
         if (serverState.status === 'linked_to_other_account') {
             setPushState('Perangkat ini terhubung ke akun lain.', 'Tekan tombol aktivasi jika Anda ingin memindahkan notifikasi browser ini ke akun yang sedang login.');
+            setToggleButtonState('disabled');
 
             return subscription;
         }
 
         setPushState('Notifikasi browser belum terhubung ke akun ini.', 'Aktifkan notifikasi untuk menghubungkan perangkat ini ke akun yang sedang login.');
+        setToggleButtonState('disabled');
 
         return subscription;
     };
 
-    enableButton?.addEventListener('click', async () => {
-        enableButton.setAttribute('disabled', 'disabled');
+    toggleButton?.addEventListener('click', async () => {
+        const currentState = toggleButton.dataset.state || 'disabled';
+        setToggleButtonState(currentState, true);
 
         try {
+            if (currentState === 'enabled') {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+
+                if (subscription) {
+                    await fetch(unsubscribeUrl, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ endpoint: subscription.endpoint }),
+                    });
+
+                    await subscription.unsubscribe();
+                }
+
+                await syncSubscriptionState();
+                return;
+            }
+
             if (Notification.permission === 'default') {
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
                     setPushState('Izin notifikasi ditolak.', 'Browser tidak memberi izin notifikasi untuk perangkat ini.');
+                    setToggleButtonState('disabled');
                     return;
                 }
             }
@@ -420,77 +497,16 @@ const bindPushSettings = () => {
 
             await syncSubscriptionState();
         } catch (error) {
-            setPushState('Aktivasi notifikasi gagal.', 'Periksa dukungan browser, koneksi internet, dan konfigurasi VAPID.');
-        } finally {
-            enableButton.removeAttribute('disabled');
-        }
-    });
-
-    disableButton?.addEventListener('click', async () => {
-        disableButton.setAttribute('disabled', 'disabled');
-
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-
-            if (subscription) {
-                await fetch(unsubscribeUrl, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ endpoint: subscription.endpoint }),
-                });
-
-                await subscription.unsubscribe();
-            }
-
-            await syncSubscriptionState();
-        } catch (error) {
-            setPushState('Gagal menonaktifkan notifikasi.', 'Coba ulangi saat koneksi stabil.');
-        } finally {
-            disableButton.removeAttribute('disabled');
-        }
-    });
-
-    disableAllButton?.addEventListener('click', async () => {
-        const approved = window.confirm('Nonaktifkan notifikasi di semua perangkat untuk akun ini?');
-        if (!approved) {
-            return;
-        }
-
-        disableAllButton.setAttribute('disabled', 'disabled');
-
-        try {
-            const response = await fetch(unsubscribeAllUrl, {
-                method: 'DELETE',
-                headers: {
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                credentials: 'same-origin',
+            setPushState('Perubahan notifikasi gagal.', 'Periksa dukungan browser, koneksi internet, dan konfigurasi VAPID.');
+            await syncSubscriptionState().catch(() => {
+                setToggleButtonState('disabled');
             });
-
-            if (!response.ok) {
-                throw new Error('unsubscribe-all-failed');
-            }
-
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
-            if (subscription) {
-                await subscription.unsubscribe();
-            }
-
-            await syncSubscriptionState();
-        } catch (error) {
-            setPushState('Gagal menonaktifkan semua perangkat.', 'Coba ulangi saat koneksi stabil.');
         } finally {
-            disableAllButton.removeAttribute('disabled');
+            if (toggleButton.dataset.state === 'unknown') {
+                setToggleButtonState('disabled');
+            } else {
+                toggleButton.disabled = false;
+            }
         }
     });
 

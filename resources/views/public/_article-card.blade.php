@@ -10,6 +10,9 @@
                 alt="{{ $article->image_alt_text_label }}"
                 class="public-article-card__image"
                 loading="lazy"
+                decoding="async"
+                width="640"
+                height="360"
             >
             <span class="public-article-card__media-overlay"></span>
         @else

@@ -120,12 +120,13 @@
         $branchOptions = collect($extracurricular->branch_options ?? [])->filter()->values();
         $limitReachedForNewRegistration = (
             ! $registration
-            || strtolower((string) $registration?->status) === 'rejected'
+            || in_array(strtolower((string) $registration?->status), ['rejected', 'cancelled'], true)
         ) && ($hasReachedRegistrationLimit ?? false);
         $statusLabel = match (strtolower((string) $registration?->status)) {
             'pending' => 'Menunggu Konfirmasi',
             'approved' => 'Sudah Mendaftar',
             'rejected' => 'Pendaftaran Ditolak',
+            'cancelled' => 'Keikutsertaan Dibatalkan',
             default => $extracurricular->is_active ? 'Pendaftaran Tersedia' : 'Pendaftaran Ditutup',
         };
     @endphp
@@ -146,7 +147,7 @@
                 <h2 class="h5 mb-1">{{ $extracurricular->name }}</h2>
                 <p class="toolbar-hint mb-0">Pastikan ringkasan kegiatan ini sudah sesuai sebelum mengirim formulir.</p>
             </div>
-            <span class="badge {{ strtolower((string) $registration?->status) === 'approved' ? 'badge-status-success' : (strtolower((string) $registration?->status) === 'rejected' ? 'badge-status-danger' : ($extracurricular->is_active ? 'badge-status-warning' : 'badge-status-secondary')) }}">
+            <span class="badge {{ strtolower((string) $registration?->status) === 'approved' ? 'badge-status-success' : (in_array(strtolower((string) $registration?->status), ['rejected', 'cancelled'], true) ? 'badge-status-danger' : ($extracurricular->is_active ? 'badge-status-warning' : 'badge-status-secondary')) }}">
                 {{ $statusLabel }}
             </span>
         </div>
@@ -192,7 +193,7 @@
     <div class="card registration-form-card">
         <div class="card-header">{{ $registration ? 'Status Pendaftaran' : 'Form Pendaftaran' }}</div>
         <div class="card-body">
-            @if($registration && $registration->status !== \App\Models\Registration::STATUS_REJECTED)
+            @if($registration && ! in_array($registration->status, [\App\Models\Registration::STATUS_REJECTED, \App\Models\Registration::STATUS_CANCELLED], true))
                 <div class="info-banner mb-3">
                     <i class="bi bi-clipboard-check"></i>
                     <div>

@@ -47,7 +47,18 @@
                         @endforeach
                     </select>
                     @error('class_name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    @if($canManageClassOptions ?? false)
+                        <div class="helper-text mt-2">Admin dapat memilih kelas yang sudah ada atau menambahkan kelas baru.</div>
+                    @endif
                 </div>
+                @if($canManageClassOptions ?? false)
+                    <div class="col-md-4">
+                        <label class="form-label" for="student_custom_class_name">Tambah Kelas Baru</label>
+                        <input type="text" id="student_custom_class_name" name="custom_class_name" value="{{ old('custom_class_name') }}" class="form-control" placeholder="Contoh: X - 13">
+                        <div class="helper-text mt-1">Jika diisi, kelas baru akan disimpan sebagai opsi sistem dan langsung dipakai untuk siswa ini.</div>
+                        @error('custom_class_name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    </div>
+                @endif
                 <div class="col-md-4">
                     <label class="form-label" for="student_gender">Jenis Kelamin</label>
                     <select id="student_gender" name="gender" class="form-select" required>

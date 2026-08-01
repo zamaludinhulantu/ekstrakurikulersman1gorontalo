@@ -41,7 +41,7 @@ class ExtracurricularCategory extends Model
 
     public static function catalogDefinitions(): Collection
     {
-        return Cache::rememberForever('extracurricular.category-definitions.records.v1', function (): Collection {
+        return Cache::rememberForever('extracurricular.category-definitions.records.v2', function (): Collection {
             $defaults = collect(Extracurricular::defaultCategoryDefinitions());
 
             if (! Schema::hasTable('extracurricular_categories')) {

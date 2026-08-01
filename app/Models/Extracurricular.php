@@ -15,9 +15,9 @@ class Extracurricular extends Model
 {
     use HasFactory;
 
-    private const CACHE_KEY_CATEGORY_DEFINITIONS = 'extracurricular.category-definitions.v1';
-    private const CACHE_KEY_CATEGORY_IDS = 'extracurricular.category-ids.v1';
-    private const CACHE_KEY_ACTIVE_CATEGORY_COUNTS = 'extracurricular.active-category-counts.v1';
+    private const CACHE_KEY_CATEGORY_DEFINITIONS = 'extracurricular.category-definitions.v2';
+    private const CACHE_KEY_CATEGORY_IDS = 'extracurricular.category-ids.v2';
+    private const CACHE_KEY_ACTIVE_CATEGORY_COUNTS = 'extracurricular.active-category-counts.v2';
 
     public const TYPE_EXTRACURRICULAR = 'extracurricular';
     public const TYPE_OLYMPIAD = 'olympiad';
@@ -270,15 +270,16 @@ class Extracurricular extends Model
             return null;
         }
 
-        $absolutePath = public_path($path);
-        $version = File::exists($absolutePath)
-            ? File::lastModified($absolutePath)
-            : $fallbackVersion;
-
-        if (! $version) {
-            return asset($path);
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
         }
 
+        $absolutePath = public_path($path);
+        if (! File::exists($absolutePath)) {
+            return null;
+        }
+
+        $version = File::lastModified($absolutePath) ?: $fallbackVersion;
         return asset($path).'?v='.$version;
     }
 

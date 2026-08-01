@@ -405,12 +405,14 @@
                     'pending', 'menunggu' => 'Menunggu Konfirmasi',
                     'approved', 'diterima' => 'Sudah Mendaftar',
                     'rejected', 'ditolak' => 'Pendaftaran Ditolak',
+                    'cancelled', 'dibatalkan' => 'Keikutsertaan Dibatalkan',
                     default => $status ? 'Sudah Mendaftar' : null,
                 };
                 $statusButtonClass = match (strtolower((string) $status)) {
                     'pending', 'menunggu' => 'btn-outline-warning',
                     'approved', 'diterima' => 'btn-outline-success',
                     'rejected', 'ditolak' => 'btn-outline-danger',
+                    'cancelled', 'dibatalkan' => 'btn-outline-danger',
                     default => 'btn-outline-secondary',
                 };
                 $description = \Illuminate\Support\Str::of($item->description ?: 'Belum ada deskripsi singkat untuk ekstrakurikuler ini.')
@@ -476,7 +478,7 @@
                         @if($statusLabel)
                             <div class="catalog-card-status">
                                 <strong>Status Pendaftaran</strong>
-                                <span class="badge {{ strtolower((string) $status) === 'approved' ? 'badge-status-success' : (strtolower((string) $status) === 'rejected' ? 'badge-status-danger' : 'badge-status-warning') }}">
+                                <span class="badge {{ strtolower((string) $status) === 'approved' ? 'badge-status-success' : (in_array(strtolower((string) $status), ['rejected', 'cancelled'], true) ? 'badge-status-danger' : 'badge-status-warning') }}">
                                     {{ $statusLabel }}
                                 </span>
                             </div>
@@ -486,7 +488,7 @@
                             <a href="{{ route('student.extracurriculars.show', $item) }}" class="btn btn-outline-primary">
                                 <i class="bi bi-eye"></i>Lihat Detail
                             </a>
-                            @if($statusLabel)
+                            @if($statusLabel && ! in_array(strtolower((string) $status), ['rejected', 'cancelled', 'ditolak', 'dibatalkan'], true))
                                 <a href="{{ route('student.registrations.index') }}" class="btn {{ $statusButtonClass }}">
                                     {{ strtolower((string) $status) === 'approved' ? 'Lihat Status' : $statusLabel }}
                                 </a>

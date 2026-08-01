@@ -55,7 +55,7 @@
                     <input id="category_image" type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp">
                     @if($category->image_path)
                         <div class="mt-2">
-                            <img src="{{ asset($category->image_path) }}" alt="{{ $category->label }}" style="width: 220px; max-width: 100%; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe5f0;">
+                            <img src="{{ asset($category->image_path) }}" alt="{{ $category->label }}" width="220" height="140" loading="lazy" decoding="async" style="width: 220px; max-width: 100%; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe5f0;">
                         </div>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" value="1" id="remove_image" name="remove_image">

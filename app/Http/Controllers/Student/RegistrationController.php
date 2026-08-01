@@ -9,6 +9,7 @@ use App\Models\NotificationPreference;
 use App\Models\Registration;
 use App\Models\User;
 use App\Support\NotificationCenter;
+use App\Support\RegistrationCancellationManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\UploadedFile;
@@ -56,6 +57,7 @@ class RegistrationController extends Controller
 
         $registrations = Registration::with(['extracurricular', 'talentTestResults.schedule', 'talentTestParticipants.schedule'])
             ->where('student_id', $student->id)
+            ->where('status', '!=', Registration::STATUS_CANCELLED)
             ->latest()
             ->paginate(10);
 
@@ -80,7 +82,7 @@ class RegistrationController extends Controller
             ->where('extracurricular_id', $extracurricular->id)
             ->first();
 
-        if ($registration && $registration->status !== Registration::STATUS_REJECTED) {
+        if ($registration && ! in_array($registration->status, [Registration::STATUS_REJECTED, Registration::STATUS_CANCELLED], true)) {
             return back()->with('error', 'Anda sudah mendaftar di ekstrakurikuler ini.');
         }
 
@@ -227,6 +229,87 @@ class RegistrationController extends Controller
         return redirect()->route('student.registrations.index')->with('success', 'Data pendaftaran berhasil diperbarui.');
     }
 
+    public function destroy(Registration $registration): RedirectResponse
+    {
+        $student = auth()->user()->student;
+        abort_unless($student && $student->id === $registration->student_id, 403);
+
+        if (! $registration->canStudentCancel()) {
+            return redirect()
+                ->route('student.registrations.index')
+                ->with('error', 'Pendaftaran ini sudah tidak dapat dibatalkan.');
+        }
+
+        $registration->loadMissing(['student.user', 'extracurricular.coaches.user']);
+        $adminReviewers = User::query()
+            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])
+            ->get();
+        $coachReviewers = $registration->extracurricular->coaches
+            ->pluck('user')
+            ->filter()
+            ->unique('id')
+            ->values();
+
+        if ($registration->requiresCancellationApproval()) {
+            $registration = app(RegistrationCancellationManager::class)->request($registration);
+            $message = "{$registration->student->user->name} meminta pembatalan keikutsertaan di {$registration->extracurricular->name}.";
+            $payload = [
+                'title' => 'Permintaan pembatalan keikutsertaan',
+                'message' => $message,
+                'category' => NotificationPreference::CATEGORY_ADMIN_ALERT,
+                'icon' => 'bi-person-x',
+                'tag' => 'registration-cancellation-request-'.$registration->id,
+            ];
+
+            app(NotificationCenter::class)->notifyUsers(
+                $adminReviewers,
+                [...$payload, 'url' => route('admin.registrations.index', ['status' => Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED])],
+                false
+            );
+            app(NotificationCenter::class)->notifyUsers(
+                $coachReviewers,
+                [...$payload, 'url' => route('coach.registrations.index', ['status' => Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED])],
+                false
+            );
+
+            return redirect()
+                ->route('student.registrations.index')
+                ->with('success', 'Permintaan pembatalan berhasil dikirim dan menunggu konfirmasi Admin atau Pembina.');
+        }
+
+        $registration = app(RegistrationCancellationManager::class)->approve(
+            $registration,
+            null,
+            'Dibatalkan oleh siswa pada '.now()->format('d-m-Y H:i'),
+            false
+        );
+
+        if ($adminReviewers->isNotEmpty()) {
+            app(NotificationCenter::class)->notifyUsers($adminReviewers, [
+                'title' => 'Siswa membatalkan keikutsertaan',
+                'message' => "{$registration->student->user->name} membatalkan keikutsertaan di {$registration->extracurricular->name}.",
+                'url' => route('admin.registrations.index'),
+                'category' => NotificationPreference::CATEGORY_ADMIN_ALERT,
+                'icon' => 'bi-person-dash',
+                'tag' => 'registration-cancelled-review-'.$registration->id,
+            ], false);
+        }
+        if ($coachReviewers->isNotEmpty()) {
+            app(NotificationCenter::class)->notifyUsers($coachReviewers, [
+                'title' => 'Siswa membatalkan keikutsertaan',
+                'message' => "{$registration->student->user->name} membatalkan keikutsertaan di {$registration->extracurricular->name}.",
+                'url' => route('coach.registrations.index'),
+                'category' => NotificationPreference::CATEGORY_ADMIN_ALERT,
+                'icon' => 'bi-person-dash',
+                'tag' => 'registration-cancelled-review-'.$registration->id,
+            ], false);
+        }
+
+        return redirect()
+            ->route('student.registrations.index')
+            ->with('success', 'Keikutsertaan ekstrakurikuler berhasil dibatalkan dan telah dihapus dari daftar pendaftaran Anda.');
+    }
+
     private function storeAchievementProof(StoreStudentRegistrationRequest $request): ?string
     {
         if (! $request->hasFile('achievement_proof')) {
@@ -273,4 +356,5 @@ class RegistrationController extends Controller
             default => $file->extension() ?: 'bin',
         };
     }
+
 }

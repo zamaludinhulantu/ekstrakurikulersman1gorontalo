@@ -27,7 +27,11 @@ class NotificationCenter
         if (
             $withPush
             && ($preference->mergedPushPreferences()[$category] ?? false)
-            && $user->pushSubscriptions()->exists()
+            && (
+                $user->relationLoaded('pushSubscriptions')
+                    ? $user->pushSubscriptions->isNotEmpty()
+                    : $user->pushSubscriptions()->exists()
+            )
         ) {
             SendPushNotificationJob::dispatchSync($user->id, $notification->id);
         }

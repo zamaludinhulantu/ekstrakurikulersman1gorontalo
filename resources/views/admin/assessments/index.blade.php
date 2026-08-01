@@ -280,7 +280,7 @@
                                 <th>Tingkat / Peringkat</th>
                                 <th>Tanggal</th>
                                 <th>Pembina</th>
-                                <th class="text-end">Aksi</th>
+                                <th class="text-center table-action-col table-action-col--compact">Aksi</th>
                             </tr>
                         @elseif($listViewType === 'assessment')
                             <tr>
@@ -290,7 +290,7 @@
                                 <th>Nilai</th>
                                 <th>Tanggal</th>
                                 <th>Pembina</th>
-                                <th class="text-end">Aksi</th>
+                                <th class="text-center table-action-col table-action-col--compact">Aksi</th>
                             </tr>
                         @else
                             <tr>
@@ -300,7 +300,7 @@
                                 <th>Ekstrakurikuler</th>
                                 <th>Hasil</th>
                                 <th>Tanggal</th>
-                                <th class="text-end">Aksi</th>
+                                <th class="text-center table-action-col table-action-col--compact">Aksi</th>
                             </tr>
                         @endif
                         </thead>
@@ -337,30 +337,29 @@
                                     <td>{{ $resultLabel }}</td>
                                     <td>{{ optional($row->assessment_date)->format('d-m-Y') }}</td>
                                 @endif
-                                <td class="text-end table-action-col">
-                                    <div class="table-inline-actions table-inline-actions--compact justify-content-end">
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-outline-primary action-button-compact assessment-detail-trigger"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#assessmentDetailModal"
-                                            data-type="{{ $typeLabel }}"
-                                            data-title="{{ $row->title }}"
-                                            data-student="{{ $subjectLabel }}"
-                                            data-extracurricular="{{ $row->extracurricular->name ?? 'Ekstrakurikuler belum dipilih' }}"
-                                            data-score="{{ $resultLabel }}"
-                                            data-date="{{ optional($row->assessment_date)->format('d-m-Y') }}"
-                                            data-coach="{{ $coachLabel }}"
-                                            data-description="{{ $row->description ?: 'Belum ada catatan tambahan.' }}"
-                                        >
-                                            <i class="bi bi-eye"></i>
-                                            <span class="d-none d-md-inline">Detail</span>
-                                        </button>
+                                <td class="text-center table-action-col table-action-col--compact">
+                                    <div class="table-inline-actions table-inline-actions--compact justify-content-center">
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-outline-secondary action-button-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-ui-tooltip="Tindakan lainnya">
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-compact">
+                                                <li>
+                                                    <button
+                                                        type="button"
+                                                        class="dropdown-item assessment-detail-trigger"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#assessmentDetailModal"
+                                                        data-type="{{ $typeLabel }}"
+                                                        data-title="{{ $row->title }}"
+                                                        data-student="{{ $subjectLabel }}"
+                                                        data-extracurricular="{{ $row->extracurricular->name ?? 'Ekstrakurikuler belum dipilih' }}"
+                                                        data-score="{{ $resultLabel }}"
+                                                        data-date="{{ optional($row->assessment_date)->format('d-m-Y') }}"
+                                                        data-coach="{{ $coachLabel }}"
+                                                        data-description="{{ $row->description ?: 'Belum ada catatan tambahan.' }}"
+                                                    ><i class="bi bi-eye me-2"></i>Detail</button>
+                                                </li>
                                                 <li><a class="dropdown-item" href="{{ route('admin.assessments.edit', $row) }}"><i class="bi bi-pencil-square me-2"></i>Edit</a></li>
                                                 <li>
                                                     <form method="post" action="{{ route('admin.assessments.destroy', $row) }}" onsubmit="return confirm('Hapus data ini?')">
@@ -414,12 +413,12 @@
                                 <div><span class="mobile-data-item-label">Pembina</span><p class="mobile-data-item-value">{{ $coachLabel }}</p></div>
                             </div>
                             <div class="table-inline-actions table-inline-actions--compact">
-                                <button type="button" class="btn btn-sm btn-outline-primary action-button-icon assessment-detail-trigger" data-bs-toggle="modal" data-bs-target="#assessmentDetailModal" data-type="{{ $typeLabel }}" data-title="{{ $row->title }}" data-student="{{ $subjectLabel }}" data-extracurricular="{{ $row->extracurricular->name ?? 'Ekstrakurikuler belum dipilih' }}" data-score="{{ $resultLabel }}" data-date="{{ optional($row->assessment_date)->format('d-m-Y') }}" data-coach="{{ $coachLabel }}" data-description="{{ $row->description ?: 'Belum ada catatan tambahan.' }}"><i class="bi bi-eye"></i></button>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary action-button-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="bi bi-three-dots"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-compact">
+                                        <li><button type="button" class="dropdown-item assessment-detail-trigger" data-bs-toggle="modal" data-bs-target="#assessmentDetailModal" data-type="{{ $typeLabel }}" data-title="{{ $row->title }}" data-student="{{ $subjectLabel }}" data-extracurricular="{{ $row->extracurricular->name ?? 'Ekstrakurikuler belum dipilih' }}" data-score="{{ $resultLabel }}" data-date="{{ optional($row->assessment_date)->format('d-m-Y') }}" data-coach="{{ $coachLabel }}" data-description="{{ $row->description ?: 'Belum ada catatan tambahan.' }}"><i class="bi bi-eye me-2"></i>Detail</button></li>
                                         <li><a class="dropdown-item" href="{{ route('admin.assessments.edit', $row) }}"><i class="bi bi-pencil-square me-2"></i>Edit</a></li>
                                         <li>
                                             <form method="post" action="{{ route('admin.assessments.destroy', $row) }}" onsubmit="return confirm('Hapus data ini?')">

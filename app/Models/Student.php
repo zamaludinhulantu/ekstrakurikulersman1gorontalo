@@ -16,6 +16,7 @@ class Student extends Model
 
     public const MIN_REGISTRATION_AGE = 8;
     public const MAX_ACTIVE_REGISTRATIONS = 3;
+    private const CUSTOM_CLASS_OPTIONS_SETTING = 'student_class_options';
 
     protected $fillable = [
         'user_id',
@@ -74,9 +75,71 @@ class Student extends Model
 
     public static function registrationClassOptions(): array
     {
-        return collect(range(1, 12))
-            ->mapWithKeys(fn (int $number) => ['X - '.$number => 'X - '.$number])
+        return collect(static::defaultRegistrationClassOptions())
+            ->merge(static::customRegistrationClassOptions())
+            ->mapWithKeys(function (string $label): array {
+                $normalized = static::normalizeClassName($label);
+
+                return $normalized ? [$normalized => $normalized] : [];
+            })
+            ->sortKeysUsing('strnatcasecmp')
             ->all();
+    }
+
+    public static function defaultRegistrationClassOptions(): array
+    {
+        return collect(range(1, 12))
+            ->map(fn (int $number) => 'X - '.$number)
+            ->all();
+    }
+
+    public static function customRegistrationClassOptions(): array
+    {
+        $stored = SystemSetting::getValue(self::CUSTOM_CLASS_OPTIONS_SETTING, []);
+
+        if (is_string($stored)) {
+            $decoded = json_decode($stored, true);
+            $stored = is_array($decoded) ? $decoded : [];
+        }
+
+        if (! is_array($stored)) {
+            return [];
+        }
+
+        return collect($stored)
+            ->map(fn ($label) => static::normalizeClassName(is_scalar($label) ? (string) $label : null))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    public static function addCustomRegistrationClassOption(?string $value): ?string
+    {
+        $normalized = static::normalizeClassName($value);
+
+        if (! $normalized) {
+            return null;
+        }
+
+        $options = collect(static::defaultRegistrationClassOptions())
+            ->merge(static::customRegistrationClassOptions())
+            ->map(fn ($label) => static::normalizeClassName($label))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if (! $options->contains($normalized)) {
+            $options->push($normalized);
+        }
+
+        SystemSetting::setValue(
+            self::CUSTOM_CLASS_OPTIONS_SETTING,
+            json_encode($options->sort()->values()->all(), JSON_UNESCAPED_UNICODE)
+        );
+
+        return $normalized;
     }
 
     public static function normalizeClassName(?string $value): ?string
@@ -155,7 +218,10 @@ class Student extends Model
             : $this->registrations()->get(['id', 'status']);
 
         return $registrations
-            ->filter(fn (Registration $registration) => $registration->status !== Registration::STATUS_REJECTED)
+            ->filter(fn (Registration $registration) => ! in_array($registration->status, [
+                Registration::STATUS_REJECTED,
+                Registration::STATUS_CANCELLED,
+            ], true))
             ->count();
     }
 
@@ -167,6 +233,15 @@ class Student extends Model
     public function hasLegacyRegistrationOverflow(): bool
     {
         return $this->activeRegistrationCount() > static::MAX_ACTIVE_REGISTRATIONS;
+    }
+
+    public function hasCompleteProfile(): bool
+    {
+        return filled($this->nis)
+            && filled($this->class_name)
+            && filled($this->gender)
+            && filled($this->user?->name)
+            && filled($this->user?->email);
     }
 
     public function registrationLimitReachedMessage(): string

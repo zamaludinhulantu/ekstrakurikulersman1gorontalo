@@ -32,12 +32,13 @@
                         @php
                             $latestPublishedResult = $row->latestPublishedTalentTestResult();
                             $displayStatus = $row->displayStatus();
+                            $requiresCancellationApproval = $row->requiresCancellationApproval();
                         @endphp
                         <tr>
                             <td>{{ $row->extracurricular->name ?? '-' }}</td>
                             <td>{{ $row->selected_branch_label }}</td>
                             <td>{{ optional($row->registration_date)->format('d-m-Y') }}</td>
-                            <td><span class="badge" data-status="{{ $displayStatus }}">{{ $displayStatus }}</span></td>
+                            <td><x-registration.status-badge :registration="$row" /></td>
                             <td>
                                 @if($latestPublishedResult)
                                     <span class="badge badge-status-success">Dipublikasikan</span>
@@ -53,6 +54,15 @@
                             <td>
                                 @if($row->canStudentEdit())
                                     <a href="{{ route('student.registrations.edit', $row) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i>Ubah</a>
+                                @endif
+                                @if($row->canStudentCancel())
+                                    <form method="post" action="{{ route('student.registrations.destroy', $row) }}" class="d-inline" onsubmit="return confirm('{{ $requiresCancellationApproval ? 'Kirim permintaan pembatalan kepada Admin atau Pembina?' : 'Batalkan keikutsertaan pada kegiatan ini?' }}');">
+                                        @csrf
+                                        @method('delete')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-x-circle"></i>{{ $requiresCancellationApproval ? 'Ajukan Pembatalan' : 'Batal Ikut' }}
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -74,11 +84,12 @@
                     @php
                         $latestPublishedResult = $row->latestPublishedTalentTestResult();
                         $displayStatus = $row->displayStatus();
+                        $requiresCancellationApproval = $row->requiresCancellationApproval();
                     @endphp
                     <div class="mobile-data-card">
                         <div class="mobile-data-card-header">
                             <h3 class="mobile-data-card-title">{{ $row->extracurricular->name ?? '-' }}</h3>
-                            <span class="badge" data-status="{{ $displayStatus }}">{{ $displayStatus }}</span>
+                            <x-registration.status-badge :registration="$row" />
                         </div>
                         <div class="mobile-data-list">
                             <div><span class="mobile-data-item-label">Cabang</span><p class="mobile-data-item-value">{{ $row->selected_branch_label }}</p></div>
@@ -101,6 +112,15 @@
                             <div class="form-actions mt-3">
                                 <a href="{{ route('student.registrations.edit', $row) }}" class="btn btn-outline-primary w-100"><i class="bi bi-pencil-square"></i>Ubah Pendaftaran</a>
                             </div>
+                        @endif
+                        @if($row->canStudentCancel())
+                            <form method="post" action="{{ route('student.registrations.destroy', $row) }}" class="mt-2" onsubmit="return confirm('{{ $requiresCancellationApproval ? 'Kirim permintaan pembatalan kepada Admin atau Pembina?' : 'Batalkan keikutsertaan pada kegiatan ini?' }}');">
+                                @csrf
+                                @method('delete')
+                                <button type="submit" class="btn btn-outline-danger w-100">
+                                    <i class="bi bi-x-circle"></i>{{ $requiresCancellationApproval ? 'Ajukan Pembatalan' : 'Batal Ikut' }}
+                                </button>
+                            </form>
                         @endif
                     </div>
                 @empty

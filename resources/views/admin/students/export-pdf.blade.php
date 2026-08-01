@@ -29,6 +29,7 @@
         <p><strong>Kegiatan:</strong> {{ $filterSummary['extracurricular'] }}</p>
         <p><strong>Jenis Kelamin:</strong> {{ $filterSummary['gender'] }}</p>
         <p><strong>Status:</strong> {{ $filterSummary['status'] }}</p>
+        <p><strong>Kelengkapan Profil:</strong> {{ $filterSummary['profile_status'] }}</p>
     </div>
 
     <table>
@@ -49,7 +50,7 @@
                 <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $controller->exportValue($student->user->name ?? '-') }}</td>
-                    <td>{{ $controller->exportValue($student->nis) }}</td>
+                    <td>{{ $controller->exportValue($student->nis ?: 'NIS belum diisi') }}</td>
                     <td>{{ $controller->exportValue($student->class_name) }}</td>
                     <td>{{ $controller->exportValue($student->user->email ?? '-') }}</td>
                     <td>{{ $controller->exportValue($controller->genderLabel($student->gender)) }}</td>

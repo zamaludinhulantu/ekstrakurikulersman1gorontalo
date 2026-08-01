@@ -723,7 +723,7 @@
                                     <th>Hasil</th>
                                     <th>Status</th>
                                     <th>Tanggal</th>
-                                    <th class="text-end">Aksi</th>
+                                    <th class="text-center table-action-col table-action-col--compact">Aksi</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -742,30 +742,29 @@
                                         <td>{{ $resultLabel }}</td>
                                         <td><span class="coach-assessment-status" data-status="{{ $row->status }}">{{ $row->status === 'draft' ? 'Draft' : 'Dipublikasikan' }}</span></td>
                                         <td>{{ optional($row->assessment_date)->format('d-m-Y') }}</td>
-                                        <td class="text-end table-action-col">
-                                            <div class="table-inline-actions table-inline-actions--compact justify-content-end">
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-sm btn-outline-primary action-button-compact coach-assessment-detail-trigger"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#coachAssessmentDetailModal"
-                                                    data-type="{{ $typeLabel }}"
-                                                    data-title="{{ $row->title }}"
-                                                    data-subject="{{ $subjectLabel }}"
-                                                    data-extracurricular="{{ $row->extracurricular->name ?? '-' }}"
-                                                    data-result="{{ $resultLabel }}"
-                                                    data-status="{{ $row->status === 'draft' ? 'Draft' : 'Dipublikasikan' }}"
-                                                    data-date="{{ optional($row->assessment_date)->translatedFormat('d F Y') ?: '-' }}"
-                                                    data-description="{{ $row->description ?: 'Belum ada catatan tambahan.' }}"
-                                                >
-                                                    <i class="bi bi-eye"></i>
-                                                    <span class="d-none d-md-inline">Detail</span>
-                                                </button>
+                                        <td class="text-center table-action-col table-action-col--compact">
+                                            <div class="table-inline-actions table-inline-actions--compact justify-content-center">
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-outline-secondary action-button-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                                         <i class="bi bi-three-dots"></i>
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-compact">
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                class="dropdown-item coach-assessment-detail-trigger"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#coachAssessmentDetailModal"
+                                                                data-type="{{ $typeLabel }}"
+                                                                data-title="{{ $row->title }}"
+                                                                data-subject="{{ $subjectLabel }}"
+                                                                data-extracurricular="{{ $row->extracurricular->name ?? '-' }}"
+                                                                data-result="{{ $resultLabel }}"
+                                                                data-status="{{ $row->status === 'draft' ? 'Draft' : 'Dipublikasikan' }}"
+                                                                data-date="{{ optional($row->assessment_date)->translatedFormat('d F Y') ?: '-' }}"
+                                                                data-description="{{ $row->description ?: 'Belum ada catatan tambahan.' }}"
+                                                            ><i class="bi bi-eye me-2"></i>Detail</button>
+                                                        </li>
                                                         <li><a href="{{ route('coach.assessments.edit', $row) }}" class="dropdown-item"><i class="bi bi-pencil-square me-2"></i>Edit</a></li>
                                                         <li>
                                                             <form method="post" action="{{ route('coach.assessments.destroy', $row) }}" onsubmit="return confirm('Hapus data ini?')">

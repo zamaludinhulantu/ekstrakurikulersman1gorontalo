@@ -3,10 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="@yield('meta_description', 'Portal resmi Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo untuk menjelajahi kegiatan, pengumuman, berita, dan alur pendaftaran siswa.')">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="@yield('title', 'Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo')">
+    <meta property="og:description" content="@yield('meta_description', 'Portal resmi Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo untuk menjelajahi kegiatan, pengumuman, berita, dan alur pendaftaran siswa.')">
+    <meta property="og:url" content="{{ url()->current() }}">
     <title>@yield('title', 'Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo')</title>
     <link rel="icon" type="image/jpeg" href="{{ asset('images/brand/sman1-gorontalo-logo.jpg') }}">
     @include('partials.pwa-meta')
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/public.js'])
     @stack('styles')
 </head>
 <body class="public-body" data-pwa-enabled="true" data-service-worker-url="{{ route('pwa.service-worker') }}">
@@ -32,10 +38,10 @@
                 <span>SMA Negeri 1 Gorontalo</span>
             </span>
         </a>
-        <button class="btn btn-outline-primary btn-sm d-lg-none ms-auto public-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#publicMobileMenu" aria-label="Buka menu navigasi" aria-controls="publicMobileMenu">
+        <button class="btn btn-outline-primary btn-sm d-xl-none ms-auto public-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#publicMobileMenu" aria-label="Buka menu navigasi" aria-controls="publicMobileMenu" aria-expanded="false">
             <i class="bi bi-list"></i>Menu
         </button>
-        <div class="public-nav-links mx-auto d-none d-lg-flex">
+        <div class="public-nav-links mx-auto d-none d-xl-flex">
             <a class="public-nav-link {{ request()->routeIs('landing') ? 'active' : '' }}" href="{{ route('landing') }}">Beranda</a>
             <div class="dropdown">
                 <a class="public-nav-link dropdown-toggle {{ request()->routeIs('public.activities.*') ? 'active' : '' }}" href="{{ route('public.activities.index') }}" data-bs-toggle="dropdown" aria-expanded="false">Kategori</a>
@@ -52,7 +58,7 @@
             <a class="public-nav-link {{ request()->routeIs('public.articles.*') ? 'active' : '' }}" href="{{ route('public.articles.index') }}">Berita</a>
             <a class="public-nav-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">Alur Pendaftaran</a>
         </div>
-        <div class="d-none d-lg-flex align-items-center gap-2 public-nav-actions">
+        <div class="d-none d-xl-flex align-items-center gap-2 public-nav-actions">
             @auth
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-speedometer2"></i>Dashboard</a>
             @else
@@ -107,9 +113,10 @@
             <div>
                 <h3>Kategori</h3>
                 <ul class="footer-public-links">
-                    @foreach($publicCategories as $publicCategory)
+                    @foreach($publicCategories->take(4) as $publicCategory)
                         <li><a href="{{ route('public.activities.category', $publicCategory['slug']) }}">{{ $publicCategory['label'] }}</a></li>
                     @endforeach
+                    <li><a href="{{ route('public.activities.index') }}">Semua Kategori</a></li>
                     @guest
                         <li><a href="{{ route('register') }}">Buat Akun</a></li>
                     @endguest
@@ -134,7 +141,7 @@
     <div class="offcanvas-body">
         <div class="public-mobile-menu-scroll">
             <div class="public-mobile-links">
-                <a class="public-mobile-link {{ request()->routeIs('landing') ? 'active' : '' }}" href="{{ route('landing') }}">
+                <a class="public-mobile-link {{ request()->routeIs('landing') ? 'active' : '' }}" href="{{ route('landing') }}" data-nav-close>
                     <span class="public-mobile-link-icon"><i class="bi bi-house-door"></i></span>
                     <span>Beranda</span>
                 </a>
@@ -148,23 +155,23 @@
                     </button>
                     <div class="collapse public-mobile-submenu-wrap {{ request()->routeIs('public.activities.*') ? 'show' : '' }}" id="publicMobileActivitiesMenu">
                         <div class="public-mobile-submenu">
-                            <a class="public-mobile-sublink {{ request()->routeIs('public.activities.index') ? 'active' : '' }}" href="{{ route('public.activities.index') }}">Semua Kategori</a>
+                            <a class="public-mobile-sublink {{ request()->routeIs('public.activities.index') ? 'active' : '' }}" href="{{ route('public.activities.index') }}" data-nav-close>Semua Kategori</a>
                             @foreach($publicCategories as $publicCategory)
-                                <a class="public-mobile-sublink {{ $currentCategorySlug === $publicCategory['slug'] ? 'active' : '' }}" href="{{ route('public.activities.category', $publicCategory['slug']) }}">{{ $publicCategory['label'] }}</a>
+                                <a class="public-mobile-sublink {{ $currentCategorySlug === $publicCategory['slug'] ? 'active' : '' }}" href="{{ route('public.activities.category', $publicCategory['slug']) }}" data-nav-close>{{ $publicCategory['label'] }}</a>
                             @endforeach
-                            <a class="public-mobile-sublink {{ request()->routeIs('public.activities.all') ? 'active' : '' }}" href="{{ route('public.activities.all') }}">Semua Pilihan</a>
+                            <a class="public-mobile-sublink {{ request()->routeIs('public.activities.all') ? 'active' : '' }}" href="{{ route('public.activities.all') }}" data-nav-close>Semua Pilihan</a>
                         </div>
                     </div>
                 </div>
-                <a class="public-mobile-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}">
+                <a class="public-mobile-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}" data-nav-close>
                     <span class="public-mobile-link-icon"><i class="bi bi-megaphone"></i></span>
                     <span>Pengumuman</span>
                 </a>
-                <a class="public-mobile-link {{ request()->routeIs('public.articles.*') ? 'active' : '' }}" href="{{ route('public.articles.index') }}">
+                <a class="public-mobile-link {{ request()->routeIs('public.articles.*') ? 'active' : '' }}" href="{{ route('public.articles.index') }}" data-nav-close>
                     <span class="public-mobile-link-icon"><i class="bi bi-newspaper"></i></span>
                     <span>Berita</span>
                 </a>
-                <a class="public-mobile-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">
+                <a class="public-mobile-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}" data-nav-close>
                     <span class="public-mobile-link-icon"><i class="bi bi-signpost-2"></i></span>
                     <span>Alur Pendaftaran</span>
                 </a>
@@ -172,11 +179,11 @@
         </div>
         <div class="public-mobile-menu-footer">
             @auth
-                <a href="{{ route('dashboard') }}" class="btn btn-primary public-mobile-footer-btn"><i class="bi bi-speedometer2"></i>Buka Dashboard</a>
+                <a href="{{ route('dashboard') }}" class="btn btn-primary public-mobile-footer-btn" data-nav-close><i class="bi bi-speedometer2"></i>Buka Dashboard</a>
             @else
                 <div class="d-grid gap-2">
-                    <a href="{{ route('login') }}" class="btn btn-primary public-mobile-footer-btn"><i class="bi bi-box-arrow-in-right"></i>Masuk</a>
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary public-mobile-footer-btn is-secondary"><i class="bi bi-person-plus"></i>Buat Akun</a>
+                    <a href="{{ route('login') }}" class="btn btn-primary public-mobile-footer-btn" data-nav-close><i class="bi bi-box-arrow-in-right"></i>Masuk</a>
+                    <a href="{{ route('register') }}" class="btn btn-outline-primary public-mobile-footer-btn is-secondary" data-nav-close><i class="bi bi-person-plus"></i>Buat Akun</a>
                 </div>
             @endauth
         </div>

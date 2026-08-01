@@ -10,6 +10,8 @@ use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Support\NotificationCenter;
+use App\Support\RegistrationCancellationManager;
+use App\Support\RegistrationStatusPresenter;
 use Illuminate\Support\Facades\DB;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -31,39 +33,30 @@ class RegistrationController extends Controller
     {
         $filters = $this->validateFilters($request);
 
-        $students = $this->filteredStudentsQuery($filters)
-            ->paginate(10)
+        $registrations = $this->filteredRegistrationsQuery($filters)
+            ->paginate($filters['per_page'] ?? 20)
             ->withQueryString();
 
-        $groupedRegistrations = $students->getCollection()
-            ->map(function (Student $student): array {
-                $studentRegistrations = $student->registrations
-                    ->sortByDesc(fn (Registration $registration) => optional($registration->registration_date)->timestamp ?? 0)
-                    ->values();
-
-                return [
-                    'student' => $student,
-                    'registrations' => $studentRegistrations,
-                    'latest_registration' => $studentRegistrations->first(),
-                ];
-            })
-            ->values();
-
         return view('admin.registrations.index', [
-            'registrations' => $students,
-            'groupedRegistrations' => $groupedRegistrations,
+            'registrations' => $registrations,
+            'statistics' => RegistrationStatusPresenter::statistics(
+                Registration::query()->where('status', '!=', Registration::STATUS_CANCELLED)
+            ),
             'search' => $filters['search'] ?? '',
             'status' => $filters['status'] ?? '',
             'extracurricularId' => $filters['extracurricular_id'] ?? '',
             'className' => $filters['class_name'] ?? '',
             'gender' => $filters['gender'] ?? '',
             'category' => $filters['category'] ?? 'all',
+            'dateFrom' => $filters['date_from'] ?? '',
+            'dateTo' => $filters['date_to'] ?? '',
+            'perPage' => $filters['per_page'] ?? 20,
             'extracurriculars' => Extracurricular::orderBy('name')->get(),
             'classOptions' => collect(array_keys(Student::registrationClassOptions())),
             'categories' => collect(Extracurricular::categoryDefinitions())
                 ->map(fn (array $definition) => ['key' => $definition['key'], 'label' => $definition['label']])
                 ->values(),
-            'statusMap' => $this->statusLabels(),
+            'statusMap' => RegistrationStatusPresenter::managementLabels(),
             'talentTestScheduleOptions' => $this->reusableTalentTestSchedules(),
         ]);
     }
@@ -89,14 +82,14 @@ class RegistrationController extends Controller
     {
         $filters = $this->validateFilters($request, true);
         $format = $filters['format'] ?? 'xls';
-        $students = $this->filteredStudentsQuery($filters)->get();
+        $registrations = $this->filteredRegistrationsQuery($filters)->get();
         $timestamp = Carbon::now()->format('YmdHis');
         $filterSummary = $this->filterSummary($filters);
         $filenameBase = $this->exportFilenameBase($filters, $filterSummary);
 
         if ($format === 'pdf') {
             $html = view('admin.registrations.export-pdf', [
-                'students' => $students,
+                'registrations' => $registrations,
                 'filters' => $filters,
                 'filterSummary' => $filterSummary,
                 'statusMap' => $this->statusLabels(),
@@ -122,7 +115,7 @@ class RegistrationController extends Controller
 
         $filename = $filenameBase.'-'.$timestamp.'.xls';
         $html = view('admin.registrations.export-xls', [
-            'students' => $students,
+            'registrations' => $registrations,
             'filters' => $filters,
             'filterSummary' => $filterSummary,
             'statusMap' => $this->statusLabels(),
@@ -138,6 +131,10 @@ class RegistrationController extends Controller
 
     public function updateStatus(Request $request, Registration $registration): RedirectResponse
     {
+        if ($registration->isCancellationRequested()) {
+            return back()->with('error', 'Selesaikan permintaan pembatalan sebelum mengubah keputusan pendaftaran.');
+        }
+
         $validator = Validator::make($request->all(), [
             'decision' => ['required', Rule::in(['approve', 'schedule_test', 'reject'])],
             'notes' => ['nullable', 'string'],
@@ -269,6 +266,47 @@ class RegistrationController extends Controller
         return back()->with('success', 'Status pendaftaran berhasil diperbarui.');
     }
 
+    public function reviewCancellation(
+        Request $request,
+        Registration $registration,
+        RegistrationCancellationManager $cancellationManager
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'decision' => ['required', Rule::in(['approve', 'reject'])],
+        ]);
+
+        if (! $registration->isCancellationRequested()) {
+            return back()->with('error', 'Permintaan pembatalan sudah tidak tersedia.');
+        }
+
+        $registration->loadMissing(['student.user', 'extracurricular']);
+        $approved = $validated['decision'] === 'approve';
+        $note = $approved
+            ? 'Permintaan pembatalan disetujui Admin pada '.now()->format('d-m-Y H:i')
+            : 'Permintaan pembatalan ditolak Admin pada '.now()->format('d-m-Y H:i');
+
+        $registration = $approved
+            ? $cancellationManager->approve($registration, $request->user(), $note)
+            : $cancellationManager->reject($registration, $request->user(), $note);
+
+        $registration->loadMissing(['student.user', 'extracurricular']);
+        app(NotificationCenter::class)->notifyUser($registration->student->user, [
+            'title' => $approved ? 'Pembatalan disetujui' : 'Pembatalan ditolak',
+            'message' => $approved
+                ? "Pembatalan keikutsertaan Anda di {$registration->extracurricular->name} telah disetujui."
+                : "Permintaan pembatalan Anda di {$registration->extracurricular->name} ditolak. Keikutsertaan Anda tetap aktif.",
+            'url' => route('student.registrations.index'),
+            'category' => NotificationPreference::CATEGORY_REGISTRATION_STATUS,
+            'icon' => $approved ? 'bi-check-circle' : 'bi-x-circle',
+            'tag' => 'registration-cancellation-reviewed-'.$registration->id,
+        ]);
+
+        return back()->with(
+            'success',
+            $approved ? 'Pembatalan keikutsertaan berhasil disetujui.' : 'Permintaan pembatalan berhasil ditolak.'
+        );
+    }
+
     private function validateFilters(Request $request, bool $includeFormat = false): array
     {
         $rules = [
@@ -279,11 +317,15 @@ class RegistrationController extends Controller
                 Registration::STATUS_PENDING,
                 'waiting_test',
                 'scheduled_test',
+                Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED,
                 Registration::STATUS_APPROVED,
                 Registration::STATUS_REJECTED,
             ])],
             'extracurricular_id' => ['nullable', 'exists:extracurriculars,id'],
             'category' => ['nullable', 'string', Rule::in(['all', ...array_keys(Extracurricular::categoryDefinitions())])],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 20, 50])],
         ];
 
         if ($includeFormat) {
@@ -299,7 +341,14 @@ class RegistrationController extends Controller
 
     private function filteredRegistrationsQuery(array $filters)
     {
-        return Registration::with(['student.user', 'extracurricular', 'verifier', 'talentTestResults'])
+        return Registration::with([
+            'student.user',
+            'student.registrations:id,student_id,status',
+            'extracurricular',
+            'verifier',
+            'talentTestResults',
+        ])
+            ->where('status', '!=', Registration::STATUS_CANCELLED)
             ->when($filters['search'] ?? null, function ($query, $searchValue) {
                 $query->where(function ($searchQuery) use ($searchValue): void {
                     $searchQuery->whereHas('student.user', function ($userQuery) use ($searchValue): void {
@@ -325,7 +374,29 @@ class RegistrationController extends Controller
                 $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('gender', $gender));
             })
             ->with(['talentTestParticipants.schedule'])
+            ->when(
+                filled($filters['status'] ?? null)
+                    && $filters['status'] !== Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED,
+                fn ($query) => $query->whereNull('cancellation_requested_at')
+            )
             ->when($filters['status'] ?? null, function ($query, $statusValue): void {
+                if ($statusValue === Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED) {
+                    $query->whereNotNull('cancellation_requested_at');
+
+                    return;
+                }
+
+                if ($statusValue === Registration::STATUS_PENDING) {
+                    $query->where('status', Registration::STATUS_PENDING)
+                        ->where(function ($pendingQuery): void {
+                            $pendingQuery->where('willing_to_take_test', false)
+                                ->orWhereNull('willing_to_take_test')
+                                ->orWhereHas('talentTestResults', fn ($resultQuery) => $resultQuery->where('status', 'published'));
+                        });
+
+                    return;
+                }
+
                 if ($statusValue === 'waiting_test') {
                     $query->where('status', Registration::STATUS_PENDING)
                         ->where('willing_to_take_test', true)
@@ -357,6 +428,8 @@ class RegistrationController extends Controller
                 $query->where('status', $statusValue);
             })
             ->when($filters['extracurricular_id'] ?? null, fn ($query, $idValue) => $query->where('extracurricular_id', $idValue))
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('registration_date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('registration_date', '<=', $date))
             ->when(($filters['category'] ?? 'all') !== 'all', function ($query) use ($filters): void {
                 $ids = Extracurricular::idsForCategory($filters['category']);
 
@@ -368,7 +441,8 @@ class RegistrationController extends Controller
 
                 $query->whereIn('extracurricular_id', $ids);
             })
-            ->latest();
+            ->latest('registration_date')
+            ->latest('id');
     }
 
     private function filteredStudentsQuery(array $filters)
@@ -460,13 +534,7 @@ class RegistrationController extends Controller
 
     private function statusLabels(): array
     {
-        return [
-            Registration::STATUS_PENDING => 'Menunggu',
-            'waiting_test' => 'Menunggu Tes',
-            'scheduled_test' => 'Tes Dijadwalkan',
-            Registration::STATUS_APPROVED => 'Diterima',
-            Registration::STATUS_REJECTED => 'Ditolak',
-        ];
+        return RegistrationStatusPresenter::labels();
     }
 
     private function filterSummary(array $filters): array
@@ -485,6 +553,8 @@ class RegistrationController extends Controller
             'status' => $this->statusLabels()[$filters['status'] ?? ''] ?? 'Semua status',
             'extracurricular' => $extracurricular?->name ?? 'Semua kegiatan',
             'class_name' => $filters['class_name'] ?? 'Semua kelas',
+            'date_from' => $filters['date_from'] ?? 'Semua tanggal',
+            'date_to' => $filters['date_to'] ?? 'Semua tanggal',
             'gender' => match ($filters['gender'] ?? null) {
                 'L' => 'Laki-laki',
                 'P' => 'Perempuan',

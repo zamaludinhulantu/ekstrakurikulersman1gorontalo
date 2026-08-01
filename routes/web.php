@@ -134,6 +134,10 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,
     Route::get('/assessments/report', [AdminReportController::class, 'assessments'])->name('assessments.report');
     Route::get('/announcements', [AdminAnnouncementController::class, 'index'])->name('announcements.index');
     Route::post('/announcements', [AdminAnnouncementController::class, 'store'])->name('announcements.store');
+    Route::get('/announcements/{announcement}/edit', [AdminAnnouncementController::class, 'edit'])->name('announcements.edit');
+    Route::put('/announcements/{announcement}', [AdminAnnouncementController::class, 'update'])->name('announcements.update');
+    Route::patch('/announcements/{announcement}/publish', [AdminAnnouncementController::class, 'publish'])->name('announcements.publish');
+    Route::patch('/announcements/{announcement}/deactivate', [AdminAnnouncementController::class, 'deactivate'])->name('announcements.deactivate');
     Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
     Route::get('/articles/{article}/preview', [AdminArticleController::class, 'preview'])->name('articles.preview');
     Route::post('/articles/{article}/duplicate', [AdminArticleController::class, 'duplicate'])->name('articles.duplicate');
@@ -145,6 +149,7 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,
     Route::get('/registrations', [AdminRegistrationController::class, 'index'])->name('registrations.index');
     Route::get('/registrations/export', [AdminRegistrationController::class, 'export'])->name('registrations.export');
     Route::match(['post', 'patch'], '/registrations/{registration}/status', [AdminRegistrationController::class, 'updateStatus'])->name('registrations.update-status');
+    Route::patch('/registrations/{registration}/cancellation', [AdminRegistrationController::class, 'reviewCancellation'])->name('registrations.review-cancellation');
     Route::get('/registrations/{registration}/status', [AdminRegistrationController::class, 'redirectStatus'])
         ->name('registrations.update-status.redirect');
     Route::get('/registrations/{registration}', [AdminRegistrationController::class, 'show'])->name('registrations.show');
@@ -166,6 +171,7 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:student'])->
     Route::get('/registrations', [StudentRegistrationController::class, 'index'])->name('registrations.index');
     Route::get('/registrations/{registration}/edit', [StudentRegistrationController::class, 'edit'])->name('registrations.edit');
     Route::put('/registrations/{registration}', [StudentRegistrationController::class, 'update'])->name('registrations.update');
+    Route::delete('/registrations/{registration}', [StudentRegistrationController::class, 'destroy'])->name('registrations.destroy');
     Route::get('/schedules', [StudentScheduleController::class, 'index'])->name('schedules.index');
     Route::get('/attendances', [StudentAttendanceController::class, 'index'])->name('attendances.index');
     Route::get('/attendances/export', [StudentAttendanceController::class, 'export'])->name('attendances.export');
@@ -178,9 +184,11 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:coach'])->pr
 
     Route::get('/extracurriculars', [CoachExtracurricularController::class, 'index'])->name('extracurriculars.index');
     Route::get('/extracurriculars/{extracurricular}/participants', [CoachExtracurricularController::class, 'participants'])->name('extracurriculars.participants');
+    Route::delete('/extracurriculars/{extracurricular}/participants/{registration}', [CoachExtracurricularController::class, 'destroyParticipant'])->name('extracurriculars.participants.destroy');
     Route::get('/registrations', [CoachRegistrationController::class, 'index'])->name('registrations.index');
     Route::get('/registrations/{registration}', [CoachRegistrationController::class, 'show'])->name('registrations.show');
     Route::match(['post', 'patch'], '/registrations/{registration}/status', [CoachRegistrationController::class, 'updateStatus'])->name('registrations.update-status');
+    Route::patch('/registrations/{registration}/cancellation', [CoachRegistrationController::class, 'reviewCancellation'])->name('registrations.review-cancellation');
     Route::get('/registrations/{registration}/status', [CoachRegistrationController::class, 'redirectStatus'])
         ->name('registrations.update-status.redirect');
     Route::get('/announcements', [CoachAnnouncementController::class, 'index'])->name('announcements.index');

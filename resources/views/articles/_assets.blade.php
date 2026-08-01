@@ -1370,6 +1370,16 @@
                     });
                 });
 
+                document.querySelectorAll('[data-article-list-image]').forEach((image) => {
+                    image.addEventListener('error', () => {
+                        image.hidden = true;
+                        const fallback = image.parentElement?.querySelector('[data-article-list-fallback]');
+                        if (fallback) {
+                            fallback.hidden = false;
+                        }
+                    }, { once: true });
+                });
+
                 document.querySelectorAll('.article-confirmable-form').forEach((form) => {
                     form.addEventListener('submit', (event) => {
                         if (form.dataset.confirmed === 'true') {

@@ -1,5 +1,210 @@
-import './bootstrap';
-import 'bootstrap';
+import { Dropdown, Modal } from 'bootstrap';
+
+const bindStatusBadgesAndSuccessModal = () => {
+    const statusClassMap = {
+        pending: 'badge-status-warning',
+        menunggu: 'badge-status-warning',
+        waiting_test: 'badge-status-warning',
+        'menunggu tes': 'badge-status-warning',
+        scheduled_test: 'badge-status-info',
+        'tes dijadwalkan': 'badge-status-info',
+        cancellation_requested: 'badge-status-warning',
+        'menunggu konfirmasi batal': 'badge-status-warning',
+        scheduled: 'badge-status-info',
+        dijadwalkan: 'badge-status-info',
+        draft: 'badge-status-secondary',
+        approved: 'badge-status-success',
+        diterima: 'badge-status-success',
+        published: 'badge-status-success',
+        dipublikasikan: 'badge-status-success',
+        active: 'badge-status-success',
+        aktif: 'badge-status-success',
+        present: 'badge-status-success',
+        hadir: 'badge-status-success',
+        archived: 'badge-status-secondary',
+        arsip: 'badge-status-secondary',
+        diarsipkan: 'badge-status-secondary',
+        rejected: 'badge-status-danger',
+        ditolak: 'badge-status-danger',
+        cancelled: 'badge-status-cancelled',
+        dibatalkan: 'badge-status-cancelled',
+        absent: 'badge-status-danger',
+        alpa: 'badge-status-danger',
+        nonaktif: 'badge-status-secondary',
+        'tidak aktif': 'badge-status-secondary',
+        inactive: 'badge-status-secondary',
+        dinonaktifkan: 'badge-status-secondary',
+        sick: 'badge-status-warning',
+        sakit: 'badge-status-warning',
+        permission: 'badge-status-warning',
+        izin: 'badge-status-warning',
+    };
+    const statusClasses = [...new Set(Object.values(statusClassMap))];
+    const cleanClasses = ['text-bg-secondary', 'text-bg-success', 'text-bg-danger', 'text-bg-warning', 'text-bg-info'];
+
+    document.querySelectorAll('[data-status], .badge, .status-badge').forEach((element) => {
+        const rawStatus = String(element.dataset.status || element.textContent || '')
+            .trim()
+            .toLowerCase()
+            .replace(/^status\s*:\s*/i, '')
+            .trim();
+        const resolvedClass = statusClassMap[rawStatus];
+        if (!resolvedClass) {
+            return;
+        }
+
+        element.classList.add('status-badge');
+        element.classList.remove(...cleanClasses, ...statusClasses);
+        element.classList.add(resolvedClass);
+    });
+
+    const successStatusModal = document.getElementById('successStatusModal');
+    if (successStatusModal) {
+        Modal.getOrCreateInstance(successStatusModal).show();
+    }
+};
+
+const bindTableActionDropdowns = () => {
+    const portaledMenus = new WeakMap();
+    const toggleMenus = new WeakMap();
+
+    document.addEventListener('shown.bs.dropdown', (event) => {
+        const toggle = event.target;
+        if (!(toggle instanceof HTMLElement) || !toggle.closest('.table-action-col')) {
+            return;
+        }
+
+        const dropdown = toggle.closest('.dropdown');
+        const menu = dropdown?.querySelector(':scope > .dropdown-menu');
+        if (!(menu instanceof HTMLElement) || portaledMenus.has(menu)) {
+            return;
+        }
+
+        const placeholder = document.createComment('table-action-menu');
+        menu.before(placeholder);
+        portaledMenus.set(menu, placeholder);
+        toggleMenus.set(toggle, menu);
+        menu.classList.add('table-action-dropdown-portal');
+        document.body.appendChild(menu);
+        Dropdown.getInstance(toggle)?.update();
+    });
+
+    document.addEventListener('hidden.bs.dropdown', (event) => {
+        const toggle = event.target;
+        if (!(toggle instanceof HTMLElement) || !toggle.closest('.table-action-col')) {
+            return;
+        }
+
+        const menu = toggleMenus.get(toggle);
+        const placeholder = menu ? portaledMenus.get(menu) : null;
+        if (!(menu instanceof HTMLElement) || !placeholder?.parentNode) {
+            return;
+        }
+
+        placeholder.replaceWith(menu);
+        menu.classList.remove('table-action-dropdown-portal');
+        portaledMenus.delete(menu);
+        toggleMenus.delete(toggle);
+    });
+};
+
+const bindAnnouncementManagement = () => {
+    const page = document.querySelector('[data-announcement-page]');
+    if (!page) {
+        return;
+    }
+
+    page.querySelectorAll('[data-announcement-form]').forEach((form) => {
+        const target = form.querySelector('[data-announcement-target]');
+        const activity = form.querySelector('[data-announcement-activity]');
+        const activityGroup = form.querySelector('[data-announcement-activity-group]');
+        const publication = form.querySelector('[data-announcement-publication]');
+        const schedules = form.querySelectorAll('[data-announcement-schedule]');
+
+        const syncTarget = () => {
+            const usesActivity = target?.value === 'single';
+            activityGroup?.classList.toggle('is-hidden', !usesActivity);
+            if (activity) {
+                activity.disabled = !usesActivity;
+                activity.required = usesActivity;
+            }
+        };
+
+        const syncSchedule = () => {
+            const scheduled = publication?.value === 'scheduled';
+            schedules.forEach((group) => {
+                group.classList.toggle('is-hidden', !scheduled);
+                group.querySelectorAll('input').forEach((input) => {
+                    input.required = scheduled;
+                });
+            });
+        };
+
+        form.querySelectorAll('[maxlength]').forEach((field) => {
+            const counter = form.querySelector(`[data-character-count-for="${field.id}"]`);
+            const updateCounter = () => {
+                if (counter) {
+                    counter.textContent = `${field.value.length}/${field.maxLength}`;
+                }
+            };
+            field.addEventListener('input', updateCounter);
+            updateCounter();
+        });
+
+        target?.addEventListener('change', syncTarget);
+        publication?.addEventListener('change', syncSchedule);
+        syncTarget();
+        syncSchedule();
+
+        form.querySelector('[data-announcement-preview]')?.addEventListener('click', () => {
+            const previewModal = document.getElementById('announcementPreviewModal');
+            if (!previewModal) {
+                return;
+            }
+
+            const title = form.querySelector('[name="title"]')?.value.trim() || 'Judul pengumuman';
+            const content = form.querySelector('[name="content"]')?.value.trim() || 'Isi pengumuman akan tampil di sini.';
+            const targetSelect = form.querySelector('[data-announcement-target]');
+            const activitySelect = form.querySelector('[data-announcement-activity]');
+            const publicationSelect = form.querySelector('[data-announcement-publication]');
+            const targetLabel = targetSelect?.value === 'single'
+                ? activitySelect?.selectedOptions[0]?.textContent.trim() || 'Kegiatan belum dipilih'
+                : 'Semua siswa';
+            const statusLabel = publicationSelect?.selectedOptions[0]?.textContent.trim() || 'Draft';
+
+            previewModal.querySelector('#announcementPreviewTitle').textContent = title;
+            previewModal.querySelector('[data-preview-content]').textContent = content;
+            previewModal.querySelector('[data-preview-meta]').textContent = `${targetLabel} | ${statusLabel}`;
+            Modal.getOrCreateInstance(previewModal).show();
+        });
+    });
+
+    const detailModal = document.getElementById('announcementDetailModal');
+    detailModal?.addEventListener('show.bs.modal', (event) => {
+        const trigger = event.relatedTarget;
+        if (!(trigger instanceof HTMLElement)) {
+            return;
+        }
+
+        const values = {
+            '#announcementDetailTitle': trigger.dataset.title,
+            '[data-detail-content]': trigger.dataset.content,
+            '[data-detail-target]': trigger.dataset.target,
+            '[data-detail-status]': trigger.dataset.status,
+            '[data-detail-priority]': trigger.dataset.priority,
+            '[data-detail-publisher]': trigger.dataset.publisher,
+            '[data-detail-publish-at]': trigger.dataset.publishAt,
+            '[data-detail-ends-at]': trigger.dataset.endsAt,
+        };
+
+        Object.entries(values).forEach(([selector, value]) => {
+            const element = detailModal.querySelector(selector);
+            if (element) {
+                element.textContent = value || '-';
+            }
+        });
+    });
+};
 
 const bindIdleLogout = () => {
     const root = document.body;
@@ -1224,6 +1429,9 @@ const bindCounters = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    bindStatusBadgesAndSuccessModal();
+    bindTableActionDropdowns();
+    bindAnnouncementManagement();
     bindIdleLogout();
     bindParticipantProfilePreview();
     bindTalentTestParticipantSelector();

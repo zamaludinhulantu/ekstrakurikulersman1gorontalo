@@ -5,64 +5,117 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Extracurricular;
-use App\Models\NotificationPreference;
-use App\Models\Registration;
-use App\Support\NotificationCenter;
+use App\Support\AnnouncementManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AnnouncementController extends Controller
 {
-    public function index(): View
+    public function __construct(private readonly AnnouncementManager $manager)
     {
+    }
+
+    public function index(Request $request): View
+    {
+        $filters = $this->manager->filters($request);
+        $baseQuery = Announcement::query();
+        $announcements = $this->manager
+            ->applyFilters((clone $baseQuery)->with(['publisher:id,name,role', 'extracurricular:id,name']), $filters)
+            ->paginate($filters['per_page'])
+            ->withQueryString();
+
         return view('admin.announcements.index', [
-            'announcements' => Announcement::with(['publisher', 'extracurricular'])
-                ->latest()
-                ->paginate(10),
-            'extracurriculars' => Extracurricular::orderBy('name')->get(),
+            'announcements' => $announcements,
+            'extracurriculars' => Extracurricular::query()->orderBy('name')->get(['id', 'name']),
+            'statistics' => $this->manager->statistics($baseQuery),
+            'filters' => $filters,
+            'canTargetAllStudents' => true,
+            'routePrefix' => 'admin.announcements',
+            'roleLabel' => 'Admin/Kesiswaan',
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
-            'extracurricular_id' => ['nullable', 'exists:extracurriculars,id'],
-            'is_active' => ['nullable', 'boolean'],
+        $announcement = Announcement::create($this->manager->payload(
+            $request,
+            Extracurricular::query()->pluck('id')->all(),
+            true
+        ));
+        $this->manager->notifyAudience($announcement);
+
+        return redirect()->route('admin.announcements.index')
+            ->with('success', 'Pengumuman berhasil disimpan.');
+    }
+
+    public function edit(Announcement $announcement): View
+    {
+        $this->authorize('manage', $announcement);
+
+        return view('admin.announcements.edit', [
+            'announcement' => $announcement,
+            'extracurriculars' => Extracurricular::query()->orderBy('name')->get(['id', 'name']),
+            'canTargetAllStudents' => true,
+            'routePrefix' => 'admin.announcements',
+        ]);
+    }
+
+    public function update(Request $request, Announcement $announcement): RedirectResponse
+    {
+        $this->authorize('manage', $announcement);
+        $wasDeliverable = $this->manager->isDeliverable($announcement);
+        $oldAttachmentPath = $announcement->attachment_path;
+        $announcement->update($this->manager->payload(
+            $request,
+            Extracurricular::query()->pluck('id')->all(),
+            true,
+            $announcement
+        ));
+        $this->manager->deleteReplacedAttachment($oldAttachmentPath, $announcement->attachment_path);
+
+        if (! $wasDeliverable) {
+            $this->manager->notifyAudience($announcement);
+        }
+
+        return redirect()->route('admin.announcements.index')
+            ->with('success', 'Pengumuman berhasil diperbarui.');
+    }
+
+    public function publish(Announcement $announcement): RedirectResponse
+    {
+        $this->authorize('manage', $announcement);
+        $wasDeliverable = $this->manager->isDeliverable($announcement);
+        $announcement->update([
+            'is_active' => true,
+            'publication_status' => Announcement::STATUS_PUBLISHED,
+            'publish_at' => now(),
         ]);
 
-        $announcement = Announcement::create([
-            ...$validated,
-            'published_by' => auth()->id(),
-            'is_active' => $request->boolean('is_active', true),
+        if (! $wasDeliverable) {
+            $this->manager->notifyAudience($announcement);
+        }
+
+        return back()->with('success', 'Pengumuman berhasil dipublikasikan.');
+    }
+
+    public function deactivate(Announcement $announcement): RedirectResponse
+    {
+        $this->authorize('manage', $announcement);
+        $announcement->update([
+            'is_active' => false,
+            'publication_status' => Announcement::STATUS_INACTIVE,
         ]);
 
-        $students = Registration::query()
-            ->with('student.user')
-            ->where('status', 'approved')
-            ->when($announcement->extracurricular_id, fn ($query, $id) => $query->where('extracurricular_id', $id))
-            ->get()
-            ->pluck('student.user')
-            ->filter();
-
-        app(NotificationCenter::class)->notifyUsers($students, [
-            'title' => 'Pengumuman baru tersedia',
-            'message' => $announcement->title,
-            'url' => route('public.announcements'),
-            'category' => NotificationPreference::CATEGORY_ANNOUNCEMENTS,
-            'icon' => 'bi-megaphone',
-            'tag' => 'announcement-'.$announcement->id,
-        ]);
-
-        return redirect()->route('admin.announcements.index')->with('success', 'Pengumuman berhasil ditambahkan.');
+        return back()->with('success', 'Pengumuman berhasil dinonaktifkan.');
     }
 
     public function destroy(Announcement $announcement): RedirectResponse
     {
-        $announcement->delete();
+        $this->authorize('manage', $announcement);
+        $this->manager->deleteDraft($announcement);
 
-        return redirect()->route('admin.announcements.index')->with('success', 'Pengumuman berhasil dihapus.');
+        return redirect()->route('admin.announcements.index')
+            ->with('success', 'Draft pengumuman berhasil dihapus.');
     }
 }

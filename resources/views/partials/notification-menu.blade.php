@@ -11,12 +11,17 @@
                 <strong>Notifikasi</strong>
                 <div class="small text-muted">Pusat notifikasi aplikasi</div>
             </div>
-            @if($unreadNotificationCount > 0)
-                <form method="post" action="{{ route('notifications.read-all') }}">
-                    @csrf
-                    <button type="submit" class="btn btn-link btn-sm text-decoration-none p-0">Tandai semua</button>
-                </form>
-            @endif
+            <div class="notification-menu__header-actions">
+                <a href="{{ route('settings.pwa-notifications') }}" class="btn btn-light btn-sm" aria-label="Buka pengaturan notifikasi">
+                    <i class="bi bi-gear"></i>Pengaturan
+                </a>
+                @if($unreadNotificationCount > 0)
+                    <form method="post" action="{{ route('notifications.read-all') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-link btn-sm text-decoration-none p-0">Tandai semua</button>
+                    </form>
+                @endif
+            </div>
         </div>
         <div class="notification-menu__body">
             @forelse($recentNotifications as $item)

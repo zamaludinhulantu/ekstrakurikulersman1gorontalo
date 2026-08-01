@@ -47,6 +47,27 @@
         .announcement-card {
             margin-top: 1.25rem;
         }
+
+        .public-announcement-filter {
+            padding: 1rem;
+            border: 1px solid #dce7f4;
+            border-radius: 22px;
+            background: #fff;
+            box-shadow: 0 12px 28px rgba(17, 48, 82, 0.05);
+        }
+
+        .public-announcement-filter form {
+            display: grid;
+            grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
+            gap: 0.75rem;
+            align-items: end;
+        }
+
+        @media (max-width: 767.98px) {
+            .public-announcement-filter form {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 @endpush
 
@@ -80,10 +101,41 @@
                 </div>
             </div>
 
+            <div class="public-announcement-filter mb-3">
+                <form method="get" action="{{ route('public.announcements') }}">
+                    <div>
+                        <label class="form-label" for="public_announcement_search">Cari Pengumuman</label>
+                        <input id="public_announcement_search" name="search" value="{{ $filters['search'] }}" class="form-control" maxlength="120" placeholder="Cari judul atau isi">
+                    </div>
+                    <div>
+                        <label class="form-label" for="public_announcement_activity">Kegiatan</label>
+                        <select id="public_announcement_activity" name="extracurricular_id" class="form-select">
+                            <option value="">Semua kegiatan</option>
+                            @foreach($extracurriculars as $item)
+                                <option value="{{ $item->id }}" @selected($filters['extracurricular_id'] === $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="public_announcement_priority">Prioritas</label>
+                        <select id="public_announcement_priority" name="priority" class="form-select">
+                            <option value="">Semua prioritas</option>
+                            <option value="normal" @selected($filters['priority'] === 'normal')>Biasa</option>
+                            <option value="important" @selected($filters['priority'] === 'important')>Penting</option>
+                            <option value="urgent" @selected($filters['priority'] === 'urgent')>Mendesak</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('public.announcements') }}" class="btn btn-outline-secondary">Reset</a>
+                        <button class="btn btn-primary" type="submit">Cari</button>
+                    </div>
+                </form>
+            </div>
+
             <div class="row g-3">
                 @forelse($announcements as $announcement)
                     <div class="col-12 col-md-6 col-xl-4">
-                        @include('public._announcement-card', ['announcement' => $announcement])
+                        @include('public._announcement-card', ['announcement' => $announcement, 'expandable' => true])
                     </div>
                 @empty
                     <div class="col-12">
@@ -96,6 +148,10 @@
                     </div>
                 @endforelse
             </div>
+
+            @if($announcements->hasPages())
+                <div class="mt-4">{{ $announcements->links() }}</div>
+            @endif
         </section>
     </div>
 @endsection

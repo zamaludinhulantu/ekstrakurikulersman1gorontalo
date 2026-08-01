@@ -7,7 +7,7 @@ use App\Models\User;
 
 class AnnouncementPolicy
 {
-    public function manageByCoach(User $user, Announcement $announcement): bool
+    public function manage(User $user, Announcement $announcement): bool
     {
         if ($user->hasRole(User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN)) {
             return true;
@@ -17,5 +17,10 @@ class AnnouncementPolicy
             && $user->coach
             && $announcement->published_by === $user->id
             && (! $announcement->extracurricular || $announcement->extracurricular->coaches()->whereKey($user->coach->id)->exists());
+    }
+
+    public function manageByCoach(User $user, Announcement $announcement): bool
+    {
+        return $this->manage($user, $announcement);
     }
 }

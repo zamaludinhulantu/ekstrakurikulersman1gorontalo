@@ -10,12 +10,17 @@
                 <strong>Pusat Notifikasi</strong>
                 <div class="small text-muted">Setiap pengguna hanya dapat melihat notifikasinya sendiri.</div>
             </div>
-            @if(($unreadNotificationCount ?? 0) > 0)
-                <form method="post" action="{{ route('notifications.read-all') }}">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-primary btn-sm">Tandai semua dibaca</button>
-                </form>
-            @endif
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if(($unreadNotificationCount ?? 0) > 0)
+                    <form method="post" action="{{ route('notifications.read-all') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Tandai semua dibaca</button>
+                    </form>
+                @endif
+                <a href="{{ route('settings.pwa-notifications') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-gear"></i>Pengaturan
+                </a>
+            </div>
         </div>
         <div class="card-body">
             <div class="notification-list">

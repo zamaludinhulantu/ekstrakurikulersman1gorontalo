@@ -29,7 +29,8 @@ class PwaNotificationFeatureTest extends TestCase
         $this->get(route('pwa.service-worker'))
             ->assertOk()
             ->assertHeader('Service-Worker-Allowed', '/')
-            ->assertSee('self.addEventListener', false);
+            ->assertSee('self.addEventListener', false)
+            ->assertSee("'/registrations'", false);
 
         $this->get(route('offline'))
             ->assertOk()

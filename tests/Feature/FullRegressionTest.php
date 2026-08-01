@@ -427,7 +427,7 @@ class FullRegressionTest extends TestCase
                 'title' => 'Pengumuman Regression Admin',
                 'content' => 'Pengumuman dibuat oleh automated regression test.',
                 'extracurricular_id' => $existingExtracurricular->id,
-                'is_active' => '1',
+                'is_active' => '0',
             ])
             ->assertRedirect(route('admin.announcements.index'));
 
@@ -714,7 +714,7 @@ class FullRegressionTest extends TestCase
                 'title' => 'Pengumuman Regression Coach',
                 'content' => 'Pengumuman pembina oleh automated regression test.',
                 'extracurricular_id' => $extracurricular->id,
-                'is_active' => '1',
+                'is_active' => '0',
             ])
             ->assertRedirect(route('coach.announcements.index'));
 
@@ -1168,6 +1168,169 @@ class FullRegressionTest extends TestCase
             'extracurricular_id' => $targetExtracurricular->id,
         ]);
         $this->assertSame(3, $student->fresh()->activeRegistrationCount());
+    }
+
+    public function test_student_can_cancel_registration_and_cleanup_related_participants(): void
+    {
+        $studentUser = $this->userByEmail('siswa1@gmail.com');
+        $student = $studentUser->student;
+        $registration = Registration::query()
+            ->where('student_id', $student->id)
+            ->whereIn('status', [Registration::STATUS_PENDING, Registration::STATUS_APPROVED])
+            ->first();
+
+        if (! $registration) {
+            $coach = $this->userByEmail('pembina1@gmail.com')->coach;
+            $extracurricular = $coach->extracurriculars()->firstOrFail();
+            $registration = Registration::query()->create([
+                'student_id' => $student->id,
+                'extracurricular_id' => $extracurricular->id,
+                'registration_date' => now()->toDateString(),
+                'status' => Registration::STATUS_APPROVED,
+            ]);
+        }
+
+        $activitySchedule = Schedule::query()->create([
+            'extracurricular_id' => $registration->extracurricular_id,
+            'coach_id' => $registration->extracurricular->coaches()->value('coaches.id') ?? $registration->extracurricular->coach_id,
+            'schedule_type' => 'activity',
+            'title' => 'Jadwal Untuk Uji Batal',
+            'activity_date' => now()->addDays(5)->toDateString(),
+            'start_time' => '15:00',
+            'end_time' => '16:00',
+            'location' => 'Lapangan Uji',
+            'status' => 'scheduled',
+        ]);
+
+        $activitySchedule->scheduleParticipants()->create([
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+            'assigned_by' => $this->userByEmail('pembina1@gmail.com')->id,
+        ]);
+
+        $talentTest = Schedule::query()->create([
+            'extracurricular_id' => $registration->extracurricular_id,
+            'coach_id' => $registration->extracurricular->coaches()->value('coaches.id') ?? $registration->extracurricular->coach_id,
+            'schedule_type' => 'talent_test',
+            'title' => 'Tes Untuk Uji Batal',
+            'activity_date' => now()->addDays(6)->toDateString(),
+            'start_time' => '10:00',
+            'end_time' => '11:00',
+            'location' => 'Ruang Uji',
+            'status' => 'scheduled',
+        ]);
+
+        $talentTest->talentTestParticipants()->create([
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+            'assigned_by' => $studentUser->id,
+            'attendance_status' => 'pending',
+        ]);
+
+        $beforeCount = $student->fresh()->activeRegistrationCount();
+
+        $this->actingAs($studentUser)
+            ->delete(route('student.registrations.destroy', $registration))
+            ->assertRedirect(route('student.registrations.index'))
+            ->assertSessionHas('success', 'Permintaan pembatalan berhasil dikirim dan menunggu konfirmasi Admin atau Pembina.');
+
+        $registration->refresh();
+
+        $this->assertNotSame(Registration::STATUS_CANCELLED, $registration->status);
+        $this->assertNotNull($registration->cancellation_requested_at);
+        $this->assertDatabaseHas('schedule_participants', [
+            'schedule_id' => $activitySchedule->id,
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+        ]);
+        $this->assertDatabaseHas('talent_test_participants', [
+            'schedule_id' => $talentTest->id,
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+        ]);
+        $this->assertSame($beforeCount, $student->fresh()->activeRegistrationCount());
+
+        $this->actingAs($this->userByEmail('admin@gmail.com'))
+            ->patch(route('admin.registrations.review-cancellation', $registration), [
+                'decision' => 'approve',
+            ])
+            ->assertSessionHas('success', 'Pembatalan keikutsertaan berhasil disetujui.');
+
+        $registration->refresh();
+
+        $this->assertSame(Registration::STATUS_CANCELLED, $registration->status);
+        $this->assertNull($registration->cancellation_requested_at);
+        $this->assertStringContainsString('Permintaan pembatalan disetujui Admin', (string) $registration->notes);
+        $this->assertFalse($registration->willing_to_take_test);
+        $this->assertDatabaseMissing('schedule_participants', [
+            'schedule_id' => $activitySchedule->id,
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+        ]);
+        $this->assertDatabaseMissing('talent_test_participants', [
+            'schedule_id' => $talentTest->id,
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+        ]);
+        $this->assertSame(max(0, $beforeCount - 1), $student->fresh()->activeRegistrationCount());
+    }
+
+    public function test_coach_can_remove_approved_participant_from_extracurricular(): void
+    {
+        $coachUser = $this->userByEmail('pembina1@gmail.com');
+        $coach = $coachUser->coach;
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
+        $registration = Registration::query()
+            ->where('extracurricular_id', $extracurricular->id)
+            ->where('status', Registration::STATUS_APPROVED)
+            ->first();
+
+        if (! $registration) {
+            $student = Student::query()
+                ->whereDoesntHave('registrations', fn ($query) => $query->where('extracurricular_id', $extracurricular->id))
+                ->firstOrFail();
+
+            $registration = Registration::query()->create([
+                'student_id' => $student->id,
+                'extracurricular_id' => $extracurricular->id,
+                'registration_date' => now()->toDateString(),
+                'status' => Registration::STATUS_APPROVED,
+            ]);
+        }
+
+        $schedule = Schedule::query()->create([
+            'extracurricular_id' => $extracurricular->id,
+            'coach_id' => $coach->id,
+            'schedule_type' => 'activity',
+            'title' => 'Jadwal Untuk Uji Keluarkan',
+            'activity_date' => now()->addDays(3)->toDateString(),
+            'start_time' => '08:00',
+            'end_time' => '09:00',
+            'location' => 'Aula Uji',
+            'status' => 'scheduled',
+        ]);
+
+        $schedule->scheduleParticipants()->create([
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+            'assigned_by' => $coachUser->id,
+        ]);
+
+        $this->actingAs($coachUser)
+            ->delete(route('coach.extracurriculars.participants.destroy', [$extracurricular, $registration]))
+            ->assertRedirect(route('coach.extracurriculars.participants', $extracurricular))
+            ->assertSessionHas('success', 'Peserta berhasil dikeluarkan dari ekstrakurikuler.');
+
+        $registration->refresh();
+
+        $this->assertSame(Registration::STATUS_CANCELLED, $registration->status);
+        $this->assertSame($coachUser->id, $registration->verified_by);
+        $this->assertStringContainsString('Dikeluarkan oleh pembina', (string) $registration->notes);
+        $this->assertDatabaseMissing('schedule_participants', [
+            'schedule_id' => $schedule->id,
+            'registration_id' => $registration->id,
+            'student_id' => $registration->student_id,
+        ]);
     }
 
     public function test_legacy_registration_overflow_only_shows_warning_without_changing_old_data(): void

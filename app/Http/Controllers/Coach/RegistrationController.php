@@ -9,6 +9,8 @@ use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\Student;
 use App\Support\NotificationCenter;
+use App\Support\RegistrationCancellationManager;
+use App\Support\RegistrationStatusPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -30,6 +32,7 @@ class RegistrationController extends Controller
                 Registration::STATUS_PENDING,
                 'waiting_test',
                 'scheduled_test',
+                Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED,
                 Registration::STATUS_APPROVED,
                 Registration::STATUS_REJECTED,
             ])],
@@ -37,6 +40,9 @@ class RegistrationController extends Controller
             'class_name' => ['nullable', 'string', 'max:100'],
             'gender' => ['nullable', Rule::in(['L', 'P'])],
             'category' => ['nullable', 'string', Rule::in(['all', ...array_keys(Extracurricular::categoryDefinitions())])],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 20, 50])],
         ]);
 
         $filters['class_name'] = Student::normalizeClassName($filters['class_name'] ?? null);
@@ -47,26 +53,81 @@ class RegistrationController extends Controller
         $extracurricularId = (string) ($filters['extracurricular_id'] ?? '');
         $ownedExtracurricularIds = $coach->extracurriculars()->pluck('extracurriculars.id');
 
-        $registrations = $this->filteredStudentsQuery($filters, $ownedExtracurricularIds)
-            ->latest('id')
-            ->paginate(10)
+        $scope = Registration::query()
+            ->whereIn('extracurricular_id', $ownedExtracurricularIds)
+            ->where('status', '!=', Registration::STATUS_CANCELLED);
+        $registrations = $this->filteredRegistrationsQuery($filters, $ownedExtracurricularIds)
+            ->paginate($filters['per_page'] ?? 20)
             ->withQueryString();
 
         return view('coach.registrations.index', [
             'registrations' => $registrations,
+            'statistics' => RegistrationStatusPresenter::statistics($scope),
             'search' => $search,
             'status' => $status,
             'extracurricularId' => $extracurricularId,
             'className' => $filters['class_name'] ?? '',
             'gender' => $filters['gender'] ?? '',
             'category' => $filters['category'] ?? 'all',
+            'dateFrom' => $filters['date_from'] ?? '',
+            'dateTo' => $filters['date_to'] ?? '',
+            'perPage' => $filters['per_page'] ?? 20,
             'extracurriculars' => Extracurricular::whereIn('id', $ownedExtracurricularIds)->orderBy('name')->get(),
             'classOptions' => collect(array_keys(Student::registrationClassOptions())),
             'categories' => collect(Extracurricular::categoryDefinitions())
                 ->map(fn (array $definition) => ['key' => $definition['key'], 'label' => $definition['label']])
                 ->values(),
+            'statusMap' => RegistrationStatusPresenter::managementLabels(),
             'talentTestScheduleOptions' => $this->reusableTalentTestSchedules($ownedExtracurricularIds->all()),
         ]);
+    }
+
+    private function filteredRegistrationsQuery(array $filters, $ownedExtracurricularIds)
+    {
+        return Registration::query()
+            ->with([
+                'student.user',
+                'student.registrations:id,student_id,status',
+                'extracurricular',
+                'verifier',
+                'talentTestResults',
+                'talentTestParticipants.schedule',
+            ])
+            ->whereIn('extracurricular_id', $ownedExtracurricularIds)
+            ->where('status', '!=', Registration::STATUS_CANCELLED)
+            ->when(
+                filled($filters['status'] ?? null)
+                    && $filters['status'] !== Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED,
+                fn ($query) => $query->whereNull('cancellation_requested_at')
+            )
+            ->when($filters['search'] ?? null, function ($query, $searchValue): void {
+                $query->where(function ($searchQuery) use ($searchValue): void {
+                    $searchQuery->whereHas('student.user', function ($userQuery) use ($searchValue): void {
+                        $userQuery->where('name', 'like', "%{$searchValue}%");
+                    })->orWhereHas('student', function ($studentQuery) use ($searchValue): void {
+                        $studentQuery->where('nis', 'like', "%{$searchValue}%")
+                            ->orWhere('class_name', 'like', "%{$searchValue}%");
+                    })->orWhereHas('extracurricular', function ($activityQuery) use ($searchValue): void {
+                        $activityQuery->where('name', 'like', "%{$searchValue}%");
+                    })->orWhere('selected_branch', 'like', "%{$searchValue}%");
+                });
+            })
+            ->when($filters['class_name'] ?? null, function ($query, $className): void {
+                $query->whereHas('student', function ($studentQuery) use ($className): void {
+                    $studentQuery->whereRaw(
+                        Student::normalizedClassExpression('class_name').' = ?',
+                        [Student::normalizedClassComparable($className)]
+                    );
+                });
+            })
+            ->when($filters['gender'] ?? null, function ($query, $gender): void {
+                $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('gender', $gender));
+            })
+            ->tap(fn ($query) => $this->applyRegistrationFilters($query, $filters))
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('registration_date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('registration_date', '<=', $date))
+            ->latest('registration_date')
+            ->latest('id');
     }
 
     private function filteredStudentsQuery(array $filters, $ownedExtracurricularIds)
@@ -112,6 +173,23 @@ class RegistrationController extends Controller
     {
         $query
             ->when($filters['status'] ?? null, function ($query, $statusValue): void {
+                if ($statusValue === Registration::DISPLAY_STATUS_CANCELLATION_REQUESTED) {
+                    $query->whereNotNull('cancellation_requested_at');
+
+                    return;
+                }
+
+                if ($statusValue === Registration::STATUS_PENDING) {
+                    $query->where('status', Registration::STATUS_PENDING)
+                        ->where(function ($pendingQuery): void {
+                            $pendingQuery->where('willing_to_take_test', false)
+                                ->orWhereNull('willing_to_take_test')
+                                ->orWhereHas('talentTestResults', fn ($resultQuery) => $resultQuery->where('status', 'published'));
+                        });
+
+                    return;
+                }
+
                 if ($statusValue === 'waiting_test') {
                     $query->where('status', Registration::STATUS_PENDING)
                         ->where('willing_to_take_test', true)
@@ -180,6 +258,10 @@ class RegistrationController extends Controller
     public function updateStatus(Request $request, Registration $registration): RedirectResponse
     {
         $this->authorize('manageByCoach', $registration);
+        if ($registration->isCancellationRequested()) {
+            return back()->with('error', 'Selesaikan permintaan pembatalan sebelum mengubah keputusan pendaftaran.');
+        }
+
         $coach = auth()->user()->coach;
         abort_unless($coach, 404, 'Data pembina tidak ditemukan.');
 
@@ -317,6 +399,48 @@ class RegistrationController extends Controller
         });
 
         return back()->with('success', 'Status pendaftaran berhasil diperbarui.');
+    }
+
+    public function reviewCancellation(
+        Request $request,
+        Registration $registration,
+        RegistrationCancellationManager $cancellationManager
+    ): RedirectResponse {
+        $this->authorize('manageByCoach', $registration);
+        $validated = $request->validate([
+            'decision' => ['required', Rule::in(['approve', 'reject'])],
+        ]);
+
+        if (! $registration->isCancellationRequested()) {
+            return back()->with('error', 'Permintaan pembatalan sudah tidak tersedia.');
+        }
+
+        $registration->loadMissing(['student.user', 'extracurricular']);
+        $approved = $validated['decision'] === 'approve';
+        $note = $approved
+            ? 'Permintaan pembatalan disetujui Pembina pada '.now()->format('d-m-Y H:i')
+            : 'Permintaan pembatalan ditolak Pembina pada '.now()->format('d-m-Y H:i');
+
+        $registration = $approved
+            ? $cancellationManager->approve($registration, $request->user(), $note)
+            : $cancellationManager->reject($registration, $request->user(), $note);
+
+        $registration->loadMissing(['student.user', 'extracurricular']);
+        app(NotificationCenter::class)->notifyUser($registration->student->user, [
+            'title' => $approved ? 'Pembatalan disetujui' : 'Pembatalan ditolak',
+            'message' => $approved
+                ? "Pembatalan keikutsertaan Anda di {$registration->extracurricular->name} telah disetujui Pembina."
+                : "Permintaan pembatalan Anda di {$registration->extracurricular->name} ditolak Pembina. Keikutsertaan Anda tetap aktif.",
+            'url' => route('student.registrations.index'),
+            'category' => NotificationPreference::CATEGORY_REGISTRATION_STATUS,
+            'icon' => $approved ? 'bi-check-circle' : 'bi-x-circle',
+            'tag' => 'registration-cancellation-reviewed-'.$registration->id,
+        ]);
+
+        return back()->with(
+            'success',
+            $approved ? 'Pembatalan keikutsertaan berhasil disetujui.' : 'Permintaan pembatalan berhasil ditolak.'
+        );
     }
 
     private function reusableTalentTestSchedules(array $extracurricularIds): array

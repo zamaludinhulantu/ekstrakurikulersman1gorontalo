@@ -16,26 +16,99 @@ class CoachController extends Controller
 {
     public function index(Request $request): View
     {
-        $search = $request->string('search')->toString();
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'extracurricular_id' => ['nullable', 'integer', 'exists:extracurriculars,id'],
+            'assignment' => ['nullable', Rule::in(['assigned', 'unassigned'])],
+            'profile_status' => ['nullable', Rule::in(['complete', 'incomplete'])],
+            'sort' => ['nullable', Rule::in(['name', 'nip', 'status', 'activities_count', 'created_at'])],
+            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 20, 50, 100])],
+        ]);
 
-        $coaches = Coach::with(['user', 'extracurriculars'])
-            ->when($search, function ($query, $searchValue) {
+        $query = Coach::query()
+            ->with([
+                'user' => fn ($query) => $query->withCount(['announcements', 'articles', 'generatedReports']),
+                'extracurriculars' => fn ($query) => $query->orderBy('name'),
+            ])
+            ->withCount(['extracurriculars', 'schedules', 'assessments', 'talentTestResults'])
+            ->when($filters['search'] ?? null, function ($query, $searchValue) {
                 $query->where(function ($coachQuery) use ($searchValue): void {
                     $coachQuery->where('nip', 'like', "%{$searchValue}%")
                         ->orWhereHas('user', function ($userQuery) use ($searchValue): void {
                             $userQuery->where('name', 'like', "%{$searchValue}%")
                                 ->orWhere('email', 'like', "%{$searchValue}%");
-                        })
-                        ->orWhereHas('extracurriculars', function ($extracurricularQuery) use ($searchValue): void {
-                            $extracurricularQuery->where('name', 'like', "%{$searchValue}%");
                         });
                 });
             })
-            ->latest()
-            ->paginate(10)
+            ->when($filters['status'] ?? null, function ($query, $status): void {
+                $query->whereHas('user', fn ($userQuery) => $userQuery->where('is_active', $status === 'active'));
+            })
+            ->when($filters['extracurricular_id'] ?? null, function ($query, $extracurricularId): void {
+                $query->whereHas('extracurriculars', fn ($activityQuery) => $activityQuery->whereKey($extracurricularId));
+            })
+            ->when($filters['assignment'] ?? null, function ($query, $assignment): void {
+                $assignment === 'assigned'
+                    ? $query->has('extracurriculars')
+                    : $query->doesntHave('extracurriculars');
+            })
+            ->when($filters['profile_status'] ?? null, function ($query, $profileStatus): void {
+                $incomplete = function ($profileQuery): void {
+                    $profileQuery->whereNull('nip')
+                        ->orWhere('nip', '')
+                        ->orWhereDoesntHave('user', function ($userQuery): void {
+                            $userQuery->whereNotNull('name')
+                                ->where('name', '!=', '')
+                                ->whereNotNull('email')
+                                ->where('email', '!=', '');
+                        });
+                };
+
+                $profileStatus === 'incomplete'
+                    ? $query->where($incomplete)
+                    : $query->whereNot($incomplete);
+            });
+
+        $sort = $filters['sort'] ?? 'created_at';
+        $direction = $filters['direction'] ?? 'desc';
+        $query = match ($sort) {
+            'name' => $query->orderBy(
+                User::select('name')->whereColumn('users.id', 'coaches.user_id'),
+                $direction
+            ),
+            'status' => $query->orderBy(
+                User::select('is_active')->whereColumn('users.id', 'coaches.user_id'),
+                $direction
+            ),
+            'nip' => $query->orderBy('nip', $direction),
+            'activities_count' => $query->orderBy('extracurriculars_count', $direction),
+            default => $query->orderBy('created_at', $direction),
+        };
+
+        $coaches = $query
+            ->orderBy('id')
+            ->paginate($filters['per_page'] ?? 20)
             ->withQueryString();
 
-        return view('admin.coaches.index', compact('coaches', 'search'));
+        return view('admin.coaches.index', [
+            'coaches' => $coaches,
+            'search' => $filters['search'] ?? '',
+            'status' => $filters['status'] ?? '',
+            'extracurricularId' => $filters['extracurricular_id'] ?? null,
+            'assignment' => $filters['assignment'] ?? '',
+            'profileStatus' => $filters['profile_status'] ?? '',
+            'sort' => $sort,
+            'direction' => $direction,
+            'perPage' => $filters['per_page'] ?? 20,
+            'extracurricularOptions' => Extracurricular::query()->orderBy('name')->get(['id', 'name']),
+            'coachSummary' => [
+                'total' => Coach::query()->count(),
+                'active' => Coach::query()->whereHas('user', fn ($query) => $query->where('is_active', true))->count(),
+                'inactive' => Coach::query()->whereHas('user', fn ($query) => $query->where('is_active', false))->count(),
+                'unassigned' => Coach::query()->doesntHave('extracurriculars')->count(),
+            ],
+        ]);
     }
 
     public function create(): View
@@ -75,7 +148,8 @@ class CoachController extends Controller
 
     public function show(Coach $coach): View
     {
-        $coach->load('user', 'extracurriculars.coaches.user');
+        $coach->loadCount(['schedules', 'assessments', 'talentTestResults'])
+            ->load('user', 'extracurriculars.coaches.user');
 
         return view('admin.coaches.show', compact('coach'));
     }
@@ -124,11 +198,27 @@ class CoachController extends Controller
     public function destroy(Coach $coach): RedirectResponse
     {
         $coach->load('user');
-        $affectedExtracurricularIds = $coach->extracurriculars()->pluck('extracurriculars.id')->all();
-        $coach->extracurriculars()->detach();
-        Extracurricular::where('coach_id', $coach->id)->update(['coach_id' => null]);
-        $this->syncLegacyCoachColumn($affectedExtracurricularIds);
-        $coach->user?->delete();
+        $hasHistory = $coach->extracurriculars()->exists()
+            || Extracurricular::query()->where('coach_id', $coach->id)->exists()
+            || $coach->schedules()->exists()
+            || $coach->assessments()->exists()
+            || $coach->talentTestResults()->exists()
+            || $coach->user?->announcements()->exists()
+            || $coach->user?->articles()->exists()
+            || $coach->user?->generatedReports()->exists();
+
+        if ($hasHistory) {
+            return redirect()
+                ->route('admin.coaches.index')
+                ->with(
+                    'error',
+                    'Pembina tidak dapat dihapus karena masih memiliki penugasan atau riwayat operasional. Lepas penugasan atau nonaktifkan akun melalui menu Edit agar laporan tetap utuh.'
+                );
+        }
+
+        DB::transaction(function () use ($coach): void {
+            $coach->user?->delete();
+        });
 
         return redirect()->route('admin.coaches.index')->with('success', 'Data pembina berhasil dihapus.');
     }
