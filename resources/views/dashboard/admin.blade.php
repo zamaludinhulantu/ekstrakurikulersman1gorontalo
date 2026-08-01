@@ -221,7 +221,7 @@
                     <a href="{{ route('admin.registrations.index') }}" class="btn btn-outline-primary btn-sm">Semua pendaftar</a>
                 </div>
                 <div class="card-body">
-                    <div class="dashboard-compact-list">
+                    <div class="dashboard-compact-list dashboard-compact-list--scroll">
                         @forelse($recentRegistrations as $registration)
                             <a href="{{ route('admin.registrations.show', $registration) }}" class="dashboard-compact-item">
                                 <span class="dashboard-compact-item__icon"><i class="bi bi-person-plus"></i></span>
@@ -242,7 +242,7 @@
                     <a href="{{ route('admin.schedules.index') }}" class="btn btn-outline-primary btn-sm">Semua jadwal</a>
                 </div>
                 <div class="card-body">
-                    <div class="dashboard-compact-list">
+                    <div class="dashboard-compact-list dashboard-compact-list--scroll">
                         @forelse($upcomingSchedules as $schedule)
                             <a href="{{ route('admin.schedules.index') }}" class="dashboard-compact-item">
                                 <span class="dashboard-date-tile"><strong>{{ optional($schedule->activity_date)->format('d') }}</strong><small>{{ optional($schedule->activity_date)->translatedFormat('M') }}</small></span>
