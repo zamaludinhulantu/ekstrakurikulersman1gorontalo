@@ -391,7 +391,10 @@ class TalentTestController extends Controller
 
                 $scores = collect($payload['scores'] ?? [])
                     ->filter(fn ($value, $key) => $aspectMap->has((int) $key) && $value !== null && $value !== '');
-                $overallScore = $scores->isNotEmpty() ? round((float) $scores->avg(), 2) : null;
+                $manualOverallScore = $payload['overall_score'] ?? null;
+                $overallScore = $manualOverallScore !== null && $manualOverallScore !== ''
+                    ? round((float) $manualOverallScore, 2)
+                    : ($scores->isNotEmpty() ? round((float) $scores->avg(), 2) : null);
 
                 $isPublished = $request->boolean('publish');
                 $decisionStatus = $payload['decision_status'] ?? null;

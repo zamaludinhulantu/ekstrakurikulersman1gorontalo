@@ -28,6 +28,7 @@ class SaveTalentTestResultsRequest extends FormRequest
             'participants.*.ability_category' => ['nullable', 'string', 'max:120'],
             'participants.*.decision_status' => ['nullable', Rule::in(['accepted', 'rejected'])],
             'participants.*.decision_notes' => ['nullable', 'string'],
+            'participants.*.overall_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'participants.*.training_group' => ['nullable', 'string', 'max:120'],
             'participants.*.recommended_role' => ['nullable', 'string', 'max:120'],
             'participants.*.recommendation' => ['nullable', 'string'],

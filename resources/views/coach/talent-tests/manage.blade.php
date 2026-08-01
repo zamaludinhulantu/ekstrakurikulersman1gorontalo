@@ -645,7 +645,8 @@
                                 $itemMap = $result ? $result->items->keyBy('talent_test_aspect_id') : collect();
                                 $attendanceStatus = old("participants.$index.attendance_status", $participant->attendance_status ?? 'pending');
                                 $panelActive = $participant->id === $activeParticipantId || ($activeParticipantId === null && $index === 0);
-                                $scoreValue = $result?->overall_score !== null ? number_format((float) $result->overall_score, 2, ',', '.') : null;
+                                $overallScoreInput = old("participants.$index.overall_score", $result?->overall_score);
+                                $scoreValue = $overallScoreInput !== null && $overallScoreInput !== '' ? number_format((float) $overallScoreInput, 2, ',', '.') : null;
                                 $scoreLabel = $participant->is_publish_ready && $scoreValue !== null ? 'Nilai Akhir' : ($scoreValue !== null ? 'Nilai Sementara' : 'Belum ada nilai');
                             @endphp
                             <section class="talent-panel-card card talent-panel-section @if($panelActive) is-active @endif" data-participant-panel="{{ $participant->id }}">
@@ -718,6 +719,11 @@
                                         <p class="talent-help-text">Isi penilaian inti untuk peserta yang hadir. Kategori kemampuan tetap wajib sebelum hasil dipublikasikan.</p>
                                         <div class="row g-3 mb-3">
                                             <div class="col-md-4">
+                                                <label class="form-label">Nilai Umum</label>
+                                                <input type="number" step="0.01" min="0" max="100" name="participants[{{ $index }}][overall_score]" class="form-control" value="{{ $overallScoreInput }}" placeholder="Contoh: 87.50">
+                                                <div class="form-text">Nilai umum non-aspek. Jika diisi, nilai ini dipakai sebagai nilai akhir peserta.</div>
+                                            </div>
+                                            <div class="col-md-4">
                                                 <label class="form-label">Kategori Kemampuan</label>
                                                 <input type="text" name="participants[{{ $index }}][ability_category]" class="form-control" value="{{ old("participants.$index.ability_category", $result->ability_category ?? '') }}" placeholder="Contoh: Dasar, Menengah" data-ability-category>
                                                 <div class="form-text">Wajib diisi untuk peserta yang hadir sebelum publikasi hasil.</div>
@@ -741,7 +747,12 @@
                                             </div>
                                         </div>
                                         @if($aspects->isEmpty())
-                                            <div class="alert alert-warning mb-0">Aspek penilaian untuk {{ $talentTest->extracurricular->name }} belum dibuat. Tambahkan dulu di menu aspek penilaian.</div>
+                                            <div class="alert alert-warning mb-0 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                                <span>Aspek penilaian untuk {{ $talentTest->extracurricular->name }} belum dibuat. Tambahkan dulu agar kolom input nilai muncul.</span>
+                                                <a href="{{ route('coach.talent-test-aspects.index', ['extracurricular_id' => $talentTest->extracurricular_id]) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-sliders"></i> Kelola Aspek Tes
+                                                </a>
+                                            </div>
                                         @else
                                             <div class="talent-aspect-list">
                                                 @foreach($aspects as $aspect)

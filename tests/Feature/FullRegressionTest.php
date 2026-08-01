@@ -952,6 +952,7 @@ class FullRegressionTest extends TestCase
                 'participants' => [[
                     'participant_id' => $participant->id,
                     'attendance_status' => 'present',
+                    'overall_score' => 91.5,
                     'ability_category' => 'Menengah',
                     'decision_status' => 'accepted',
                     'decision_notes' => 'Lulus tanpa aspek tambahan.',
@@ -965,6 +966,7 @@ class FullRegressionTest extends TestCase
             'schedule_id' => $talentTest->id,
             'student_id' => $participant->student_id,
             'status' => 'published',
+            'overall_score' => 91.50,
             'ability_category' => 'Menengah',
             'decision_status' => 'accepted',
         ]);
