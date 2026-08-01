@@ -348,19 +348,37 @@ class TalentTestController extends Controller
             ]);
         }
 
-        if ($applyBulkDecision && ! filled($request->input('bulk_decision_status'))) {
+        $bulkOverallScore = $request->input('bulk_overall_score');
+        $bulkAbilityCategory = trim($request->string('bulk_ability_category')->toString());
+        $bulkDecisionStatus = $request->string('bulk_decision_status')->toString();
+        $bulkDecisionNotes = trim($request->string('bulk_decision_notes')->toString());
+
+        $hasBulkPayload = ($bulkOverallScore !== null && $bulkOverallScore !== '')
+            || $bulkAbilityCategory !== ''
+            || $bulkDecisionStatus !== ''
+            || $bulkDecisionNotes !== '';
+
+        if ($applyBulkDecision && ! $hasBulkPayload) {
             throw ValidationException::withMessages([
-                'bulk_decision_status' => 'Pilih keputusan massal yang ingin diterapkan.',
+                'apply_bulk_decision' => 'Isi minimal satu field aksi massal sebelum diterapkan.',
             ]);
         }
 
         if ($applyBulkDecision) {
-            $bulkDecisionStatus = $request->string('bulk_decision_status')->toString();
-            $bulkDecisionNotes = trim($request->string('bulk_decision_notes')->toString());
+            $submittedParticipants = $submittedParticipants->map(function (array $payload) use ($bulkOverallScore, $bulkAbilityCategory, $bulkDecisionStatus, $bulkDecisionNotes): array {
+                if ($bulkOverallScore !== null && $bulkOverallScore !== '') {
+                    $payload['overall_score'] = $bulkOverallScore;
+                }
 
-            $submittedParticipants = $submittedParticipants->map(function (array $payload) use ($bulkDecisionStatus, $bulkDecisionNotes): array {
-                $payload['decision_status'] = $bulkDecisionStatus;
-                if ($bulkDecisionNotes !== '' && ! filled($payload['decision_notes'] ?? null)) {
+                if ($bulkAbilityCategory !== '') {
+                    $payload['ability_category'] = $bulkAbilityCategory;
+                }
+
+                if ($bulkDecisionStatus !== '') {
+                    $payload['decision_status'] = $bulkDecisionStatus;
+                }
+
+                if ($bulkDecisionNotes !== '') {
                     $payload['decision_notes'] = $bulkDecisionNotes;
                 }
 

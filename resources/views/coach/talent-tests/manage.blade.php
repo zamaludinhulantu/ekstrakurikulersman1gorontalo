@@ -473,7 +473,7 @@
 
         .talent-bulk-toolbar {
             display: grid;
-            grid-template-columns: minmax(0, 0.9fr) minmax(200px, 240px) minmax(260px, 1.15fr) auto;
+            grid-template-columns: minmax(0, 0.75fr) repeat(3, minmax(180px, 1fr)) auto;
             gap: 0.75rem;
             align-items: end;
             padding: 0.9rem 1rem 0;
@@ -804,16 +804,20 @@
                         <div class="talent-bulk-count" id="bulkSelectionCount">0 peserta dipilih untuk aksi massal.</div>
                     </div>
                     <div>
-                        <label class="form-label" for="bulkDecisionStatus">Keputusan massal</label>
+                        <label class="form-label" for="bulkOverallScore">Nilai Umum massal</label>
+                        <input id="bulkOverallScore" type="number" step="0.01" min="0" max="100" name="bulk_overall_score" class="form-control" value="{{ old('bulk_overall_score') }}" placeholder="Contoh: 80">
+                    </div>
+                    <div>
+                        <label class="form-label" for="bulkAbilityCategory">Kategori Kemampuan massal</label>
+                        <input id="bulkAbilityCategory" type="text" name="bulk_ability_category" class="form-control" value="{{ old('bulk_ability_category') }}" placeholder="Contoh: Menengah">
+                    </div>
+                    <div>
+                        <label class="form-label" for="bulkDecisionStatus">Keputusan Akhir massal</label>
                         <select id="bulkDecisionStatus" name="bulk_decision_status" class="form-select">
                             <option value="">Pilih keputusan</option>
                             <option value="accepted" @selected(old('bulk_decision_status') === 'accepted')>Diterima ke ekskul</option>
                             <option value="rejected" @selected(old('bulk_decision_status') === 'rejected')>Tidak diterima</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="form-label" for="bulkDecisionNotes">Catatan keputusan massal</label>
-                        <input id="bulkDecisionNotes" type="text" name="bulk_decision_notes" class="form-control" value="{{ old('bulk_decision_notes') }}" placeholder="Opsional, diterapkan ke peserta yang belum punya catatan keputusan">
                     </div>
                     <div class="d-flex gap-2 flex-wrap justify-content-start justify-content-lg-end">
                         <button type="button" class="btn btn-outline-secondary" id="bulkSelectVisibleButton">Pilih Semua</button>
@@ -821,6 +825,10 @@
                             <i class="bi bi-check2-square"></i>Terapkan
                         </button>
                     </div>
+                </div>
+                <div class="px-3 pb-3">
+                    <label class="form-label" for="bulkDecisionNotes">Catatan keputusan massal</label>
+                    <input id="bulkDecisionNotes" type="text" name="bulk_decision_notes" class="form-control" value="{{ old('bulk_decision_notes') }}" placeholder="Opsional, diterapkan ke peserta yang dipilih">
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive talent-recap-table">

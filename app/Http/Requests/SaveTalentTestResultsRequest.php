@@ -19,6 +19,8 @@ class SaveTalentTestResultsRequest extends FormRequest
             'apply_bulk_decision' => ['nullable', 'boolean'],
             'selected_participant_ids' => ['nullable', 'array'],
             'selected_participant_ids.*' => ['integer', 'exists:talent_test_participants,id'],
+            'bulk_overall_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'bulk_ability_category' => ['nullable', 'string', 'max:120'],
             'bulk_decision_status' => ['nullable', Rule::in(['accepted', 'rejected'])],
             'bulk_decision_notes' => ['nullable', 'string'],
             'participants' => ['required', 'array', 'min:1'],

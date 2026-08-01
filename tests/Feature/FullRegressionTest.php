@@ -1080,6 +1080,8 @@ class FullRegressionTest extends TestCase
         $this->actingAs($coachUser)
             ->post(route('coach.talent-tests.results.save', $talentTest), [
                 'apply_bulk_decision' => '1',
+                'bulk_overall_score' => 84.5,
+                'bulk_ability_category' => 'Menengah',
                 'bulk_decision_status' => 'accepted',
                 'bulk_decision_notes' => 'Diterima melalui aksi massal.',
                 'selected_participant_ids' => $participants->pluck('id')->all(),
@@ -1092,6 +1094,8 @@ class FullRegressionTest extends TestCase
                 'schedule_id' => $talentTest->id,
                 'student_id' => $participant->student_id,
                 'status' => 'draft',
+                'overall_score' => 84.50,
+                'ability_category' => 'Menengah',
                 'decision_status' => 'accepted',
             ]);
         }
