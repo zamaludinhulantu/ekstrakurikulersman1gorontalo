@@ -656,19 +656,16 @@ svg {
     border: 2px solid rgba(12, 33, 63, 0.45);
 }
 
-.sidebar::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 30%),
-        linear-gradient(0deg, rgba(255, 255, 255, 0.04), transparent 35%);
-}
-
 .sidebar > * {
     position: relative;
     z-index: 1;
+}
+
+.sidebar-group-label,
+.side-link,
+.side-link-content {
+    background: transparent;
+    backdrop-filter: none;
 }
 
 .brand-box {
@@ -762,10 +759,10 @@ svg {
 }
 
 .side-link.active {
-    background: linear-gradient(135deg, rgba(47, 111, 255, 0.5), rgba(88, 169, 255, 0.28));
+    background: linear-gradient(135deg, rgba(47, 111, 255, 0.34), rgba(88, 169, 255, 0.18));
     border-color: rgba(185, 220, 255, 0.34);
     color: #ffffff;
-    box-shadow: 0 16px 24px rgba(16, 63, 124, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .side-link-icon {
@@ -5081,6 +5078,13 @@ textarea.form-control {
     scrollbar-color: rgba(186, 212, 255, 0.7) rgba(12, 33, 63, 0.45);
     box-shadow: 0 20px 36px rgba(8, 22, 44, 0.24);
     overscroll-behavior-y: contain;
+}
+
+.offcanvas.offcanvas-start .sidebar-group-label,
+.offcanvas.offcanvas-start .side-link,
+.offcanvas.offcanvas-start .side-link-content {
+    background: transparent;
+    backdrop-filter: none;
 }
 
 .offcanvas.offcanvas-start .offcanvas-header,
