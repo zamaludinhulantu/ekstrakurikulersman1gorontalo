@@ -1028,6 +1028,12 @@ class FullRegressionTest extends TestCase
             'registration_id' => $registration->id,
             'student_id' => $registration->student_id,
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'registration.verified',
+            'subject_type' => Registration::class,
+            'subject_id' => $registration->id,
+        ]);
 
         $studentUser = $registration->student->user;
         $this->actingAs($studentUser)
@@ -1119,6 +1125,12 @@ class FullRegressionTest extends TestCase
             'schedule_id' => $schedule->id,
             'registration_id' => $registration->id,
             'student_id' => $registration->student_id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $coachUser->id,
+            'action' => 'registration.verified',
+            'subject_type' => Registration::class,
+            'subject_id' => $registration->id,
         ]);
     }
 

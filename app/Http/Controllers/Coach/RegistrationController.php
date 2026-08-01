@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Coach;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Extracurricular;
 use App\Models\NotificationPreference;
 use App\Models\Registration;
@@ -335,6 +336,7 @@ class RegistrationController extends Controller
 
         DB::transaction(function () use ($registration, $validated, $coach): void {
             $decision = $validated['decision'];
+            $previousDisplayStatus = $registration->displayStatus();
             $status = match ($decision) {
                 'approve' => Registration::STATUS_APPROVED,
                 'reject' => Registration::STATUS_REJECTED,
@@ -396,6 +398,8 @@ class RegistrationController extends Controller
                 'icon' => $decision === 'reject' ? 'bi-x-circle' : 'bi-check2-circle',
                 'tag' => 'registration-status-'.$registration->id,
             ]);
+
+            $this->recordRegistrationAudit($registration, $decision, $previousDisplayStatus);
         });
 
         return back()->with('success', 'Status pendaftaran berhasil diperbarui.');
@@ -437,10 +441,76 @@ class RegistrationController extends Controller
             'tag' => 'registration-cancellation-reviewed-'.$registration->id,
         ]);
 
+        $this->recordCancellationAudit($registration, $approved);
+
         return back()->with(
             'success',
             $approved ? 'Pembatalan keikutsertaan berhasil disetujui.' : 'Permintaan pembatalan berhasil ditolak.'
         );
+    }
+
+    private function recordRegistrationAudit(Registration $registration, string $decision, string $previousDisplayStatus): void
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return;
+        }
+
+        $registration->refresh();
+        $registration->loadMissing(['student.user', 'extracurricular']);
+
+        $decisionLabel = match ($decision) {
+            'approve' => 'menerima pendaftaran',
+            'reject' => 'menolak pendaftaran',
+            default => 'menjadwalkan tes pendaftaran',
+        };
+
+        AuditLog::query()->create([
+            'user_id' => $user->id,
+            'action' => 'registration.verified',
+            'subject_type' => Registration::class,
+            'subject_id' => $registration->id,
+            'description' => "Pembina {$user->name} {$decisionLabel} untuk {$registration->student->user->name} di {$registration->extracurricular->name}.",
+            'metadata' => [
+                'actor_name' => $user->name,
+                'actor_role' => $user->roleLabel(),
+                'student_name' => $registration->student->user->name,
+                'extracurricular_name' => $registration->extracurricular->name,
+                'decision' => $decision,
+                'previous_status' => $previousDisplayStatus,
+                'current_status' => $registration->displayStatus(),
+                'verified_at' => optional($registration->verified_at)->format('d-m-Y H:i:s'),
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+    }
+
+    private function recordCancellationAudit(Registration $registration, bool $approved): void
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return;
+        }
+
+        AuditLog::query()->create([
+            'user_id' => $user->id,
+            'action' => 'registration.cancellation_reviewed',
+            'subject_type' => Registration::class,
+            'subject_id' => $registration->id,
+            'description' => "Pembina {$user->name} ".($approved ? 'menyetujui' : 'menolak')." pembatalan pendaftaran {$registration->student->user->name} di {$registration->extracurricular->name}.",
+            'metadata' => [
+                'actor_name' => $user->name,
+                'actor_role' => $user->roleLabel(),
+                'student_name' => $registration->student->user->name,
+                'extracurricular_name' => $registration->extracurricular->name,
+                'decision' => $approved ? 'approve' : 'reject',
+                'current_status' => $registration->displayStatus(),
+                'verified_at' => optional($registration->verified_at)->format('d-m-Y H:i:s'),
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
     }
 
     private function reusableTalentTestSchedules(array $extracurricularIds): array

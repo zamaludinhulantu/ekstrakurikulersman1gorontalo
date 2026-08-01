@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('page_title', 'Audit Log Sistem')
-@section('page_subtitle', 'Pantau jejak aksi sensitif yang dilakukan oleh super admin.')
+@section('page_subtitle', 'Pantau aktivitas penting akun seperti verifikasi pendaftaran, perubahan sistem, dan aksi operasional lain.')
 
 @section('content')
     @php
@@ -10,7 +10,7 @@
         ];
     @endphp
 
-    <x-filter.card class="mb-3" title="Filter Audit Log" description="Cari aksi sensitif berdasarkan kata kunci pengguna, aksi, atau deskripsi.">
+    <x-filter.card class="mb-3" title="Filter Audit Log" description="Cari aktivitas akun berdasarkan kata kunci pengguna, aksi, atau deskripsi.">
         <x-slot:active>
             <x-filter.active-filters :items="$activeFilters" :reset-url="route('super-admin.audit-logs.index')" />
         </x-slot:active>
@@ -45,13 +45,27 @@
                 <tbody>
                 @forelse($logs as $log)
                     <tr>
-                        <td>{{ optional($log->created_at)->format('d-m-Y H:i') }}</td>
+                        <td>
+                            <div class="fw-semibold">{{ optional($log->created_at)->format('d-m-Y') }}</div>
+                            <div class="small text-muted">{{ optional($log->created_at)->format('H:i:s') }}</div>
+                        </td>
                         <td>{{ $log->user->name ?? 'Sistem' }}</td>
                         <td><span class="badge badge-status-secondary">{{ $log->action }}</span></td>
                         <td>
                             <div class="fw-semibold">{{ $log->description ?: '-' }}</div>
                             @if(!empty($log->metadata))
-                                <div class="small text-muted mt-1">{{ json_encode($log->metadata, JSON_UNESCAPED_UNICODE) }}</div>
+                                @php($details = [
+                                    'Peran' => $log->metadata['actor_role'] ?? null,
+                                    'Siswa' => $log->metadata['student_name'] ?? null,
+                                    'Kegiatan' => $log->metadata['extracurricular_name'] ?? null,
+                                    'Keputusan' => $log->metadata['decision'] ?? null,
+                                    'Status awal' => $log->metadata['previous_status'] ?? null,
+                                    'Status akhir' => $log->metadata['current_status'] ?? null,
+                                    'Waktu verifikasi' => $log->metadata['verified_at'] ?? null,
+                                ])
+                                <div class="small text-muted mt-1">
+                                    {{ collect($details)->filter(fn ($value) => filled($value))->map(fn ($value, $label) => $label.': '.$value)->implode(' | ') }}
+                                </div>
                             @endif
                         </td>
                         <td>{{ $log->ip_address ?? '-' }}</td>
@@ -74,14 +88,20 @@
                 <div class="mobile-data-card">
                     <div class="mobile-data-card-header">
                         <h3 class="mobile-data-card-title">{{ $log->action }}</h3>
-                        <span class="badge badge-status-secondary">{{ optional($log->created_at)->format('d-m-Y H:i') }}</span>
+                        <span class="badge badge-status-secondary">{{ optional($log->created_at)->format('d-m-Y H:i:s') }}</span>
                     </div>
                     <div class="mobile-data-list">
                         <div><span class="mobile-data-item-label">Pengguna</span><p class="mobile-data-item-value">{{ $log->user->name ?? 'Sistem' }}</p></div>
                         <div><span class="mobile-data-item-label">Deskripsi</span><p class="mobile-data-item-value">{{ $log->description ?: '-' }}</p></div>
                         <div><span class="mobile-data-item-label">IP</span><p class="mobile-data-item-value">{{ $log->ip_address ?? '-' }}</p></div>
                         @if(!empty($log->metadata))
-                            <div><span class="mobile-data-item-label">Metadata</span><p class="mobile-data-item-value">{{ json_encode($log->metadata, JSON_UNESCAPED_UNICODE) }}</p></div>
+                            <div><span class="mobile-data-item-label">Peran</span><p class="mobile-data-item-value">{{ $log->metadata['actor_role'] ?? '-' }}</p></div>
+                            <div><span class="mobile-data-item-label">Siswa</span><p class="mobile-data-item-value">{{ $log->metadata['student_name'] ?? '-' }}</p></div>
+                            <div><span class="mobile-data-item-label">Kegiatan</span><p class="mobile-data-item-value">{{ $log->metadata['extracurricular_name'] ?? '-' }}</p></div>
+                            <div><span class="mobile-data-item-label">Keputusan</span><p class="mobile-data-item-value">{{ $log->metadata['decision'] ?? '-' }}</p></div>
+                            <div><span class="mobile-data-item-label">Status awal</span><p class="mobile-data-item-value">{{ $log->metadata['previous_status'] ?? '-' }}</p></div>
+                            <div><span class="mobile-data-item-label">Status akhir</span><p class="mobile-data-item-value">{{ $log->metadata['current_status'] ?? '-' }}</p></div>
+                            <div><span class="mobile-data-item-label">Waktu verifikasi</span><p class="mobile-data-item-value">{{ $log->metadata['verified_at'] ?? '-' }}</p></div>
                         @endif
                     </div>
                 </div>
