@@ -62,8 +62,8 @@
 
         .talent-manage-layout {
             display: grid;
-            grid-template-columns: minmax(280px, 0.92fr) minmax(0, 2.08fr);
-            gap: 1.2rem;
+            grid-template-columns: 1fr;
+            gap: 1rem;
             align-items: start;
         }
 
@@ -76,7 +76,8 @@
         }
 
         .talent-workspace .talent-manage-layout {
-            gap: 0;
+            gap: 1rem;
+            padding: 1rem;
         }
 
         .talent-pane {
@@ -84,7 +85,8 @@
         }
 
         .talent-pane--aside {
-            border-right: 1px solid #ebf0f5;
+            border: 1px solid #ebf0f5;
+            border-radius: 18px;
             background: #fbfdff;
         }
 
@@ -134,17 +136,15 @@
 
         .talent-participant-tools {
             display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(220px, 260px);
             gap: 0.7rem;
             margin-bottom: 0.85rem;
         }
 
         .talent-participant-list {
             display: grid;
-            gap: 0.6rem;
-            max-height: calc(100dvh - 290px);
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
-            padding-right: 0.2rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
         }
 
         .talent-participant-item {
@@ -212,7 +212,7 @@
         .talent-panel-stack {
             display: grid;
             gap: 1rem;
-            padding: 1.05rem;
+            padding: 0;
         }
 
         .talent-panel-section {
@@ -515,10 +515,6 @@
         }
 
         @media (max-width: 1199.98px) {
-            .talent-manage-layout {
-                grid-template-columns: minmax(260px, 0.95fr) minmax(0, 1.95fr);
-            }
-
             .talent-bulk-toolbar {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -529,21 +525,8 @@
         }
 
         @media (max-width: 991.98px) {
-            .talent-manage-layout {
-                grid-template-columns: 1fr;
-            }
-
             .talent-workspace .talent-manage-layout {
-                gap: 0;
-            }
-
-            .talent-pane--aside {
-                border-right: 0;
-                border-bottom: 1px solid #ebf0f5;
-            }
-
-            .talent-participant-list {
-                max-height: none;
+                padding: 0.9rem;
             }
 
             .talent-bulk-toolbar {
@@ -552,6 +535,10 @@
 
             .talent-bulk-toolbar > div:last-child {
                 grid-column: auto;
+            }
+
+            .talent-participant-tools {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -577,6 +564,10 @@
             .talent-pane .card-body,
             .talent-pane .card-header {
                 padding-inline: 0.95rem;
+            }
+
+            .talent-workspace .talent-manage-layout {
+                padding: 0.85rem;
             }
 
             .talent-manage-stat strong {
@@ -617,6 +608,10 @@
 
             .talent-form-cluster {
                 gap: 0.78rem;
+            }
+
+            .talent-participant-list {
+                grid-template-columns: 1fr;
             }
 
             .page-summary-banner .row {
