@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\SanitizesCsvExports;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
+use App\Models\AuditLog;
 use App\Models\Attendance;
 use App\Models\Coach;
 use App\Models\Extracurricular;
 use App\Models\Registration;
 use App\Models\Schedule;
 use App\Models\Student;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -98,6 +100,36 @@ class ReportController extends Controller
             'dateFrom' => $filters['date_from'] ?? null,
             'dateTo' => $filters['date_to'] ?? null,
         ]);
+    }
+
+    public function destroySchedule(Schedule $schedule): RedirectResponse
+    {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        $schedule->loadMissing(['extracurricular', 'coach.user']);
+
+        AuditLog::query()->create([
+            'user_id' => auth()->id(),
+            'action' => 'schedule.deleted',
+            'subject_type' => Schedule::class,
+            'subject_id' => $schedule->id,
+            'description' => 'Super admin menghapus jadwal latihan.',
+            'metadata' => [
+                'title' => $schedule->title,
+                'extracurricular_name' => $schedule->extracurricular->name ?? null,
+                'coach_name' => $schedule->coach->user->name ?? null,
+                'activity_date' => optional($schedule->activity_date)->format('d-m-Y'),
+                'start_time' => substr((string) $schedule->start_time, 0, 5),
+                'end_time' => substr((string) $schedule->end_time, 0, 5),
+                'location' => $schedule->location,
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        $schedule->delete();
+
+        return redirect()->route('admin.schedules.index')->with('success', 'Jadwal latihan berhasil dihapus.');
     }
 
     public function attendances(Request $request): View

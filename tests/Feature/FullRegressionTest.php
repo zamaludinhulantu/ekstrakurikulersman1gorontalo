@@ -1134,6 +1134,49 @@ class FullRegressionTest extends TestCase
         ]);
     }
 
+    public function test_super_admin_can_delete_schedule_but_admin_cannot(): void
+    {
+        $superAdmin = $this->userByEmail('superadmin@gmail.com');
+        $admin = $this->userByEmail('admin@gmail.com');
+        $coach = $this->userByEmail('pembina1@gmail.com')->coach;
+        $extracurricular = $coach->extracurriculars()->firstOrFail();
+
+        $schedule = Schedule::query()->create([
+            'extracurricular_id' => $extracurricular->id,
+            'coach_id' => $coach->id,
+            'schedule_type' => 'activity',
+            'title' => 'Latihan Super Admin Hapus',
+            'activity_date' => now()->addDays(5)->toDateString(),
+            'start_time' => '15:00',
+            'end_time' => '17:00',
+            'location' => 'Lapangan Utama',
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.schedules.destroy', $schedule))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('schedules', [
+            'id' => $schedule->id,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->delete(route('admin.schedules.destroy', $schedule))
+            ->assertRedirect(route('admin.schedules.index'))
+            ->assertSessionHas('success', 'Jadwal latihan berhasil dihapus.');
+
+        $this->assertDatabaseMissing('schedules', [
+            'id' => $schedule->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $superAdmin->id,
+            'action' => 'schedule.deleted',
+            'subject_type' => Schedule::class,
+            'subject_id' => $schedule->id,
+        ]);
+    }
+
     public function test_student_cannot_add_fourth_active_registration_but_old_data_stays_intact(): void
     {
         $studentUser = $this->userByEmail('siswa1@gmail.com');

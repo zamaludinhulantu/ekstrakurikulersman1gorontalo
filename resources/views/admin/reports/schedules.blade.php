@@ -68,6 +68,9 @@
                         <th>Tanggal</th>
                         <th>Jam</th>
                         <th>Lokasi</th>
+                        @if(auth()->user()?->isSuperAdmin())
+                            <th class="text-end">Aksi</th>
+                        @endif
                     </tr>
                     </thead>
                     <tbody>
@@ -79,10 +82,19 @@
                             <td>{{ optional($schedule->activity_date)->format('d-m-Y') }}</td>
                             <td>{{ \Illuminate\Support\Str::substr($schedule->start_time, 0, 5) }} - {{ \Illuminate\Support\Str::substr($schedule->end_time, 0, 5) }}</td>
                             <td>{{ $schedule->location ?: '-' }}</td>
+                            @if(auth()->user()?->isSuperAdmin())
+                                <td class="text-end">
+                                    <form method="post" action="{{ route('admin.schedules.destroy', $schedule) }}" onsubmit="return confirm('Hapus jadwal latihan ini?')">
+                                        @csrf
+                                        @method('delete')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3"></i>Hapus</button>
+                                    </form>
+                                </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6"><div class="empty-state"><div class="icon"><i class="bi bi-calendar3"></i></div><p class="mb-0">Belum ada data jadwal.</p></div></td>
+                            <td colspan="{{ auth()->user()?->isSuperAdmin() ? 7 : 6 }}"><div class="empty-state"><div class="icon"><i class="bi bi-calendar3"></i></div><p class="mb-0">Belum ada data jadwal.</p></div></td>
                         </tr>
                     @endforelse
                     </tbody>
@@ -102,6 +114,13 @@
                             <div><span class="mobile-data-item-label">Tanggal</span><p class="mobile-data-item-value">{{ optional($schedule->activity_date)->format('d-m-Y') }}</p></div>
                             <div><span class="mobile-data-item-label">Lokasi</span><p class="mobile-data-item-value">{{ $schedule->location ?: '-' }}</p></div>
                         </div>
+                        @if(auth()->user()?->isSuperAdmin())
+                            <form class="mt-3" method="post" action="{{ route('admin.schedules.destroy', $schedule) }}" onsubmit="return confirm('Hapus jadwal latihan ini?')">
+                                @csrf
+                                @method('delete')
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3"></i>Hapus Jadwal</button>
+                            </form>
+                        @endif
                     </div>
                 @empty
                     <div class="empty-state"><div class="icon"><i class="bi bi-calendar-event"></i></div><p class="mb-0">Belum ada data jadwal.</p></div>

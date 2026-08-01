@@ -156,6 +156,7 @@ Route::middleware(['auth', 'system.maintenance', 'idle.auth', 'role:super_admin,
     Route::get('/talent-tests', [AdminTalentTestController::class, 'index'])->name('talent-tests.index');
     Route::get('/participants', [AdminReportController::class, 'participants'])->name('participants.index');
     Route::get('/schedules', [AdminReportController::class, 'schedules'])->name('schedules.index');
+    Route::delete('/schedules/{schedule}', [AdminReportController::class, 'destroySchedule'])->name('schedules.destroy');
     Route::get('/attendances', [AdminReportController::class, 'attendances'])->name('attendances.index');
     Route::get('/reports/export/{type}', [AdminReportController::class, 'export'])->name('reports.export');
 });
