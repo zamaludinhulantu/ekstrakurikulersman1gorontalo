@@ -43,22 +43,13 @@
                                 </div>
                                 <div class="auth-input-group">
                                     <label for="password" class="form-label">Password Baru</label>
-                                    <div class="password-toggle-group">
-                                        <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 8 karakter" required>
-                                        <button type="button" class="password-toggle-btn" data-password-toggle="password" aria-label="Tampilkan password baru">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    </div>
+                                    <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 8 karakter" required>
                                 </div>
                                 <div class="auth-input-group">
                                     <label for="password_confirmation" class="form-label">Konfirmasi Password Baru</label>
-                                    <div class="password-toggle-group">
-                                        <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" required>
-                                        <button type="button" class="password-toggle-btn" data-password-toggle="password_confirmation" aria-label="Tampilkan konfirmasi password baru">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    </div>
+                                    <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" required>
                                 </div>
+
 
                                 <button class="btn btn-primary w-100" type="submit" data-loading-text="Menyimpan...">
                                     <i class="bi bi-shield-check"></i>Simpan Password Baru

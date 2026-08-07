@@ -63,13 +63,9 @@
                                 </div>
                                 <div class="auth-input-group">
                                     <label for="password" class="form-label">Password</label>
-                                    <div class="password-toggle-group">
-                                        <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan password akun kamu" required>
-                                        <button type="button" class="password-toggle-btn" data-password-toggle="password" aria-label="Tampilkan password">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    </div>
+                                    <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan password akun kamu" required>
                                 </div>
+
 
                                 <div class="alert alert-info app-alert mb-0" role="alert">
                                     <i class="bi bi-info-circle-fill app-alert__icon"></i>

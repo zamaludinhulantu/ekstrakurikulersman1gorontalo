@@ -65,22 +65,12 @@
 
                                         <div class="col-md-6">
                                             <label for="password" class="form-label">Password</label>
-                                            <div class="password-toggle-group">
-                                                <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 8 karakter" required>
-                                                <button type="button" class="password-toggle-btn" data-password-toggle="password" aria-label="Tampilkan password">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </div>
+                                            <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 8 karakter" required>
                                         </div>
 
                                         <div class="col-md-6">
                                             <label for="password_confirmation" class="form-label">Konfirmasi Password</label>
-                                            <div class="password-toggle-group">
-                                                <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required>
-                                                <button type="button" class="password-toggle-btn" data-password-toggle="password_confirmation" aria-label="Tampilkan konfirmasi password">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </div>
+                                            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required>
                                         </div>
                                     </div>
                                 </div>
