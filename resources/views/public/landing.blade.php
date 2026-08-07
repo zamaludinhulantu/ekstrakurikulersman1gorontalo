@@ -669,68 +669,6 @@
             @endif
         </section>
 
-        <section id="faq" data-reveal>
-            <div class="mb-4">
-                <span class="section-kicker"><i class="bi bi-question-circle"></i>Pertanyaan Umum (FAQ)</span>
-                <h2 class="section-title">Hal yang sering ditanyakan siswa</h2>
-                <p class="section-subtitle mb-0">Temukan jawaban cepat seputar pendaftaran, tes seleksi, dan pengelolaan kegiatan ekstrakurikuler.</p>
-            </div>
-            <div class="accordion faq-accordion" id="landingFaqAccordion">
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeadingOne">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseOne" aria-expanded="true" aria-controls="faqCollapseOne">
-                            <i class="bi bi-person-check text-primary fs-5"></i>
-                            <span>Bagaimana cara mendaftar kegiatan ekstrakurikuler di SMAN 1 Gorontalo?</span>
-                        </button>
-                    </h3>
-                    <div id="faqCollapseOne" class="accordion-collapse collapse show" aria-labelledby="faqHeadingOne" data-bs-parent="#landingFaqAccordion">
-                        <div class="accordion-body">
-                            Siswa hanya perlu membuat akun siswa, melakukan verifikasi melalui email aktif, lalu memilih kegiatan yang diminati dari katalog publik. Form pendaftaran online dapat diisi secara terpandu.
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeadingTwo">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseTwo" aria-expanded="false" aria-controls="faqCollapseTwo">
-                            <i class="bi bi-layers text-primary fs-5"></i>
-                            <span>Apakah siswa bisa mendaftar lebih dari satu kegiatan ekstrakurikuler?</span>
-                        </button>
-                    </h3>
-                    <div id="faqCollapseTwo" class="accordion-collapse collapse" aria-labelledby="faqHeadingTwo" data-bs-parent="#landingFaqAccordion">
-                        <div class="accordion-body">
-                            Bisa, selama jadwal latihan kegiatan tidak bertabrakan dan siswa mampu mengatur waktu belajar. Kuota serta arahan khusus dari pembina akan disesuaikan.
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeadingThree">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseThree" aria-expanded="false" aria-controls="faqCollapseThree">
-                            <i class="bi bi-journal-check text-primary fs-5"></i>
-                            <span>Apakah semua kegiatan memerlukan tes bakat/seleksi?</span>
-                        </button>
-                    </h3>
-                    <div id="faqCollapseThree" class="accordion-collapse collapse" aria-labelledby="faqHeadingThree" data-bs-parent="#landingFaqAccordion">
-                        <div class="accordion-body">
-                            Tidak semua. Kegiatan kompetitif seperti OSN, O2SN, atau FLS3N umumnya mensyaratkan tes minat & bakat, sedangkan ekstrakurikuler umum sebagian besar terbuka secara langsung.
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeadingFour">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapseFour" aria-expanded="false" aria-controls="faqCollapseFour">
-                            <i class="bi bi-clock-history text-primary fs-5"></i>
-                            <span>Berapa lama proses verifikasi pendaftaran siswa?</span>
-                        </button>
-                    </h3>
-                    <div id="faqCollapseFour" class="accordion-collapse collapse" aria-labelledby="faqHeadingFour" data-bs-parent="#landingFaqAccordion">
-                        <div class="accordion-body">
-                            Proses verifikasi oleh pembina atau admin sekolah biasanya memakan waktu 1 - 3 hari kerja. Status pengajuan dapat dipantau langsung di Dashboard Siswa.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <section class="premium-cta" data-reveal>
             <div class="row g-4 align-items-center">
                 <div class="col-lg-8">
