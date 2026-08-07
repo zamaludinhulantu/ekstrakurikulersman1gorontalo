@@ -3475,6 +3475,46 @@ textarea.form-control {
     gap: 0.48rem;
 }
 
+.password-toggle-group {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle-group .form-control {
+    padding-right: 3rem !important;
+    width: 100%;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #667892;
+    padding: 0.35rem 0.5rem;
+    border-radius: 10px;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.18s ease;
+}
+
+.password-toggle-btn:hover,
+.password-toggle-btn:focus {
+    color: #1f5eff;
+    background: transparent !important;
+}
+
+
 .auth-footer-links {
     display: flex;
     align-items: center;
