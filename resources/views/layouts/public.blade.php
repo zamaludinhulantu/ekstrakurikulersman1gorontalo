@@ -83,8 +83,14 @@
                 <div>
                     <strong>Sistem Informasi Ekstrakurikuler</strong>
                     <div class="footer-public-school">SMA Negeri 1 Gorontalo</div>
-                    <p>Portal resmi untuk menjelajahi kategori ekskul seperti OSN, FLS3N, Debat, O2SN, dan kegiatan umum secara lebih ringkas.</p>
-                    <div class="footer-public-actions">
+                    <p>Portal resmi untuk menjelajahi kegiatan Ekstrakurikuler, OSN, O2SN, dan alur pendaftaran siswa secara transparan dan terstruktur.</p>
+                    <div class="footer-social-links">
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+                        <a href="mailto:admin@sman1gorontalo.sch.id" class="footer-social-icon" aria-label="Email Admin"><i class="bi bi-envelope-fill"></i></a>
+                    </div>
+                    <div class="footer-public-actions mt-3">
                         <button type="button" class="btn btn-light btn-sm install-app-trigger footer-install-app" hidden>
                             <i class="bi bi-phone"></i>Install App
                         </button>
@@ -190,7 +196,12 @@
     </div>
 </div>
 
+<button type="button" class="back-to-top-btn" data-back-to-top aria-label="Kembali ke atas">
+    <i class="bi bi-arrow-up-short"></i>
+</button>
+
 @stack('scripts')
 @include('partials.pwa-ui')
 </body>
 </html>
+

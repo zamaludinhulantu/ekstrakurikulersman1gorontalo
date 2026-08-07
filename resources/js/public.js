@@ -152,6 +152,73 @@ const bindCounters = () => {
     counters.forEach((counter) => observer.observe(counter));
 };
 
+const bindPasswordToggle = () => {
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-password-toggle');
+            const input = targetId ? document.getElementById(targetId) : button.parentElement?.querySelector('input');
+            if (!input) {
+                return;
+            }
+
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+
+            const icon = button.querySelector('i');
+            if (icon) {
+                icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+            }
+
+            button.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
+        });
+    });
+};
+
+const bindBackToTop = () => {
+    const button = document.querySelector('[data-back-to-top]');
+    if (!button) {
+        return;
+    }
+
+    const sync = () => {
+        button.classList.toggle('is-visible', window.scrollY > 300);
+    };
+
+    sync();
+    window.addEventListener('scroll', sync, { passive: true });
+
+    button.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+};
+
+const bindFormProtection = () => {
+    // If page is restored from browser back-forward cache (BFCache), refresh to get a fresh CSRF token
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
+    document.querySelectorAll('form').forEach((form) => {
+        form.addEventListener('submit', () => {
+            const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            submitButtons.forEach((button) => {
+                if (button.dataset.submitting === '1') {
+                    return;
+                }
+
+                button.dataset.submitting = '1';
+                const loadingText = button.getAttribute('data-loading-text');
+                if (loadingText && button instanceof HTMLButtonElement) {
+                    button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${loadingText}`;
+                }
+                button.disabled = true;
+            });
+        });
+    });
+};
+
 const bootPublicPwa = () => {
     if (document.body?.dataset.pwaEnabled !== 'true') {
         return;
@@ -172,5 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
     bindImageFallbacks();
     bindRevealAnimations();
     bindCounters();
+    bindPasswordToggle();
+    bindBackToTop();
+    bindFormProtection();
     bootPublicPwa();
 });
+
+

@@ -21,23 +21,36 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    public function showLoginForm(): View
+    public function showLoginForm(): \Illuminate\Http\Response
     {
-        return view('auth.login');
+        return response()
+            ->view('auth.login')
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
     }
 
-    public function showRegistrationForm(): View
+    public function showRegistrationForm(): \Illuminate\Http\Response
     {
-        return view('auth.register', [
-            'classOptions' => Student::registrationClassOptions(),
-            'prefill' => session('registration_form_data', []),
-        ]);
+        return response()
+            ->view('auth.register', [
+                'classOptions' => Student::registrationClassOptions(),
+                'prefill' => session('registration_form_data', []),
+            ])
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
     }
 
-    public function showForgotPasswordForm(): View
+    public function showForgotPasswordForm(): \Illuminate\Http\Response
     {
-        return view('auth.forgot-password');
+        return response()
+            ->view('auth.forgot-password')
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
     }
+
 
     public function sendResetLinkEmail(Request $request): RedirectResponse
     {
@@ -78,13 +91,18 @@ class AuthController extends Controller
             : back()->withErrors(['email' => __($status)])->onlyInput('email');
     }
 
-    public function showResetPasswordForm(Request $request, string $token): View
+    public function showResetPasswordForm(Request $request, string $token): \Illuminate\Http\Response
     {
-        return view('auth.reset-password', [
-            'token' => $token,
-            'email' => $request->string('email')->toString(),
-        ]);
+        return response()
+            ->view('auth.reset-password', [
+                'token' => $token,
+                'email' => $request->string('email')->toString(),
+            ])
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
     }
+
 
     public function resetPassword(Request $request): RedirectResponse
     {

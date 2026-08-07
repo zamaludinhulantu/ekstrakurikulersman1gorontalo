@@ -6925,3 +6925,224 @@ textarea.form-control {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   Public UI Redesign Enhancements
+   ========================================================================== */
+
+/* Password Input Toggle */
+.password-toggle-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle-group .form-control {
+    padding-right: 2.8rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    background: transparent;
+    border: none;
+    color: var(--ui-muted);
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.18s ease;
+}
+
+.password-toggle-btn:hover {
+    color: var(--ui-primary-dark);
+}
+
+.password-toggle-btn:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 1px;
+}
+
+/* Back to Top Floating Button */
+.back-to-top-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1040;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1f5eff 0%, #1849cb 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(31, 94, 255, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px) scale(0.9);
+    transition: opacity 0.28s ease, visibility 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease;
+    cursor: pointer;
+}
+
+.back-to-top-btn.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.back-to-top-btn:hover {
+    color: #ffffff;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 32px rgba(31, 94, 255, 0.45);
+}
+
+.back-to-top-btn:focus-visible {
+    outline: 3px solid rgba(31, 94, 255, 0.5);
+    outline-offset: 3px;
+}
+
+/* Accordion FAQ Modern Styling */
+.faq-accordion {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.faq-accordion .accordion-item {
+    border-radius: 20px !important;
+    border: 1px solid #dbe5f0;
+    background: #ffffff;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(16, 35, 63, 0.04);
+    transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.faq-accordion .accordion-item:hover {
+    border-color: #bcd4f7;
+    box-shadow: 0 14px 28px rgba(16, 35, 63, 0.08);
+}
+
+.faq-accordion .accordion-header {
+    margin: 0;
+}
+
+.faq-accordion .accordion-button {
+    padding: 1.15rem 1.35rem;
+    font-weight: 800;
+    font-size: 1.02rem;
+    color: #12305b;
+    background: transparent;
+    box-shadow: none !important;
+    border: none;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.faq-accordion .accordion-button:not(.collapsed) {
+    color: var(--ui-primary-dark);
+    background: #f4f8ff;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.faq-accordion .accordion-button::after {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-size: 1.25rem;
+    transition: transform 0.25s ease;
+}
+
+.faq-accordion .accordion-body {
+    padding: 1.15rem 1.35rem 1.35rem;
+    color: #556980;
+    line-height: 1.75;
+    font-size: 0.95rem;
+}
+
+/* Micro-animations & Focus enhancements */
+.btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--ui-primary) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(31, 94, 255, 0.18) !important;
+}
+
+/* Footer Improvements */
+.footer-social-links {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.85rem;
+}
+
+.footer-social-icon {
+    width: 2.3rem;
+    height: 2.3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(235, 244, 255, 0.9);
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.footer-social-icon:hover {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+/* Step Flow Grid for Information Page */
+.step-flow-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+@media (max-width: 1199.98px) {
+    .step-flow-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .step-flow-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .back-to-top-btn {
+        bottom: 1.25rem;
+        right: 1.25rem;
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
+    }
+}
+
+
