@@ -732,6 +732,10 @@
                     padding: 0.95rem 0.95rem 0;
                 }
 
+            }
+
+            /* Keep the article editor readable on phones and tablet-sized viewports. */
+            @media (max-width: 1199.98px) {
                 .article-form-grid,
                 .article-seo-grid,
                 .article-publish-top,
@@ -745,7 +749,6 @@
                 .article-col-3 {
                     grid-column: span 1;
                 }
-
             }
 
             @media (max-width: 767.98px) {
