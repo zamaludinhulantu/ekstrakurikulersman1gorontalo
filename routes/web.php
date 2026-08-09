@@ -52,7 +52,6 @@ Route::middleware('system.maintenance')->group(function (): void {
     Route::get('/kegiatan', [PublicLandingController::class, 'activities'])->name('public.activities.index');
     Route::get('/kegiatan/semua', [PublicLandingController::class, 'catalog'])->name('public.activities.all');
     Route::get('/kegiatan/{slug}', [PublicLandingController::class, 'categoryCatalog'])->name('public.activities.category');
-    Route::get('/informasi-sistem', [PublicLandingController::class, 'information'])->name('public.information');
     Route::get('/pengumuman', [PublicLandingController::class, 'announcements'])->name('public.announcements');
     Route::get('/berita', [PublicLandingController::class, 'articles'])->name('public.articles.index');
     Route::get('/berita/{slug}', [PublicLandingController::class, 'articleShow'])->name('public.articles.show');

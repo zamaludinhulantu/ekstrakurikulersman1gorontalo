@@ -176,7 +176,7 @@ class AuthController extends Controller
             }
         }
 
-        return redirect()->intended(route('dashboard'));
+        return $this->redirectToAllowedIntendedUrl($request, Auth::user());
     }
 
     public function register(Request $request): RedirectResponse
@@ -394,6 +394,54 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')->with('success', 'Logout berhasil.');
+    }
+
+    private function redirectToAllowedIntendedUrl(Request $request, User $user): RedirectResponse
+    {
+        $intendedUrl = $request->session()->pull('url.intended');
+
+        if (is_string($intendedUrl) && $this->canAccessIntendedUrl($request, $user, $intendedUrl)) {
+            return redirect()->to($intendedUrl);
+        }
+
+        return redirect()->route('dashboard');
+    }
+
+    private function canAccessIntendedUrl(Request $request, User $user, string $url): bool
+    {
+        $parts = parse_url($url);
+
+        if ($parts === false) {
+            return false;
+        }
+
+        if (isset($parts['host']) && $parts['host'] !== $request->getHost()) {
+            return false;
+        }
+
+        $path = '/'.ltrim($parts['path'] ?? '/', '/');
+        $allowedPrefixes = match ($user->role) {
+            User::ROLE_SUPER_ADMIN => ['/super-admin', '/admin'],
+            User::ROLE_ADMIN => ['/admin'],
+            User::ROLE_COACH => ['/coach'],
+            User::ROLE_STUDENT => ['/student'],
+            User::ROLE_PRINCIPAL => ['/principal'],
+            default => [],
+        };
+        $sharedPrefixes = ['/dashboard', '/profile', '/notifications', '/settings', '/push', '/registrations'];
+
+        return $this->startsWithAnyPrefix($path, [...$sharedPrefixes, ...$allowedPrefixes]);
+    }
+
+    private function startsWithAnyPrefix(string $path, array $prefixes): bool
+    {
+        foreach ($prefixes as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function shouldExposeResetLinkPreview(): bool

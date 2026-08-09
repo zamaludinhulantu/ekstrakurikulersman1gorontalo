@@ -1,12 +1,12 @@
         .public-activity-card {
-            height: 100%;
+            display: grid;
+            grid-template-columns: 13.5rem minmax(0, 1fr);
+            min-height: 12rem;
             border-radius: 24px;
             border: 1px solid #dbe5f0;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 251, 255, 0.95));
             box-shadow: 0 14px 26px rgba(16, 35, 63, 0.06);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
             transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
         }
 
@@ -25,7 +25,8 @@
         }
 
         .public-activity-card-media {
-            aspect-ratio: 16 / 9;
+            height: 100%;
+            min-height: 12rem;
             background: #eef5ff;
             overflow: hidden;
         }
@@ -89,10 +90,25 @@
         }
 
         .public-activity-card-body {
-            padding: 1rem;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem 1.15rem;
+            min-width: 0;
+        }
+
+        .public-activity-card-content,
+        .public-activity-card-aside {
+            min-width: 0;
+        }
+
+        .public-activity-card-aside {
             display: flex;
             flex-direction: column;
-            flex: 1 1 auto;
+            align-items: flex-end;
+            gap: 0.7rem;
+            width: 13.5rem;
         }
 
         .public-activity-card-meta {
@@ -157,11 +173,11 @@
             font-size: 1.05rem;
             font-weight: 800;
             color: #163252;
-            min-height: 2.7rem;
+            min-height: 0;
         }
 
         .public-activity-card-description {
-            margin: 0 0 0.9rem;
+            margin: 0 0 0.55rem;
             color: #5a6d84;
             font-size: 0.9rem;
             line-height: 1.65;
@@ -169,13 +185,14 @@
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            min-height: 4.4rem;
+            min-height: 0;
         }
 
         .public-activity-card-info {
-            display: grid;
-            gap: 0.55rem;
-            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem 1rem;
+            margin: 0;
         }
 
         .public-activity-card-info div {
@@ -207,13 +224,14 @@
         }
 
         .public-activity-card-actions {
-            margin-top: auto;
-            display: flex;
-            gap: 0.65rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            width: 100%;
         }
 
         .public-activity-card-actions .btn {
-            flex: 1 1 0;
+            width: 100%;
         }
 
         .public-activity-card:hover {
@@ -224,4 +242,29 @@
 
         .public-activity-card:hover .public-activity-card-image {
             transform: scale(1.03);
+        }
+
+        @media (max-width: 767.98px) {
+            .public-activity-card {
+                grid-template-columns: 1fr;
+            }
+
+            .public-activity-card-media {
+                height: auto;
+                min-height: 0;
+                aspect-ratio: 16 / 8;
+            }
+
+            .public-activity-card-body {
+                grid-template-columns: 1fr;
+            }
+
+            .public-activity-card-aside {
+                align-items: stretch;
+                width: auto;
+            }
+
+            .public-activity-card-meta {
+                margin-bottom: 0;
+            }
         }

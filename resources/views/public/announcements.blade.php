@@ -4,48 +4,64 @@
 
 @push('styles')
     <style>
-        .announcement-hero {
-            position: relative;
-            overflow: hidden;
-            border-radius: 34px;
-            padding: 1.5rem;
-            margin: 1.25rem 0 1.5rem;
-            color: #fff;
-            background:
-                radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 24%),
-                linear-gradient(135deg, #0f2f57 0%, #1f5eff 55%, #7bc8ff 100%);
-            box-shadow: 0 28px 44px rgba(16, 35, 63, 0.16);
-        }
-
-        .announcement-hero::before,
-        .announcement-hero::after {
-            content: "";
-            position: absolute;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .announcement-hero::before {
-            width: 220px;
-            height: 220px;
-            top: -110px;
-            right: -50px;
-        }
-
-        .announcement-hero::after {
-            width: 170px;
-            height: 170px;
-            left: -40px;
-            bottom: -60px;
-        }
-
-        .announcement-hero > * {
-            position: relative;
-            z-index: 1;
-        }
-
         .announcement-card {
             margin-top: 1.25rem;
+        }
+
+        .announcement-page-header {
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0 1.5rem;
+        }
+
+        .announcement-page-header h1 {
+            margin: 0;
+            color: #12345c;
+        }
+
+        .announcement-search-tools {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .65rem;
+        }
+
+        .announcement-quick-search {
+            display: flex;
+            flex: 1 1 28rem;
+            gap: .55rem;
+        }
+
+        .announcement-quick-search .form-control {
+            min-width: 0;
+        }
+
+        .announcement-filter-panel {
+            flex: 0 0 auto;
+        }
+
+        .announcement-filter-panel summary {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            min-height: 44px;
+            padding: .6rem 1rem;
+            border: 1px solid #cfe0fb;
+            border-radius: 999px;
+            color: #1552d6;
+            background: #f5f8ff;
+            font-weight: 700;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .announcement-filter-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .announcement-filter-panel[open] {
+            flex-basis: 100%;
+            width: 100%;
         }
 
         .public-announcement-filter {
@@ -58,12 +74,16 @@
 
         .public-announcement-filter form {
             display: grid;
-            grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
+            grid-template-columns: repeat(2, minmax(180px, 1fr)) auto;
             gap: 0.75rem;
             align-items: end;
         }
 
         @media (max-width: 767.98px) {
+            .announcement-quick-search {
+                flex-basis: 100%;
+            }
+
             .public-announcement-filter form {
                 grid-template-columns: 1fr;
             }
@@ -73,64 +93,51 @@
 
 @section('content')
     <div class="container py-3 py-md-4">
-        <section class="announcement-hero" data-reveal>
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-8">
-                    <span class="badge bg-white text-primary px-3 py-2 mb-3">Informasi Terbaru</span>
-                    <h1 class="hero-title mb-3">Pengumuman resmi untuk calon peserta dan siswa.</h1>
-                    <p class="hero-text mb-0">
-                        Pantau informasi terbaru dari sekolah dan pembina, mulai dari jadwal penting, arahan pendaftaran,
-                        hingga kabar terbaru dari kategori Ekstrakurikuler, OSN, dan O2SN.
-                    </p>
-                </div>
-                <div class="col-lg-4">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('public.activities.index') }}" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Jelajahi Kategori</a>
-                        <a href="{{ route('public.information') }}" class="btn btn-outline-light"><i class="bi bi-signpost-2"></i>Pahami Alur Pendaftaran</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <section data-reveal>
-            <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
-                <div>
-                    <span class="section-kicker"><i class="bi bi-megaphone"></i>Pengumuman</span>
-                    <h2 class="section-title">Informasi terbaru dari sekolah dan pembina</h2>
-                    <p class="section-subtitle mb-0">Semua pengumuman aktif ditampilkan dalam satu halaman agar informasi penting lebih mudah ditemukan.</p>
-                </div>
-            </div>
+            @php($hasFilters = filled($filters['extracurricular_id']) || filled($filters['priority']))
+            <header class="announcement-page-header">
+                <h1><i class="bi bi-megaphone me-2"></i>Pengumuman</h1>
 
-            <div class="public-announcement-filter mb-3">
-                <form method="get" action="{{ route('public.announcements') }}">
-                    <div>
-                        <label class="form-label" for="public_announcement_search">Cari Pengumuman</label>
-                        <input id="public_announcement_search" name="search" value="{{ $filters['search'] }}" class="form-control" maxlength="120" placeholder="Cari judul atau isi">
-                    </div>
-                    <div>
-                        <label class="form-label" for="public_announcement_activity">Kegiatan</label>
-                        <select id="public_announcement_activity" name="extracurricular_id" class="form-select">
-                            <option value="">Semua kegiatan</option>
-                            @foreach($extracurriculars as $item)
-                                <option value="{{ $item->id }}" @selected($filters['extracurricular_id'] === $item->id)>{{ $item->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" for="public_announcement_priority">Prioritas</label>
-                        <select id="public_announcement_priority" name="priority" class="form-select">
-                            <option value="">Semua prioritas</option>
-                            <option value="normal" @selected($filters['priority'] === 'normal')>Biasa</option>
-                            <option value="important" @selected($filters['priority'] === 'important')>Penting</option>
-                            <option value="urgent" @selected($filters['priority'] === 'urgent')>Mendesak</option>
-                        </select>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('public.announcements') }}" class="btn btn-outline-secondary">Reset</a>
-                        <button class="btn btn-primary" type="submit">Cari</button>
-                    </div>
-                </form>
-            </div>
+                <div class="announcement-search-tools">
+                    <form method="get" action="{{ route('public.announcements') }}" class="announcement-quick-search">
+                        <input type="hidden" name="extracurricular_id" value="{{ $filters['extracurricular_id'] }}">
+                        <input type="hidden" name="priority" value="{{ $filters['priority'] }}">
+                        <input id="public_announcement_search" name="search" value="{{ $filters['search'] }}" class="form-control" maxlength="120" placeholder="Cari pengumuman">
+                        <button class="btn btn-primary px-3" type="submit" aria-label="Cari pengumuman"><i class="bi bi-search"></i></button>
+                    </form>
+
+                    <details class="announcement-filter-panel" @if($hasFilters) open @endif>
+                        <summary><i class="bi bi-funnel"></i>Filter</summary>
+                        <div class="public-announcement-filter mt-2">
+                            <form method="get" action="{{ route('public.announcements') }}">
+                                <input type="hidden" name="search" value="{{ $filters['search'] }}">
+                                <div>
+                                    <label class="form-label" for="public_announcement_activity">Kegiatan</label>
+                                    <select id="public_announcement_activity" name="extracurricular_id" class="form-select">
+                                        <option value="">Semua kegiatan</option>
+                                        @foreach($extracurriculars as $item)
+                                            <option value="{{ $item->id }}" @selected($filters['extracurricular_id'] === $item->id)>{{ $item->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="public_announcement_priority">Prioritas</label>
+                                    <select id="public_announcement_priority" name="priority" class="form-select">
+                                        <option value="">Semua prioritas</option>
+                                        <option value="normal" @selected($filters['priority'] === 'normal')>Biasa</option>
+                                        <option value="important" @selected($filters['priority'] === 'important')>Penting</option>
+                                        <option value="urgent" @selected($filters['priority'] === 'urgent')>Mendesak</option>
+                                    </select>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ route('public.announcements') }}" class="btn btn-outline-secondary">Reset</a>
+                                    <button class="btn btn-primary" type="submit">Cari</button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+            </header>
 
             <div class="row g-3">
                 @forelse($announcements as $announcement)

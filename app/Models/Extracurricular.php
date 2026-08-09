@@ -397,11 +397,11 @@ class Extracurricular extends Model
     public static function makePreviewImage(string $name): string
     {
         $palette = collect([
-            ['#c70f43', '#ff6f87', '#ffd5e0'],
-            ['#008d8a', '#34d2c5', '#dcfffb'],
-            ['#d67b00', '#ffb11a', '#fff0c7'],
-            ['#2d63d8', '#63a3ff', '#dce9ff'],
-            ['#6a35cc', '#9f72ff', '#efe4ff'],
+            ['#164a9a', '#367cf6', '#dceaff'],
+            ['#087f7d', '#2bbdb8', '#d9fbf7'],
+            ['#9a6408', '#e5a82f', '#fff2d2'],
+            ['#315d9e', '#6ba5e8', '#e2efff'],
+            ['#365c79', '#638ba9', '#e4f0f8'],
         ]);
 
         $colors = $palette[abs(crc32($name)) % $palette->count()];

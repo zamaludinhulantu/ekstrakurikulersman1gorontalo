@@ -14,8 +14,27 @@
         }
 
         .activities-hub-hero {
-            padding: 1.2rem 1.3rem;
+            padding: 1rem 1.3rem;
             margin: 1rem 0 1.1rem;
+        }
+
+        .activities-hub-hero .section-title {
+            max-width: 42rem;
+            font-size: clamp(1.7rem, 3vw, 2.35rem);
+        }
+
+        .activities-hub-hero .section-subtitle {
+            max-width: 45rem;
+        }
+
+        .activities-hub-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-top: 0.75rem;
+            color: #52708e;
+            font-size: 0.85rem;
+            font-weight: 700;
         }
 
         .activities-hub-card {
@@ -34,7 +53,7 @@
 
         .activities-hub-card-media {
             position: relative;
-            aspect-ratio: 16 / 9;
+            aspect-ratio: 16 / 7.2;
             overflow: hidden;
             background: #eef5ff;
         }
@@ -55,6 +74,50 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(180deg, rgba(10, 24, 46, 0.04), rgba(10, 24, 46, 0.35));
+        }
+
+        .activities-hub-card-fallback {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 0.55rem;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 28%),
+                linear-gradient(135deg, rgba(14, 45, 86, 0.95) 0%, rgba(31, 94, 255, 0.9) 58%, rgba(90, 197, 255, 0.8) 100%);
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .activities-hub-card-media.has-image-fallback .activities-hub-card-fallback {
+            opacity: 1;
+        }
+
+        .activities-hub-card-media.has-image-fallback img {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .activities-hub-card-fallback-icon {
+            width: 3rem;
+            height: 3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: auto;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.18);
+            font-size: 1.15rem;
+        }
+
+        .activities-hub-card-fallback-text {
+            font-size: 1rem;
+            font-weight: 900;
+            line-height: 1.3;
         }
 
         .activities-hub-card-body {
@@ -119,6 +182,13 @@
         }
 
         .activities-hub-card p {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
+        }
+
+        .activities-hub-card p {
             margin: 0 0 1rem;
             color: #607389;
             line-height: 1.75;
@@ -147,8 +217,8 @@
                     <span class="section-kicker"><i class="bi bi-grid-3x3-gap"></i>Kategori Kegiatan</span>
                     <h1 class="section-title mb-2">Pilih kategori ekskul yang ingin dijelajahi</h1>
                     <p class="section-subtitle mb-0">Setiap kegiatan tetap berada dalam sistem ekstrakurikuler, lalu dipisahkan per kategori agar lebih mudah dipilih.</p>
+                    <span class="activities-hub-hint"><i class="bi bi-arrow-down-right-circle"></i>Pilih kategori untuk melihat kegiatan yang tersedia.</span>
                 </div>
-                <a href="{{ route('public.information') }}" class="btn btn-outline-primary"><i class="bi bi-signpost-2"></i>Lihat Alur Pendaftaran</a>
             </div>
         </section>
 

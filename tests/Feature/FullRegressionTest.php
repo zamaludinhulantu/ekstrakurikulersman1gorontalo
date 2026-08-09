@@ -36,13 +36,7 @@ class FullRegressionTest extends TestCase
 
         $this->get(route('landing'))
             ->assertOk()
-            ->assertSee("Tilawatil Qur'an")
-            ->assertDontSee('Alur Penggunaan Sistem');
-
-        $this->get(route('public.information'))
-            ->assertOk()
-            ->assertSee('Alur Penggunaan Sistem')
-            ->assertSee('Manfaat Sistem');
+            ->assertSee("Tilawatil Qur'an");
 
         $this->get(route('public.extracurriculars.show', $extracurricular->getKey()))
             ->assertOk();
@@ -136,6 +130,42 @@ class FullRegressionTest extends TestCase
             ->assertRedirect(route('login'));
 
         $this->assertGuest();
+    }
+
+    public function test_login_as_admin_ignores_expired_super_admin_dashboard_destination(): void
+    {
+        $this->withSession([
+            'url.intended' => route('super-admin.dashboard'),
+        ])->post(route('login.attempt'), [
+            'email' => 'admin@gmail.com',
+            'password' => '11111111',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->get(route('dashboard'))
+            ->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_login_discards_intended_dashboard_from_a_different_role(): void
+    {
+        $cases = [
+            'superadmin@gmail.com' => route('principal.dashboard'),
+            'admin@gmail.com' => route('super-admin.dashboard'),
+            'pembina1@gmail.com' => route('admin.dashboard'),
+            'siswa1@gmail.com' => route('coach.dashboard'),
+            'kepsek@gmail.com' => route('student.dashboard'),
+        ];
+
+        foreach ($cases as $email => $intendedUrl) {
+            $this->withSession(['url.intended' => $intendedUrl])
+                ->post(route('login.attempt'), [
+                    'email' => $email,
+                    'password' => '11111111',
+                ])
+                ->assertRedirect(route('dashboard'));
+
+            $this->post(route('logout'))
+                ->assertRedirect(route('login'));
+        }
     }
 
     public function test_super_admin_can_manage_users_and_operational_admin_stays_working(): void

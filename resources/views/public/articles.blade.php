@@ -14,11 +14,20 @@
             border-radius: 34px;
             padding: 1.5rem;
             margin: 1.25rem 0 1.25rem;
-            color: #fff;
+            color: #143252;
             background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 26%),
-                linear-gradient(135deg, #10325b 0%, #2458c6 58%, #81beff 100%);
-            box-shadow: 0 28px 44px rgba(16, 35, 63, 0.16);
+                radial-gradient(circle at top right, rgba(111, 174, 255, 0.18) 0%, rgba(111, 174, 255, 0) 28%),
+                linear-gradient(135deg, #ffffff 0%, #f4f8fd 62%, #eaf3ff 100%);
+            border: 1px solid #d9e6f5;
+            box-shadow: 0 18px 34px rgba(16, 35, 63, 0.08);
+        }
+
+        .article-page-hero .hero-title {
+            color: #143252;
+        }
+
+        .article-page-hero .hero-text {
+            color: #58708c;
         }
 
         .article-page-hero__actions {
@@ -122,11 +131,81 @@
 
         .article-list-toolbar {
             border: 1px solid #dbe5f0;
-            border-radius: 28px;
-            padding: 1.1rem;
+            border-radius: 22px;
+            padding: 0.85rem;
             margin-bottom: 1rem;
             background: linear-gradient(180deg, #ffffff, #f8fbff);
             box-shadow: 0 14px 26px rgba(16, 35, 63, 0.05);
+        }
+
+        .article-filter-panel {
+            flex: 0 0 auto;
+            margin: 0;
+        }
+
+        .article-filter-panel[open] {
+            flex-basis: 100%;
+            width: 100%;
+        }
+
+        .article-page-header {
+            position: relative;
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0 0.8rem;
+        }
+
+        .article-page-heading {
+            margin: 0;
+            color: #143252;
+            font-size: clamp(1.45rem, 2.4vw, 2rem);
+            font-weight: 900;
+            letter-spacing: -0.035em;
+        }
+
+        .article-quick-search {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            flex: 1 1 20rem;
+            width: auto;
+        }
+
+        .article-search-tools {
+            display: flex;
+            width: 100%;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.55rem;
+        }
+
+        .article-quick-search .form-control {
+            min-height: 42px;
+        }
+
+        .article-filter-panel summary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.62rem 0.9rem;
+            border: 1px solid #cbdcf4;
+            border-radius: 999px;
+            background: #fff;
+            color: #1849cb;
+            cursor: pointer;
+            font-size: 0.84rem;
+            font-weight: 800;
+            list-style: none;
+        }
+
+        .article-filter-panel summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .article-filter-panel[open] summary {
+            margin-bottom: 0.7rem;
+            background: #edf4ff;
         }
 
         .article-result-meta {
@@ -199,87 +278,49 @@
             .article-page-grid {
                 grid-template-columns: 1fr;
             }
+
+            .article-page-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .article-quick-search {
+                width: 100%;
+            }
+
+            .article-search-tools {
+                width: 100%;
+            }
+
+            .article-filter-panel[open] {
+                position: static;
+                width: 100%;
+            }
         }
     </style>
 @endpush
 
 @section('content')
     <div class="container py-3 py-md-4">
-        <section class="article-page-hero">
-            <span class="section-kicker bg-white text-primary border-0 mb-3 d-inline-flex" data-reveal style="--reveal-delay: 0ms;">
-                <i class="bi bi-newspaper"></i>Berita & Artikel
-            </span>
-            <div class="row g-4 align-items-center">
-                <div class="col-lg-8">
-                    <h1 class="hero-title mb-3" data-reveal style="--reveal-delay: 70ms;">Publikasi terbaru dari kegiatan siswa, sekolah, dan pembina.</h1>
-                    <p class="hero-text mb-0" data-reveal style="--reveal-delay: 130ms;">Temukan berita kegiatan, prestasi, pengumuman pembinaan, dan artikel informasi yang sudah dipublikasikan secara resmi.</p>
-                    <div class="article-page-hero__actions" data-reveal style="--reveal-delay: 180ms;">
-                        <a href="{{ route('public.activities.index') }}" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Jelajahi Kategori</a>
-                        <a href="{{ route('public.announcements') }}" class="btn btn-outline-light"><i class="bi bi-megaphone"></i>Lihat Pengumuman</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        @if($featuredArticle)
-            <section data-reveal style="--reveal-delay: 0ms;">
-                <div class="section-header-inline">
-                    <div>
-                        <span class="section-kicker"><i class="bi bi-stars"></i>Artikel Unggulan</span>
-                        <h2 class="section-title">Sorotan publikasi utama</h2>
-                    </div>
-                </div>
-
-                <article class="article-featured-card">
-                    <div class="article-featured-card__copy">
-                        <div class="article-featured-card__meta">
-                            <span><i class="bi bi-bookmark-star"></i>{{ $featuredArticle->content_category_label }}</span>
-                            <span><i class="bi bi-calendar-event"></i>{{ optional($featuredArticle->publish_at ?? $featuredArticle->created_at)->translatedFormat('d F Y') ?? '-' }}</span>
-                            <span><i class="bi bi-person"></i>{{ $featuredArticle->publisher?->name ?? 'Admin' }}</span>
-                        </div>
-                        <h3 class="article-featured-card__title">{{ $featuredArticle->title }}</h3>
-                        <p class="article-featured-card__excerpt">{{ $featuredArticle->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($featuredArticle->content), 240) }}</p>
-                        <div class="article-featured-card__footer">
-                            <span class="text-muted small">
-                                @if($featuredArticle->extracurricular)
-                                    Terkait {{ $featuredArticle->extracurricular->name }}
-                                @else
-                                    Publikasi umum sekolah
-                                @endif
-                            </span>
-                            <a href="{{ route('public.articles.show', $featuredArticle->slug) }}" class="btn btn-primary">
-                                <i class="bi bi-arrow-right-circle"></i>Baca Artikel
-                            </a>
-                        </div>
-                    </div>
-                    <a href="{{ route('public.articles.show', $featuredArticle->slug) }}" class="article-featured-card__media">
-                        @if($featuredArticle->cover_image_url)
-                            <img src="{{ $featuredArticle->cover_image_url }}" alt="{{ $featuredArticle->image_alt_text_label }}" loading="lazy">
-                        @else
-                            <span class="article-featured-card__placeholder">{{ $featuredArticle->content_category_label }}</span>
-                        @endif
-                    </a>
-                </article>
-            </section>
-        @endif
-
-        <section data-reveal style="--reveal-delay: 40ms;">
-            <div class="section-header-inline">
-                <div>
-                    <span class="section-kicker"><i class="bi bi-funnel"></i>Filter Artikel</span>
-                    <h2 class="section-title">Jelajahi semua publikasi</h2>
-                    <p class="section-subtitle mb-0">Gunakan pencarian dan filter ringan untuk menemukan artikel yang paling relevan.</p>
-                </div>
-            </div>
-
-            <form method="get" class="article-list-toolbar">
-                <div class="row g-3">
-                    <div class="col-12 col-lg-4">
-                        <label class="form-label" for="article_search">Cari judul</label>
-                        <input id="article_search" type="text" name="search" value="{{ $search }}" class="form-control" placeholder="Cari judul artikel">
-                    </div>
+        <header class="article-page-header" data-reveal>
+            <h1 class="article-page-heading"><i class="bi bi-newspaper me-2"></i>Berita & Artikel</h1>
+            <div class="article-search-tools">
+            <form method="get" class="article-quick-search">
+                <label class="visually-hidden" for="article_quick_search">Cari judul artikel</label>
+                <input id="article_quick_search" type="search" name="search" value="{{ $search }}" class="form-control" placeholder="Cari artikel">
+                <input type="hidden" name="content_category" value="{{ $contentCategory }}">
+                <input type="hidden" name="extracurricular_id" value="{{ $extracurricularId }}">
+                <input type="hidden" name="published_from" value="{{ $publishedFrom }}">
+                <input type="hidden" name="published_until" value="{{ $publishedUntil }}">
+                <button class="btn btn-primary" type="submit" aria-label="Cari artikel"><i class="bi bi-search"></i></button>
+            </form>
+            <details class="article-filter-panel" @if($hasFilters) open @endif>
+                <summary><i class="bi bi-funnel"></i>Filter</summary>
+                <form method="get" class="article-list-toolbar">
+                    <div class="row g-3">
+                    <input type="hidden" name="search" value="{{ $search }}">
                     <div class="col-12 col-md-6 col-lg-2">
-                        <label class="form-label" for="article_content_category">Kategori</label>
+                        <label class="visually-hidden" for="article_content_category">Kategori</label>
                         <select id="article_content_category" name="content_category" class="form-select">
                             <option value="">Semua kategori</option>
                             @foreach($contentCategories as $key => $label)
@@ -288,7 +329,7 @@
                         </select>
                     </div>
                     <div class="col-12 col-md-6 col-lg-2">
-                        <label class="form-label" for="article_extracurricular_filter">Kegiatan</label>
+                        <label class="visually-hidden" for="article_extracurricular_filter">Kegiatan</label>
                         <select id="article_extracurricular_filter" name="extracurricular_id" class="form-select">
                             <option value="">Semua kegiatan</option>
                             @foreach($extracurriculars as $item)
@@ -297,20 +338,22 @@
                         </select>
                     </div>
                     <div class="col-6 col-lg-2">
-                        <label class="form-label" for="article_published_from">Dari</label>
+                        <label class="visually-hidden" for="article_published_from">Dari</label>
                         <input id="article_published_from" type="date" name="published_from" value="{{ $publishedFrom }}" class="form-control">
                     </div>
                     <div class="col-6 col-lg-2">
-                        <label class="form-label" for="article_published_until">Sampai</label>
+                        <label class="visually-hidden" for="article_published_until">Sampai</label>
                         <input id="article_published_until" type="date" name="published_until" value="{{ $publishedUntil }}" class="form-control">
                     </div>
                     <div class="col-12 d-flex flex-wrap gap-2">
-                        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i>Cari Artikel</button>
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i>Cari</button>
                         <a href="{{ route('public.articles.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i>Reset Filter</a>
                     </div>
-                </div>
-            </form>
-        </section>
+                    </div>
+                </form>
+            </details>
+            </div>
+        </header>
 
         <section data-reveal style="--reveal-delay: 90ms;">
             <div class="article-result-meta">

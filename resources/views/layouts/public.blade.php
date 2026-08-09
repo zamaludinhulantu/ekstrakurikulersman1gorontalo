@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="@yield('meta_description', 'Portal resmi Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo untuk menjelajahi kegiatan, pengumuman, berita, dan alur pendaftaran siswa.')">
+    <meta name="description" content="@yield('meta_description', 'Portal resmi Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo untuk menjelajahi kegiatan, pengumuman, dan berita sekolah.')">
     <link rel="canonical" href="{{ url()->current() }}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="@yield('title', 'Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo')">
-    <meta property="og:description" content="@yield('meta_description', 'Portal resmi Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo untuk menjelajahi kegiatan, pengumuman, berita, dan alur pendaftaran siswa.')">
+    <meta property="og:description" content="@yield('meta_description', 'Portal resmi Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo untuk menjelajahi kegiatan, pengumuman, dan berita sekolah.')">
     <meta property="og:url" content="{{ url()->current() }}">
     <title>@yield('title', 'Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo')</title>
     <link rel="icon" type="image/jpeg" href="{{ asset('images/brand/sman1-gorontalo-logo.jpg') }}">
@@ -56,7 +56,6 @@
             </div>
             <a class="public-nav-link {{ request()->routeIs('public.announcements') ? 'active' : '' }}" href="{{ route('public.announcements') }}">Pengumuman</a>
             <a class="public-nav-link {{ request()->routeIs('public.articles.*') ? 'active' : '' }}" href="{{ route('public.articles.index') }}">Berita</a>
-            <a class="public-nav-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}">Alur Pendaftaran</a>
         </div>
         <div class="d-none d-xl-flex align-items-center gap-2 public-nav-actions">
             @auth
@@ -83,7 +82,7 @@
                 <div>
                     <strong>Sistem Informasi Ekstrakurikuler</strong>
                     <div class="footer-public-school">SMA Negeri 1 Gorontalo</div>
-                    <p>Portal resmi untuk menjelajahi kegiatan Ekstrakurikuler, OSN, O2SN, dan alur pendaftaran siswa secara transparan dan terstruktur.</p>
+                    <p>Portal resmi untuk menjelajahi kegiatan Ekstrakurikuler, OSN, O2SN, pengumuman, dan berita sekolah.</p>
                     <div class="footer-social-links">
                         <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
                         <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="footer-social-icon" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
@@ -113,7 +112,6 @@
                     <li><a href="{{ route('public.activities.all') }}">Semua Pilihan</a></li>
                     <li><a href="{{ route('public.announcements') }}">Pengumuman</a></li>
                     <li><a href="{{ route('public.articles.index') }}">Berita</a></li>
-                    <li><a href="{{ route('public.information') }}">Alur Pendaftaran</a></li>
                 </ul>
             </div>
             <div>
@@ -177,10 +175,6 @@
                     <span class="public-mobile-link-icon"><i class="bi bi-newspaper"></i></span>
                     <span>Berita</span>
                 </a>
-                <a class="public-mobile-link {{ request()->routeIs('public.information') ? 'active' : '' }}" href="{{ route('public.information') }}" data-nav-close>
-                    <span class="public-mobile-link-icon"><i class="bi bi-signpost-2"></i></span>
-                    <span>Alur Pendaftaran</span>
-                </a>
             </div>
         </div>
         <div class="public-mobile-menu-footer">
@@ -204,4 +198,3 @@
 @include('partials.pwa-ui')
 </body>
 </html>
-

@@ -6,7 +6,6 @@ use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\Extracurricular;
 use App\Models\Registration;
-use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -34,7 +33,6 @@ class PublicLandingController extends Controller
                         'totalActivities' => $activityCounts['total'],
                         'categories' => $categorySummaries->count(),
                     ],
-                    'registrationStatus' => $this->resolveRegistrationStatus(),
                     'recentAnnouncements' => Announcement::query()
                         ->select(['id', 'title', 'content', 'priority', 'extracurricular_id', 'published_by', 'publish_at', 'created_at'])
                         ->with([
@@ -69,7 +67,7 @@ class PublicLandingController extends Controller
                         ->visibleToPublic()
                         ->orderByDesc('is_featured')
                         ->latest('publish_at')
-                        ->limit(3)
+                        ->limit(4)
                         ->get(),
                 ];
             }
@@ -78,7 +76,6 @@ class PublicLandingController extends Controller
         return view('public.landing', [
             'categorySummaries' => $landingPayload['categorySummaries'],
             'statistics' => $landingPayload['statistics'],
-            'registrationStatus' => $landingPayload['registrationStatus'],
             'recentAnnouncements' => $landingPayload['recentAnnouncements'],
             'recentArticles' => $landingPayload['recentArticles'],
         ]);
@@ -174,11 +171,6 @@ class PublicLandingController extends Controller
         ]);
     }
 
-    public function information(): View
-    {
-        return view('public.information');
-    }
-
     public function announcements(Request $request): View
     {
         $filters = $request->validate([
@@ -266,17 +258,6 @@ class PublicLandingController extends Controller
             ->when($publishedFrom !== '', fn ($query) => $query->whereDate('publish_at', '>=', $publishedFrom))
             ->when($publishedUntil !== '', fn ($query) => $query->whereDate('publish_at', '<=', $publishedUntil));
 
-        $featuredArticle = (clone $baseQuery)
-            ->where('is_featured', true)
-            ->orderByDesc('publish_at')
-            ->first();
-
-        if (! $featuredArticle && $search === '' && $contentCategory === '' && ! $extracurricularId && $publishedFrom === '' && $publishedUntil === '') {
-            $featuredArticle = (clone $baseQuery)
-                ->orderByDesc('publish_at')
-                ->first();
-        }
-
         $articles = (clone $baseQuery)
             ->orderByDesc('is_featured')
             ->latest('publish_at')
@@ -284,7 +265,6 @@ class PublicLandingController extends Controller
             ->withQueryString();
 
         return view('public.articles', [
-            'featuredArticle' => $featuredArticle,
             'articles' => $articles,
             'search' => $search,
             'contentCategory' => $contentCategory,
@@ -384,12 +364,6 @@ class PublicLandingController extends Controller
                 'lastmod' => Article::query()->visibleToPublic()->max('updated_at')?->toDateString() ?? now()->toDateString(),
                 'changefreq' => 'daily',
                 'priority' => '0.8',
-            ],
-            [
-                'loc' => route('public.information'),
-                'lastmod' => now()->toDateString(),
-                'changefreq' => 'monthly',
-                'priority' => '0.7',
             ],
         ]);
 
@@ -675,26 +649,6 @@ class PublicLandingController extends Controller
         return Extracurricular::makePreviewImage($extracurricular->name);
     }
 
-    private function resolveRegistrationStatus(): ?array
-    {
-        $isOpen = filter_var(SystemSetting::getValue('registration_open', null), FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
-
-        if ($isOpen === null) {
-            return null;
-        }
-
-        $label = $isOpen ? 'Pendaftaran sedang dibuka' : 'Pendaftaran saat ini ditutup';
-        $description = $isOpen
-            ? 'Siswa dapat menjelajahi kegiatan dan melanjutkan pendaftaran melalui akun masing-masing.'
-            : 'Pantau pengumuman terbaru dari sekolah untuk mengetahui jadwal pembukaan berikutnya.';
-
-        return [
-            'is_open' => $isOpen,
-            'label' => $label,
-            'description' => $description,
-        ];
-    }
-
     private function buildDetailPageData(Extracurricular $extracurricular, ?Registration $currentRegistration, ?User $user): array
     {
         $coachItems = $this->resolveCoachItems($extracurricular);
@@ -745,38 +699,6 @@ class PublicLandingController extends Controller
                 ->toString(),
             'schedule_section_title' => $scheduleSectionTitle,
             'schedules' => $schedules,
-            'information_rows' => [
-                [
-                    'label' => 'Status Pendaftaran',
-                    'value' => $registrationBadge['label'],
-                    'icon' => 'bi-door-open',
-                ],
-                [
-                    'label' => 'Kuota',
-                    'value' => $quotaValue !== null ? "{$quotaValue} peserta" : 'Belum ditentukan',
-                    'icon' => 'bi-people',
-                ],
-                [
-                    'label' => 'Lokasi',
-                    'value' => $primaryLocation ?: 'Belum ditentukan',
-                    'icon' => 'bi-geo-alt',
-                ],
-                [
-                    'label' => 'Pembina',
-                    'value' => $coachItems->isNotEmpty() ? $coachItems->count().' pembina' : 'Belum ditentukan',
-                    'icon' => 'bi-person-workspace',
-                ],
-                [
-                    'label' => 'Syarat',
-                    'value' => $requirements->isNotEmpty() ? $requirements->first() : 'Tidak ada syarat khusus yang ditentukan.',
-                    'icon' => 'bi-card-checklist',
-                ],
-                [
-                    'label' => 'Seleksi',
-                    'value' => $this->resolveSelectionText($currentRegistration),
-                    'icon' => 'bi-clipboard-check',
-                ],
-            ],
             'breadcrumbs' => [
                 ['label' => 'Beranda', 'url' => route('landing')],
                 ['label' => $extracurricular->category_label, 'url' => $this->backToActivityUrl($extracurricular)],
@@ -861,26 +783,13 @@ class PublicLandingController extends Controller
         };
     }
 
-    private function resolveSelectionText(?Registration $registration): string
-    {
-        if ($registration?->willing_to_take_test) {
-            return 'Mengikuti tes jika dijadwalkan oleh pembina atau admin.';
-        }
-
-        return 'Mengikuti verifikasi pendaftaran sesuai alur yang berlaku.';
-    }
-
     private function resolveDetailCta(Extracurricular $extracurricular, ?Registration $registration, ?User $user, bool $isQuotaFull): array
     {
         $base = [
             'title' => 'Pendaftaran kegiatan',
             'description' => 'Seluruh verifikasi tetap dilakukan di backend agar pendaftaran berjalan sesuai aturan sekolah.',
             'primary' => null,
-            'secondary' => [
-                'label' => 'Lihat Alur Pendaftaran',
-                'href' => route('public.information'),
-                'variant' => 'outline-light',
-            ],
+            'secondary' => null,
             'status_note' => null,
         ];
 

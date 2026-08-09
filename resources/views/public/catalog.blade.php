@@ -29,16 +29,16 @@
         }
 
         .catalog-toolbar {
-            padding: 0.9rem;
+            padding: 0.8rem 0.9rem;
             margin-bottom: 1rem;
         }
 
         .catalog-toolbar-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 0.9rem;
-            margin-bottom: 0.9rem;
+            margin-bottom: 0.65rem;
         }
 
         .catalog-toolbar-title {
@@ -46,12 +46,6 @@
             color: #18334f;
             font-size: 1rem;
             font-weight: 800;
-        }
-
-        .catalog-toolbar-description {
-            margin: 0.2rem 0 0;
-            color: #667b93;
-            font-size: 0.84rem;
         }
 
         .catalog-toolbar-actions {
@@ -76,9 +70,7 @@
         }
 
         .catalog-toolbar.is-sticky {
-            position: sticky;
-            top: 5.3rem;
-            z-index: 20;
+            position: static;
         }
 
         .catalog-toolbar-grid {
@@ -94,7 +86,7 @@
 
         .catalog-select,
         .catalog-search-input {
-            min-height: 46px;
+            min-height: 42px;
         }
 
         .catalog-chip-row {
@@ -142,6 +134,40 @@
             font-size: 0.9rem;
         }
 
+        .catalog-category-shortcuts {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            overflow-x: auto;
+            padding: 0.15rem 0 0.6rem;
+            scrollbar-width: thin;
+        }
+
+        .catalog-category-shortcut {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+            gap: 0.38rem;
+            padding: 0.45rem 0.72rem;
+            border: 1px solid #d6e2f1;
+            border-radius: 999px;
+            background: #fff;
+            color: #526b87;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-decoration: none;
+            transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .catalog-category-shortcut:hover,
+        .catalog-category-shortcut:focus-visible,
+        .catalog-category-shortcut.is-active {
+            border-color: #aec8fb;
+            background: #edf4ff;
+            color: #1849cb;
+            text-decoration: none;
+        }
+
         .catalog-mobile-sheet .offcanvas-header,
         .catalog-mobile-sheet .offcanvas-body {
             padding: 1rem;
@@ -181,9 +207,6 @@
         @include('public._activity-card-styles')
 
         @media (max-width: 991.98px) {
-            .catalog-toolbar.is-sticky {
-                top: 5rem;
-            }
         }
 
         @media (max-width: 767.98px) {
@@ -199,10 +222,6 @@
             .catalog-toolbar-actions {
                 width: 100%;
                 justify-content: flex-start;
-            }
-
-            .catalog-toolbar.is-sticky {
-                position: static;
             }
 
             .catalog-toolbar-grid {
@@ -282,16 +301,25 @@
                     @else
                         <a href="{{ route('public.activities.index') }}" class="btn btn-outline-secondary"><i class="bi bi-grid"></i>Semua Kategori</a>
                     @endif
-                    <a href="{{ route('public.information') }}" class="btn btn-outline-primary"><i class="bi bi-signpost-2"></i>Lihat Alur Pendaftaran</a>
                 </div>
             </div>
         </section>
 
+        <nav class="catalog-category-shortcuts" aria-label="Pilih kategori kegiatan" data-reveal>
+            <a href="{{ route('public.activities.all') }}" class="catalog-category-shortcut {{ $fixedCategory ? '' : 'is-active' }}">
+                <i class="bi bi-grid-3x3-gap"></i>Semua
+            </a>
+            @foreach($categorySummaries as $summary)
+                <a href="{{ $summary['route'] }}" class="catalog-category-shortcut {{ ($fixedCategory['key'] ?? null) === $summary['key'] ? 'is-active' : '' }}">
+                    <i class="bi {{ $summary['icon'] }}"></i>{{ $summary['display_label'] }}
+                </a>
+            @endforeach
+        </nav>
+
         <section class="catalog-toolbar is-sticky" data-reveal>
             <div class="catalog-toolbar-header">
                 <div>
-                    <h2 class="catalog-toolbar-title">Filter Katalog</h2>
-                    <p class="catalog-toolbar-description">Gunakan pencarian, status, dan urutan untuk menemukan kegiatan yang paling relevan.</p>
+                    <h2 class="catalog-toolbar-title"><i class="bi bi-sliders2 me-1"></i>Temukan kegiatan</h2>
                 </div>
                 <div class="catalog-toolbar-actions">
                     <span class="catalog-toolbar-count"><i class="bi bi-collection"></i>{{ $extracurriculars->total() }} kegiatan</span>
@@ -303,11 +331,11 @@
 
             <form method="get" action="{{ $baseRoute }}" class="catalog-toolbar-grid">
                 <div>
-                    <label class="form-label" for="catalogSearch">Cari kegiatan</label>
+                    <label class="visually-hidden" for="catalogSearch">Cari kegiatan</label>
                     <input type="text" id="catalogSearch" name="search" value="{{ $search }}" class="form-control catalog-search-input" placeholder="Cari nama kegiatan">
                 </div>
                 <div>
-                    <label class="form-label" for="catalogStatus">Status</label>
+                    <label class="visually-hidden" for="catalogStatus">Status</label>
                     <select id="catalogStatus" name="status" class="form-select catalog-select">
                         @foreach($statusOptions as $value => $label)
                             <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
@@ -315,7 +343,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label" for="catalogSort">Urutkan</label>
+                    <label class="visually-hidden" for="catalogSort">Urutkan</label>
                     <select id="catalogSort" name="sort" class="form-select catalog-select">
                         @foreach($sortOptions as $value => $label)
                             <option value="{{ $value }}" @selected($sort === $value)>{{ $label }}</option>
@@ -368,7 +396,7 @@
             @if($extracurriculars->isNotEmpty())
                 <div class="row g-3 catalog-grid">
                     @foreach($extracurriculars as $activity)
-                        <div class="col-12 col-md-6 col-xl-4">
+                        <div class="col-12">
                             @include('public._activity-card', ['activity' => $activity])
                         </div>
                     @endforeach

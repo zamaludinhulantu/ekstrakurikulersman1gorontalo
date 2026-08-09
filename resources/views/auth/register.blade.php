@@ -5,39 +5,14 @@
 @section('content')
     <section class="auth-page auth-page-public">
         <div class="container">
-            <div class="auth-card auth-card-register">
+            <div class="auth-card auth-card-login auth-card-register">
                 <div class="row g-0 align-items-stretch">
-                    <div class="col-lg-4">
-                        <div class="auth-hero">
-                            <span class="auth-hero-badge">
-                                <i class="bi bi-person-plus"></i>
-                                Akun Siswa Baru
-                            </span>
-
-                            <h1>Buat akun siswa untuk mulai mengikuti ekstrakurikuler.</h1>
-
-                            <p>Lengkapi data akun dan identitas siswa dengan benar. Setelah berhasil, email aktif akan dipakai untuk verifikasi akun sebelum kamu bisa login dan melanjutkan pendaftaran kegiatan.</p>
-
-                            <div class="auth-helper-list">
-                                <div class="auth-helper-item">
-                                    <strong>Siapkan data penting</strong>
-                                    Isi nama, email aktif, nomor telepon, dan data wali agar akun mudah diverifikasi.
-                                </div>
-
-                                <div class="auth-helper-item">
-                                    <strong>Setelah akun jadi</strong>
-                                    Cek inbox email aktif untuk verifikasi, lalu login ke sistem untuk memilih kegiatan dan memantau statusnya.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-8">
-                        <div class="auth-form-wrap">
+                    <div class="col-12">
+                        <div class="auth-form-wrap auth-form-wrap-login auth-form-wrap-register">
                             <div class="auth-form-header">
                                 <span class="auth-section-kicker">Registrasi</span>
                                 <h2>Registrasi Akun Siswa</h2>
-                                <p>Isi data berikut dengan benar agar akun siswa dapat digunakan untuk mendaftar ekstrakurikuler. Gunakan email aktif karena tautan verifikasi akan dikirim ke email tersebut.</p>
+                                <p>Lengkapi data berikut dengan benar. Tautan verifikasi akan dikirim ke email aktif yang Anda gunakan.</p>
                             </div>
 
                             @include('partials.alerts')
@@ -47,8 +22,8 @@
 
                                 <div class="register-section">
                                     <div class="register-section-header">
-                                        <h3>Data Akun</h3>
-                                        <p>Informasi ini dipakai untuk login ke sistem.</p>
+                                        <h3><i class="bi bi-person-vcard"></i>Data Akun dan Data Diri</h3>
+                                        <p>Lengkapi informasi akun dan identitas dasar siswa dengan benar.</p>
                                     </div>
 
                                     <div class="row g-3">
@@ -73,14 +48,6 @@
                                             <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="register-section">
-                                    <div class="register-section-header">
-                                        <h3>Profil Siswa</h3>
-                                        <p>Lengkapi identitas dasar untuk membantu proses verifikasi.</p>
-                                    </div>
-
                                     <div class="row g-3">
                                         <div class="col-md-6">
                                             <label for="class_name" class="form-label">Kelas</label>
@@ -140,27 +107,12 @@
                                 </button>
                             </form>
 
-                            <div class="auth-divider">
-                                <span>Sudah punya akun?</span>
-                            </div>
-
-                            <a href="{{ route('login') }}" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-box-arrow-in-right"></i>
-                                Masuk ke Sistem
-                            </a>
-
-                            <div class="auth-footer-links">
-                                <a href="{{ route('landing') }}">
-                                    <i class="bi bi-arrow-left"></i>
-                                    Kembali ke halaman publik
-                                </a>
-
-                                <span class="small text-muted">
-                                    Registrasi ini hanya untuk akun siswa.
-                                </span>
+                            <div class="auth-login-prompt">
+                                Sudah punya akun? <a href="{{ route('login') }}">Masuk</a>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

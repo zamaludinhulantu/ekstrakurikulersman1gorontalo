@@ -1,8 +1,9 @@
 @php
     $revealDelay = $revealDelay ?? null;
+    $variant = $variant ?? 'default';
 @endphp
 
-<article class="public-article-card h-100" data-reveal @if($revealDelay !== null) style="--reveal-delay: {{ (int) $revealDelay }}ms;" @endif>
+<article class="public-article-card public-article-card--{{ $variant }} h-100" data-reveal @if($revealDelay !== null) style="--reveal-delay: {{ (int) $revealDelay }}ms;" @endif>
     <a href="{{ route('public.articles.show', $article->slug) }}" class="public-article-card__media">
         @if($article->cover_image_url)
             <img

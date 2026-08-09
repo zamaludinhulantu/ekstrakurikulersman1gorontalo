@@ -101,23 +101,27 @@
         @endif
     </div>
     <div class="public-activity-card-body">
-        <div class="public-activity-card-category">{{ $groupLabel }}</div>
-        <div class="public-activity-card-meta">
-            <span class="{{ $activity->is_active ? 'is-open' : 'is-closed' }}"><i class="bi bi-circle-fill"></i>{{ $activity->is_active ? 'Pendaftaran Dibuka' : 'Pendaftaran Ditutup' }}</span>
+        <div class="public-activity-card-content">
+            <div class="public-activity-card-category">{{ $groupLabel }}</div>
+            <h3 class="public-activity-card-title">{{ $catalogName }}</h3>
+            <p class="public-activity-card-description">{{ $description }}</p>
+            <div class="public-activity-card-info">
+                <div><i class="bi bi-person-workspace"></i><span>{{ $coachText }}</span></div>
+                <div><i class="bi bi-calendar3"></i><span>{{ $scheduleText }}</span></div>
+            </div>
         </div>
-        <h3 class="public-activity-card-title">{{ $catalogName }}</h3>
-        <p class="public-activity-card-description">{{ $description }}</p>
-        <div class="public-activity-card-info">
-            <div><i class="bi bi-person-workspace"></i><span>{{ $coachText }}</span></div>
-            <div><i class="bi bi-calendar3"></i><span>{{ $scheduleText }}</span></div>
-        </div>
-        <div class="public-activity-card-actions">
-            <a href="{{ route('public.extracurriculars.show', $activity) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Lihat Detail</a>
-            @if($actionDisabled)
-                <button type="button" class="btn {{ $actionClass }}" disabled><i class="bi bi-lock"></i>{{ $actionLabel }}</button>
-            @else
-                <a href="{{ $actionHref }}" class="btn {{ $actionClass }}"><i class="bi {{ $actionLabel === 'Lihat Status' ? 'bi-clipboard-check' : ($actionLabel === 'Buka Dashboard' ? 'bi-arrow-right-circle' : 'bi-send-check') }}"></i>{{ $actionLabel }}</a>
-            @endif
+        <div class="public-activity-card-aside">
+            <div class="public-activity-card-meta">
+                <span class="{{ $activity->is_active ? 'is-open' : 'is-closed' }}"><i class="bi bi-circle-fill"></i>{{ $activity->is_active ? 'Dibuka' : 'Ditutup' }}</span>
+            </div>
+            <div class="public-activity-card-actions">
+                <a href="{{ route('public.extracurriculars.show', $activity) }}" class="btn btn-outline-primary"><i class="bi bi-eye"></i>Lihat Detail</a>
+                @if($actionDisabled)
+                    <button type="button" class="btn {{ $actionClass }}" disabled><i class="bi bi-lock"></i>{{ $actionLabel }}</button>
+                @else
+                    <a href="{{ $actionHref }}" class="btn {{ $actionClass }}"><i class="bi {{ $actionLabel === 'Lihat Status' ? 'bi-clipboard-check' : ($actionLabel === 'Buka Dashboard' ? 'bi-arrow-right-circle' : 'bi-send-check') }}"></i>{{ $actionLabel }}</a>
+                @endif
+            </div>
         </div>
     </div>
 </article>

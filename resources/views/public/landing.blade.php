@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @section('title', 'Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo')
-@section('meta_description', 'Jelajahi kegiatan ekstrakurikuler, pengumuman, berita, dan alur pendaftaran siswa di Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo.')
+@section('meta_description', 'Jelajahi kegiatan ekstrakurikuler, pengumuman, dan berita siswa di Sistem Informasi Ekstrakurikuler SMA Negeri 1 Gorontalo.')
 
 @push('styles')
     <style>
@@ -84,6 +84,83 @@
             justify-content: center;
         }
 
+        .editorial-showcase {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+            gap: 1rem;
+        }
+
+        .editorial-article-featured .public-article-card__media {
+            aspect-ratio: 16 / 8.2;
+        }
+
+        .editorial-article-featured .public-article-card__title {
+            font-size: clamp(1.25rem, 2vw, 1.55rem);
+            -webkit-line-clamp: 2;
+        }
+
+        .editorial-article-support {
+            display: grid;
+            gap: 1rem;
+            align-content: start;
+        }
+
+        .editorial-article-support .public-article-card {
+            display: grid;
+            grid-template-columns: 10rem minmax(0, 1fr);
+            border-radius: 22px;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .editorial-article-support .public-article-card__media {
+            width: 100%;
+            height: 100%;
+            min-height: 8.65rem;
+            min-width: 0;
+            aspect-ratio: auto;
+        }
+
+        .editorial-article-support .public-article-card__image,
+        .editorial-article-support .public-article-card__placeholder {
+            min-width: 0;
+        }
+
+        .editorial-article-support .public-article-card__body {
+            min-width: 0;
+        }
+
+        .editorial-article-support .public-article-card__body {
+            padding: 0.9rem;
+        }
+
+        .editorial-article-support .public-article-card__meta {
+            gap: 0.35rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .editorial-article-support .public-article-card__chip {
+            padding: 0.3rem 0.48rem;
+            font-size: 0.68rem;
+        }
+
+        .editorial-article-support .public-article-card__title {
+            margin-bottom: 0.35rem;
+            font-size: 1rem;
+            -webkit-line-clamp: 2;
+        }
+
+        .editorial-article-support .public-article-card__excerpt {
+            margin-bottom: 0;
+            font-size: 0.82rem;
+            line-height: 1.55;
+            -webkit-line-clamp: 2;
+        }
+
+        .editorial-article-support .public-article-card__footer {
+            display: none;
+        }
+
         .hero-premium {
             position: relative;
             overflow: hidden;
@@ -142,28 +219,6 @@
             font-size: 0.96rem;
             line-height: 1.7;
             margin-bottom: 1rem;
-        }
-
-        .hero-registration-status {
-            display: grid;
-            gap: 0.18rem;
-            max-width: 34rem;
-            margin: 0 0 1rem;
-            padding: 0.75rem 0.9rem;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.12);
-        }
-
-        .hero-registration-status strong {
-            font-size: 0.88rem;
-            letter-spacing: -0.01em;
-        }
-
-        .hero-registration-status span {
-            color: rgba(240, 247, 255, 0.84);
-            font-size: 0.82rem;
-            line-height: 1.55;
         }
 
         .hero-stat-grid {
@@ -384,6 +439,106 @@
             margin-top: auto;
         }
 
+        .category-carousel {
+            position: relative;
+        }
+
+        .category-carousel-viewport {
+            overflow: hidden;
+            padding: 0.25rem 0.1rem 0.55rem;
+        }
+
+        .category-carousel-track {
+            display: flex;
+            transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+            will-change: transform;
+        }
+
+        .category-carousel-slide {
+            flex: 0 0 33.333333%;
+            min-width: 0;
+            padding: 0 0.5rem;
+        }
+
+        .category-carousel-controls {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 1rem;
+            margin-top: 0.45rem;
+        }
+
+        .category-carousel-controls [data-category-carousel-prev] {
+            justify-self: start;
+        }
+
+        .category-carousel-controls [data-category-carousel-next] {
+            justify-self: end;
+        }
+
+        .category-carousel-center-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .category-carousel-control {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.6rem;
+            height: 2.6rem;
+            border: 1px solid #d7e3f4;
+            border-radius: 999px;
+            background: #fff;
+            color: #23496f;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .category-carousel-control:hover,
+        .category-carousel-control:focus-visible {
+            background: #123b73;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .category-carousel-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 3.5rem;
+            height: 2.25rem;
+            padding: 0 0.72rem;
+            border-radius: 999px;
+            background: #edf4ff;
+            color: #315f91;
+            font-size: 0.78rem;
+            font-weight: 900;
+        }
+
+        .category-carousel-dot {
+            display: none;
+        }
+
+        .category-carousel-all-link {
+            display: inline-flex;
+        }
+
+        .category-carousel-all-link .btn {
+            border: 0;
+            padding: 0.45rem 0.2rem;
+            color: #1849cb;
+            font-weight: 800;
+        }
+
+        .category-carousel-all-link .btn:hover,
+        .category-carousel-all-link .btn:focus-visible {
+            background: transparent;
+            color: #0d3a9d;
+            text-decoration: underline;
+        }
+
         .premium-section-card {
             padding: 1.2rem;
         }
@@ -465,6 +620,14 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 justify-content: stretch;
             }
+
+            .editorial-showcase {
+                grid-template-columns: 1fr;
+            }
+
+            .category-carousel-slide {
+                flex-basis: 50%;
+            }
         }
 
         @media (max-width: 767.98px) {
@@ -507,21 +670,29 @@
                 grid-template-columns: 1fr;
             }
 
+            .editorial-article-support .public-article-card {
+                grid-template-columns: 1fr;
+            }
+
+            .editorial-article-support .public-article-card__media {
+                height: auto;
+                min-height: 0;
+                aspect-ratio: 16 / 9;
+            }
+
             .hero-stat-grid {
                 grid-template-columns: 1fr;
             }
+
+            .category-carousel-slide {
+                flex-basis: 100%;
+            }
+
         }
     </style>
 @endpush
 
 @section('content')
-    @php
-        $recentArticleCount = $recentArticles->count();
-        $editorialGridClass = $recentArticleCount === 1
-            ? 'is-one-item'
-            : ($recentArticleCount === 2 ? 'is-two-items' : '');
-    @endphp
-
     <div class="container py-3 py-md-4 landing-shell">
         <section class="hero-premium" data-reveal aria-labelledby="landingHeroTitle">
             <div class="row">
@@ -531,15 +702,8 @@
                     <p class="hero-premium-copy">
                         Jelajahi ekstrakurikuler, OSN, dan O2SN yang sesuai dengan minat dan potensimu, mulai dari pembinaan seperti Tilawatil Qur&#039;an hingga jalur akademik dan olahraga sekolah.
                     </p>
-                    @if($registrationStatus)
-                        <div class="hero-registration-status {{ $registrationStatus['is_open'] ? 'is-open' : 'is-closed' }}">
-                            <strong>{{ $registrationStatus['label'] }}</strong>
-                            <span>{{ $registrationStatus['description'] }}</span>
-                        </div>
-                    @endif
                     <div class="hero-actions">
                         <a href="{{ route('public.activities.index') }}" class="btn btn-light text-primary"><i class="bi bi-grid-3x3-gap"></i>Jelajahi Kegiatan</a>
-                        <a href="{{ route('public.information') }}" class="btn btn-outline-light"><i class="bi bi-signpost-2"></i>Lihat Alur Pendaftaran</a>
                     </div>
                     <div class="hero-stat-grid">
                         <div class="hero-stat-chip">
@@ -568,43 +732,32 @@
                     <p class="section-subtitle mb-0">Setiap kategori dirancang agar siswa baru bisa memahami jalur kegiatan dengan lebih cepat.</p>
                 </div>
             </div>
-            <div class="row g-3">
+            <div class="category-carousel" data-category-carousel aria-label="Carousel kategori kegiatan">
+                <div class="category-carousel-viewport">
+                    <div class="category-carousel-track">
                 @foreach($categorySummaries as $summary)
-                    <div class="col-12 col-md-6 col-xl-4">
+                    <div class="category-carousel-slide">
                         @include('public._category-card', ['summary' => $summary, 'variant' => 'media'])
                     </div>
                 @endforeach
-            </div>
-        </section>
-
-        <section id="alur-pendaftaran" class="premium-section-card" data-reveal>
-            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
-                <div>
-                    <span class="section-kicker"><i class="bi bi-signpost-split"></i>Alur Pendaftaran</span>
-                    <h2 class="section-title">Tiga langkah yang perlu dilakukan siswa</h2>
-                    <p class="section-subtitle mb-0">Rangkuman singkat di beranda, sementara detail lengkap tetap ada di halaman alur pendaftaran.</p>
+                    </div>
                 </div>
-                <a href="{{ route('public.information') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Detail Alur</a>
-            </div>
-            <div class="premium-step-grid">
-                <article class="premium-step-card">
-                    <span class="premium-step-number">01</span>
-                    <span class="premium-step-icon"><i class="bi bi-compass"></i></span>
-                    <h3>Pilih kegiatan</h3>
-                    <p>Telusuri kategori dan buka detail kegiatan yang paling cocok dengan minatmu.</p>
-                </article>
-                <article class="premium-step-card">
-                    <span class="premium-step-number">02</span>
-                    <span class="premium-step-icon"><i class="bi bi-box-arrow-in-right"></i></span>
-                    <h3>Masuk dan kirim pendaftaran</h3>
-                    <p>Gunakan akun siswa untuk melanjutkan ke halaman form pendaftaran terpisah.</p>
-                </article>
-                <article class="premium-step-card">
-                    <span class="premium-step-number">03</span>
-                    <span class="premium-step-icon"><i class="bi bi-patch-check"></i></span>
-                    <h3>Tunggu verifikasi dan tes bila perlu</h3>
-                    <p>Pendaftaran akan diperiksa pembina atau admin, lalu siswa mengikuti tes apabila kegiatan mensyaratkannya.</p>
-                </article>
+                <div class="category-carousel-controls">
+                    <button class="category-carousel-control" type="button" data-category-carousel-prev aria-label="Kategori sebelumnya">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <div class="category-carousel-center-controls">
+                        <div class="category-carousel-dots" data-category-carousel-dots aria-live="polite"></div>
+                        <span class="category-carousel-all-link">
+                            <a href="{{ route('public.activities.index') }}" class="btn btn-outline-primary">
+                                Lihat semua kategori<i class="bi bi-arrow-right"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <button class="category-carousel-control" type="button" data-category-carousel-next aria-label="Kategori berikutnya">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -649,10 +802,17 @@
             </div>
 
             @if($recentArticles->isNotEmpty())
-                <div class="editorial-grid {{ $editorialGridClass }}">
-                    @foreach($recentArticles as $article)
-                        @include('public._article-card', ['article' => $article, 'revealDelay' => 200 + (($loop->index % 3) * 60)])
-                    @endforeach
+                <div class="editorial-showcase">
+                    <div class="editorial-article-featured">
+                        @include('public._article-card', ['article' => $recentArticles->first(), 'variant' => 'featured', 'revealDelay' => 200])
+                    </div>
+                    @if($recentArticles->count() > 1)
+                        <div class="editorial-article-support">
+                            @foreach($recentArticles->skip(1)->take(3) as $article)
+                                @include('public._article-card', ['article' => $article, 'variant' => 'compact', 'revealDelay' => 260 + (($loop->index % 3) * 60)])
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             @else
                 <div class="card border-0 bg-transparent shadow-none" data-reveal style="--reveal-delay: 200ms;">
@@ -687,3 +847,76 @@
     </div>
 @endsection
 
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const carousel = document.querySelector('[data-category-carousel]');
+            const track = carousel?.querySelector('.category-carousel-track');
+            const slides = track ? Array.from(track.children) : [];
+            const dots = carousel?.querySelector('[data-category-carousel-dots]');
+
+            if (!carousel || !track || !slides.length || !dots) {
+                return;
+            }
+
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+            let page = 0;
+            let interval = null;
+            let pageCount = 1;
+
+            const perPage = () => window.matchMedia('(min-width: 992px)').matches ? 3 : (window.matchMedia('(min-width: 768px)').matches ? 2 : 1);
+
+            const render = () => {
+                const visible = perPage();
+                pageCount = Math.max(1, Math.ceil(slides.length / visible));
+                page = Math.min(page, pageCount - 1);
+                track.style.transform = `translateX(-${page * 100}%)`;
+                dots.textContent = `${page + 1} / ${pageCount}`;
+            };
+
+            const move = (direction) => {
+                page = (page + direction + pageCount) % pageCount;
+                render();
+            };
+
+            const stop = () => {
+                window.clearInterval(interval);
+                interval = null;
+            };
+
+            const start = () => {
+                stop();
+                if (pageCount > 1 && !reducedMotion.matches) {
+                    interval = window.setInterval(() => move(1), 5000);
+                }
+            };
+
+            const restart = () => start();
+
+            carousel.querySelector('[data-category-carousel-prev]')?.addEventListener('click', () => {
+                move(-1);
+                restart();
+            });
+            carousel.querySelector('[data-category-carousel-next]')?.addEventListener('click', () => {
+                move(1);
+                restart();
+            });
+            carousel.addEventListener('mouseenter', stop);
+            carousel.addEventListener('mouseleave', start);
+            carousel.addEventListener('focusin', stop);
+            carousel.addEventListener('focusout', (event) => {
+                if (!carousel.contains(event.relatedTarget)) {
+                    start();
+                }
+            });
+            window.addEventListener('resize', () => {
+                render();
+                start();
+            });
+            reducedMotion.addEventListener('change', start);
+
+            render();
+            start();
+        });
+    </script>
+@endpush

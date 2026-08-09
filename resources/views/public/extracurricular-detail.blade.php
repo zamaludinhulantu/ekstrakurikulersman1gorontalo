@@ -49,6 +49,13 @@
             margin: 0.85rem 0 1rem;
         }
 
+        .detail-hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            margin-top: 1rem;
+        }
+
         .detail-summary {
             display: grid;
             gap: 0.8rem;
@@ -394,7 +401,6 @@
 
         <div class="split-actions mb-3">
             <a href="{{ $backToActivitiesUrl ?? route('public.activities.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>Kembali ke Kategori</a>
-            <a href="{{ route('public.information') }}" class="btn btn-outline-primary"><i class="bi bi-signpost-2"></i>Lihat Alur Pendaftaran</a>
         </div>
 
         <section class="detail-shell mb-3">
@@ -406,10 +412,6 @@
 
                     <div class="detail-badges">
                         <span class="badge {{ $detailPage['activity_badge']['class'] }}">{{ $detailPage['activity_badge']['label'] }}</span>
-                        <span class="badge {{ $detailPage['registration_badge']['class'] }}">{{ $detailPage['registration_badge']['label'] }}</span>
-                        @if($detailPage['student_badge'])
-                            <span class="badge {{ $detailPage['student_badge']['class'] }}">{{ $detailPage['student_badge']['label'] }}</span>
-                        @endif
                     </div>
 
                     <div class="detail-summary">
@@ -445,6 +447,10 @@
                             <span class="detail-summary-label">Lokasi</span>
                             <p class="mb-0">{{ $detailPage['primary_location'] }}</p>
                         </div>
+                        <div class="detail-summary-block">
+                            <span class="detail-summary-label">Tentang Kegiatan</span>
+                            <p class="mb-0">{{ $extracurricular->description ?: 'Informasi kegiatan ini akan diperbarui oleh sekolah.' }}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -464,6 +470,15 @@
                             </div>
                         @endif
                     </div>
+                    @if($cta['primary'])
+                        <div class="detail-hero-actions">
+                            @if(!empty($cta['primary']['disabled']))
+                                <button type="button" class="btn btn-primary w-100" disabled><i class="bi {{ $cta['primary']['icon'] }}"></i>{{ $cta['primary']['label'] }}</button>
+                            @else
+                                <a href="{{ $cta['primary']['href'] }}" class="btn btn-primary w-100"><i class="bi {{ $cta['primary']['icon'] }}"></i>{{ $cta['primary']['label'] }}</a>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
         </section>
@@ -472,85 +487,26 @@
             <div class="col-12">
                 <div class="row g-3">
                     <div class="col-12">
-                        <section class="detail-section">
-                            <span class="section-kicker"><i class="bi bi-info-circle"></i>Tentang Kegiatan</span>
-                            <h2 class="h5 mb-2">Ringkasan kegiatan</h2>
-                            <p class="mb-0">{{ $extracurricular->description ?: 'Informasi kegiatan ini akan diperbarui oleh sekolah.' }}</p>
-                        </section>
-                    </div>
-
-                    <div class="col-12">
-                        <section class="detail-section">
-                            <span class="section-kicker"><i class="bi bi-card-checklist"></i>Informasi Pendaftaran</span>
-                            <h2 class="h5 mb-3">Informasi utama</h2>
-                            <div class="detail-keyfacts">
-                                @foreach($detailPage['information_rows'] as $row)
-                                    <div class="detail-keyfact">
-                                        <span class="detail-keyfact-icon" aria-hidden="true"><i class="bi {{ $row['icon'] }}"></i></span>
-                                        <div>
-                                            <div class="detail-meta-label">{{ $row['label'] }}</div>
-                                            <div>{{ $row['value'] }}</div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                            <div class="detail-process-card">
-                                <div class="detail-meta-label mb-1">Petunjuk Proses</div>
-                                <p class="mb-0">Lengkapi pendaftaran melalui akun siswa. Verifikasi status, seleksi, dan penerimaan tetap mengikuti alur yang dikelola pembina atau admin.</p>
-                            </div>
-                            <div class="detail-cta-card is-inline">
-                                <span class="section-kicker"><i class="bi bi-send-check"></i>Langkah Berikutnya</span>
-                                <h2 class="h5 mb-2">Status pendaftaran kegiatan</h2>
-                                <p class="mb-3">{{ $cta['description'] }}</p>
-
-                                <div class="detail-cta-summary">
-                                    <div class="detail-cta-row">
-                                        <div>
-                                            <div class="detail-cta-label">Pendaftaran</div>
-                                            <div class="small text-muted">Status saat ini</div>
-                                        </div>
-                                        <div class="detail-cta-value">{{ $detailPage['registration_badge']['label'] }}</div>
-                                    </div>
-                                    <div class="detail-cta-row">
-                                        <div>
-                                            <div class="detail-cta-label">Kuota</div>
-                                            <div class="small text-muted">Ketersediaan peserta</div>
-                                        </div>
-                                        <div class="detail-cta-value">{{ $detailPage['quota_text'] }}</div>
-                                    </div>
-                                    @if($detailPage['student_badge'])
-                                        <div class="detail-cta-row">
-                                            <div>
-                                                <div class="detail-cta-label">Status Saya</div>
-                                                <div class="small text-muted">Untuk akun yang sedang masuk</div>
+                        @if($detailPage['schedules']->isNotEmpty())
+                            <section class="detail-section mt-3">
+                                <span class="section-kicker"><i class="bi bi-calendar3"></i>Jadwal Kegiatan</span>
+                                <h2 class="h5 mb-3">{{ $detailPage['schedule_section_title'] }}</h2>
+                                <div class="detail-schedule-grid">
+                                    @foreach($detailPage['schedules'] as $schedule)
+                                        <article class="detail-schedule-card">
+                                            <strong>{{ $schedule['title'] }}</strong>
+                                            <div class="detail-schedule-meta mt-2">
+                                                <span><i class="bi bi-calendar-event"></i>{{ $schedule['date_label'] }}</span>
+                                                <span><i class="bi bi-clock"></i>{{ $schedule['time_label'] }}</span>
+                                                <span><i class="bi bi-geo-alt"></i>{{ $schedule['location'] }}</span>
                                             </div>
-                                            <div class="detail-cta-value">{{ $detailPage['student_badge']['label'] }}</div>
-                                        </div>
-                                    @endif
+                                        </article>
+                                    @endforeach
                                 </div>
-
-                                @if($cta['status_note'])
-                                    <div class="detail-cta-note">{{ $cta['status_note'] }}</div>
-                                @endif
-
-                                <div class="detail-cta-actions">
-                                    @if($cta['primary'])
-                                        @if(!empty($cta['primary']['disabled']))
-                                            <button type="button" class="btn btn-{{ $cta['primary']['variant'] }}" disabled><i class="bi {{ $cta['primary']['icon'] }}"></i>{{ $cta['primary']['label'] }}</button>
-                                        @else
-                                            <a href="{{ $cta['primary']['href'] }}" class="btn btn-{{ $cta['primary']['variant'] }}"><i class="bi {{ $cta['primary']['icon'] }}"></i>{{ $cta['primary']['label'] }}</a>
-                                        @endif
-                                    @endif
-
-                                    @if($cta['secondary'])
-                                        <a href="{{ $cta['secondary']['href'] }}" class="btn btn-{{ $cta['secondary']['variant'] }}">
-                                            <i class="bi {{ $cta['secondary']['icon'] ?? 'bi-signpost-2' }}"></i>{{ $cta['secondary']['label'] }}
-                                        </a>
-                                    @endif
-                                </div>
-                            </div>
-                        </section>
+                            </section>
+                        @endif
                     </div>
+
                 </div>
             </div>
         </div>
