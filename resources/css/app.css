@@ -7289,6 +7289,10 @@ textarea.form-control {
     }
 
     .app-topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 0.65rem;
         padding: 0.8rem 0.85rem;
         position: sticky;
     }
@@ -7298,7 +7302,26 @@ textarea.form-control {
     }
 
     .app-topbar__row {
-        padding-right: 3.7rem;
+        min-width: 0;
+        padding-right: 0;
+    }
+
+    .topbar-mobile-account {
+        position: static;
+        grid-column: 2;
+        grid-row: 1;
+        margin: 0;
+        align-self: start;
+    }
+
+    .app-topbar__identity {
+        gap: 0.55rem;
+    }
+
+    .app-topbar__menu-button {
+        width: 42px;
+        min-width: 42px;
+        padding-inline: 0;
     }
 
     .page-breadcrumb {
@@ -7313,10 +7336,33 @@ textarea.form-control {
     .topbar-subtitle {
         margin-top: 0.1rem;
         font-size: 0.76rem;
+        line-height: 1.4;
     }
 
     .app-content {
         padding: 0.85rem;
+    }
+
+    .offcanvas.offcanvas-start:not(.public-mobile-menu) {
+        width: min(86vw, 320px);
+    }
+
+    .offcanvas.offcanvas-start:not(.public-mobile-menu) .offcanvas-header {
+        padding: 0.85rem 0.9rem 0.7rem;
+    }
+
+    .offcanvas.offcanvas-start:not(.public-mobile-menu) .offcanvas-body {
+        padding: 0 0.9rem 1rem;
+    }
+
+    .offcanvas.offcanvas-start:not(.public-mobile-menu) .brand-box {
+        padding: 0.9rem;
+        border-radius: 20px;
+    }
+
+    .offcanvas.offcanvas-start:not(.public-mobile-menu) .brand-mark {
+        width: 3.25rem;
+        height: 3.25rem;
     }
 
     .card .card-body,
@@ -7453,6 +7499,15 @@ textarea.form-control {
     }
 
     .assessment-bulk-tools {
+        width: 100%;
+    }
+
+    .dashboard-next-schedule {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-panel-header .btn {
         width: 100%;
     }
 

@@ -344,7 +344,7 @@
     </div>
 </div>
 
-<div class="offcanvas offcanvas-start text-bg-dark d-lg-none" tabindex="-1" id="mobileSidebar">
+<div class="offcanvas offcanvas-start text-white d-lg-none" tabindex="-1" id="mobileSidebar">
     <div class="offcanvas-header border-bottom border-secondary-subtle">
         <div>
             <h5 class="offcanvas-title mb-1">Menu {{ $roleLabel }}</h5>

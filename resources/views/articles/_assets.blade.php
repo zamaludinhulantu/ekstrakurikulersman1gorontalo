@@ -732,6 +732,20 @@
                     padding: 0.95rem 0.95rem 0;
                 }
 
+                .article-form-grid,
+                .article-seo-grid,
+                .article-publish-top,
+                .article-schedule-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .article-col-8,
+                .article-col-6,
+                .article-col-4,
+                .article-col-3 {
+                    grid-column: span 1;
+                }
+
             }
 
             @media (max-width: 767.98px) {
