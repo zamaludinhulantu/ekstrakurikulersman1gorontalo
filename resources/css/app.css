@@ -7932,3 +7932,21 @@ textarea.form-control {
         font-size: 1.1rem;
     }
 }
+
+/* The article editor is shared by Admin and Coach. Keep its fields readable on
+ * phones and tablets, even while a hosting view cache is being refreshed. */
+@media (max-width: 1199.98px) {
+    [data-article-form] .article-form-grid,
+    [data-article-form] .article-seo-grid,
+    [data-article-form] .article-publish-top,
+    [data-article-form] .article-schedule-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    [data-article-form] .article-col-8,
+    [data-article-form] .article-col-6,
+    [data-article-form] .article-col-4,
+    [data-article-form] .article-col-3 {
+        grid-column: 1 / -1 !important;
+    }
+}
