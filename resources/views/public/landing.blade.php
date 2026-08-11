@@ -768,34 +768,6 @@
             </div>
         </section>
 
-        <section id="pengumuman" data-reveal>
-            <div class="section-header-inline">
-                <div>
-                    <span class="section-kicker"><i class="bi bi-megaphone"></i>Pengumuman</span>
-                    <h2 class="section-title">Informasi terbaru dari sekolah dan pembina</h2>
-                    <p class="section-subtitle mb-0">Pengumuman penting tetap singkat dan mudah dipindai dari beranda.</p>
-                </div>
-                <a href="{{ route('public.announcements') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-right-circle"></i>Lihat Semua</a>
-            </div>
-            <div class="row g-3">
-                @forelse($recentAnnouncements as $announcement)
-                    <div class="col-12 col-lg-4">
-                        @include('public._announcement-card', ['announcement' => $announcement])
-                    </div>
-                @empty
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="empty-state py-4">
-                                <div class="icon"><i class="bi bi-megaphone"></i></div>
-                                <h3 class="h5 fw-bold text-dark mb-2">Belum ada pengumuman terbaru.</h3>
-                                <p class="mb-0">Informasi baru dari sekolah dan pembina akan tampil di sini.</p>
-                            </div>
-                        </div>
-                    </div>
-                @endforelse
-            </div>
-        </section>
-
         <section id="berita" class="editorial-section-shell">
             <div class="editorial-section-header">
                 <div class="editorial-section-copy" data-reveal style="--reveal-delay: 0ms;">
