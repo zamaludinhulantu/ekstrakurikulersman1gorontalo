@@ -97,11 +97,13 @@
 
         .article-detail-cover {
             width: 100%;
-            max-height: 460px;
-            object-fit: cover;
+            max-height: 600px;
+            object-fit: contain;
+            object-position: center top;
             display: block;
             border-radius: 26px;
             margin-bottom: 1.25rem;
+            background: #f0f5ff;
         }
 
         .article-detail-content {
@@ -177,7 +179,7 @@
             }
 
             .article-detail-cover {
-                max-height: 280px;
+                max-height: 420px;
                 border-radius: 18px;
             }
 
