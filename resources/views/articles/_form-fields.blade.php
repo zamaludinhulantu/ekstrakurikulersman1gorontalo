@@ -134,27 +134,7 @@
                 @enderror
             </div>
 
-            <div class="article-col-12 article-form-field" data-article-counter-wrap>
-                <label for="{{ $fieldPrefix }}_excerpt">Ringkasan artikel</label>
-                <textarea
-                    id="{{ $fieldPrefix }}_excerpt"
-                    name="excerpt"
-                    class="form-control @error('excerpt') is-invalid @enderror"
-                    rows="3"
-                    maxlength="320"
-                    placeholder="Ringkasan untuk kartu berita dan hasil pencarian publik"
-                    aria-invalid="@error('excerpt') true @else false @enderror"
-                    aria-describedby="@error('excerpt') {{ $fieldPrefix }}_excerpt_error @else {{ $fieldPrefix }}_excerpt_hint @enderror"
-                    data-article-counter-input
-                >{{ old('excerpt', $article?->excerpt) }}</textarea>
-                <div class="article-seo-toolbar">
-                    <div id="{{ $fieldPrefix }}_excerpt_hint" class="article-field-hint">Wajib saat artikel akan dijadwalkan atau dipublikasikan.</div>
-                    <div class="article-char-counter">Karakter: <strong data-article-counter>0/320</strong></div>
-                </div>
-                @if($fieldError('excerpt'))
-                    <div id="{{ $fieldPrefix }}_excerpt_error" class="article-form-error">{{ $fieldError('excerpt') }}</div>
-                @endif
-            </div>
+
         </div>
     </section>
 

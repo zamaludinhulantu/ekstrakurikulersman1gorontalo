@@ -140,7 +140,7 @@ class ArticleManager
             'title' => ['required', 'string', 'min:8', 'max:255'],
             'slug' => ['nullable', 'string', 'min:4', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('articles', 'slug')->ignore($article?->id)],
             'content_category' => ['required', Rule::in(array_keys(Article::contentCategories()))],
-            'excerpt' => [$requiresCompleteContent ? 'required' : 'nullable', 'string', 'min:24', 'max:320'],
+            'excerpt' => ['nullable', 'string', 'max:320'],
             'content' => [$requiresCompleteContent ? 'required' : 'nullable', 'string'],
             'extracurricular_id' => $activityRule,
             'publication_status' => ['required', Rule::in(array_keys(Article::publicationStatuses()))],

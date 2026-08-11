@@ -232,9 +232,7 @@
 
                 <h1 class="article-detail-title">{{ $article->title }}</h1>
 
-                @if($article->excerpt)
-                    <p class="article-detail-lead">{!! nl2br(e($article->excerpt)) !!}</p>
-                @endif
+
 
                 <div class="article-detail-header-meta">
                     <span>Dipublikasikan secara resmi untuk portal informasi kegiatan siswa.</span>
