@@ -121,7 +121,14 @@
             aspect-ratio: auto;
         }
 
-        .editorial-article-support .public-article-card__image,
+        .editorial-article-support .public-article-card__image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 20%;
+            min-width: 0;
+        }
+
         .editorial-article-support .public-article-card__placeholder {
             min-width: 0;
         }

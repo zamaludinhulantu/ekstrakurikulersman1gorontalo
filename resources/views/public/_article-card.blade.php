@@ -8,14 +8,6 @@
         @if($article->cover_image_url)
             <img
                 src="{{ $article->cover_image_url }}"
-                alt=""
-                class="public-article-card__bg-blur"
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async"
-            >
-            <img
-                src="{{ $article->cover_image_url }}"
                 alt="{{ $article->image_alt_text_label }}"
                 class="public-article-card__image"
                 loading="lazy"
