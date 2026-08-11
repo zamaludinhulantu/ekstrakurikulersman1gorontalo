@@ -154,13 +154,16 @@ class Article extends Model
             return '';
         }
 
-        // Jika sudah mengandung tag HTML, tampilkan apa adanya
+        // Jika sudah mengandung tag HTML
         if ($content !== strip_tags($content)) {
-            return $content;
+            // Hapus paragraf kosong: <p></p>, <p> </p>, <p>&nbsp;</p>, <p><br></p>
+            $content = preg_replace('/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $content) ?? $content;
+            // Hapus <br> berulang lebih dari 2x
+            $content = preg_replace('/(<br\s*\/?>\s*){3,}/i', '<br><br>', $content) ?? $content;
+            return trim($content);
         }
 
         // Teks polos: ubah paragraf & baris baru jadi HTML yang rapi
-        // Pisahkan berdasarkan baris kosong (paragraf)
         $paragraphs = preg_split('/\n\s*\n/', $content);
 
         $html = '';

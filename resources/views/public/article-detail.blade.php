@@ -119,14 +119,14 @@
             max-width: 72ch;
             color: #22344a;
             font-size: 1rem;
-            line-height: 1.95;
+            line-height: 1.75;
         }
 
         .article-detail-content h2,
         .article-detail-content h3,
         .article-detail-content h4 {
-            margin-top: 1.7rem;
-            margin-bottom: 0.7rem;
+            margin-top: 1.4rem;
+            margin-bottom: 0.5rem;
             color: #12305b;
             line-height: 1.25;
             font-weight: 900;
@@ -136,7 +136,11 @@
         .article-detail-content ul,
         .article-detail-content ol,
         .article-detail-content blockquote {
-            margin-bottom: 1rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .article-detail-content p:empty {
+            display: none;
         }
 
         .article-detail-content ul,
