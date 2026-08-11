@@ -82,8 +82,7 @@
             margin: 0 0 1rem;
             color: #5e738c;
             font-size: 1.02rem;
-            line-height: 1.9;
-            max-width: 64ch;
+            line-height: 1.75;
         }
 
         .article-detail-header-meta {
@@ -234,7 +233,7 @@
                 <h1 class="article-detail-title">{{ $article->title }}</h1>
 
                 @if($article->excerpt)
-                    <p class="article-detail-lead">{{ $article->excerpt }}</p>
+                    <p class="article-detail-lead">{!! nl2br(e($article->excerpt)) !!}</p>
                 @endif
 
                 <div class="article-detail-header-meta">
