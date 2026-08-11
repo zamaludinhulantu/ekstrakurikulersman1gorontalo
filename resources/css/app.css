@@ -2806,13 +2806,13 @@ textarea.form-control {
     border: 1px solid #dbe5f0;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 251, 255, 0.96));
     box-shadow: 0 14px 28px rgba(16, 35, 63, 0.06);
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 
 .public-article-card:hover {
-    transform: translateY(-4px);
-    border-color: #c4d7fb;
-    box-shadow: 0 22px 34px rgba(16, 35, 63, 0.1);
+    transform: translateY(-6px);
+    border-color: #b8d4ff;
+    box-shadow: 0 20px 38px -10px rgba(24, 73, 203, 0.18), 0 10px 20px -8px rgba(16, 35, 63, 0.08);
 }
 
 .public-article-card__media {
@@ -2823,17 +2823,36 @@ textarea.form-control {
     background: linear-gradient(135deg, #edf4ff 0%, #dbeaff 100%);
 }
 
+.public-article-card__media::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transform: skewX(-25deg);
+    transition: none;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.public-article-card:hover .public-article-card__media::after {
+    left: 200%;
+    transition: left 0.85s ease-in-out;
+}
+
 .public-article-card__image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center 20%;
     display: block;
-    transition: transform 0.35s ease;
+    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .public-article-card:hover .public-article-card__image {
-    transform: scale(1.03);
+    transform: scale(1.06);
 }
 
 .public-article-card__media-overlay {
@@ -2949,6 +2968,11 @@ textarea.form-control {
     -webkit-line-clamp: 2;
     overflow: hidden;
     overflow-wrap: anywhere;
+    transition: color 0.25s ease;
+}
+
+.public-article-card:hover .public-article-card__title {
+    color: #1849cb;
 }
 
 .public-article-card__excerpt {
