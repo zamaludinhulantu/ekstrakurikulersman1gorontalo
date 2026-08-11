@@ -116,7 +116,6 @@
         }
 
         .article-detail-content {
-            max-width: 72ch;
             color: #22344a;
             font-size: 1rem;
             line-height: 1.75;
