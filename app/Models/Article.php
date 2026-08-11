@@ -146,6 +146,37 @@ class Article extends Model
         return $this->image_alt_text ?: $this->title;
     }
 
+    public function getFormattedContentAttribute(): string
+    {
+        $content = trim((string) $this->content);
+
+        if ($content === '') {
+            return '';
+        }
+
+        // Jika sudah mengandung tag HTML, tampilkan apa adanya
+        if ($content !== strip_tags($content)) {
+            return $content;
+        }
+
+        // Teks polos: ubah paragraf & baris baru jadi HTML yang rapi
+        // Pisahkan berdasarkan baris kosong (paragraf)
+        $paragraphs = preg_split('/\n\s*\n/', $content);
+
+        $html = '';
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if ($paragraph === '') {
+                continue;
+            }
+            // Baris tunggal dalam paragraf → <br>
+            $paragraph = nl2br(e($paragraph));
+            $html .= '<p>' . $paragraph . '</p>' . "\n";
+        }
+
+        return $html;
+    }
+
     public function getContentCategoryLabelAttribute(): string
     {
         return static::contentCategories()[$this->content_category] ?? 'Berita Kegiatan';

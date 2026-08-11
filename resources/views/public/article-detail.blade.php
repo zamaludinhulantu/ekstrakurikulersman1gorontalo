@@ -252,7 +252,7 @@
                 @endif
 
                 <div class="article-detail-content">
-                    {!! $article->content !!}
+                    {!! $article->formatted_content !!}
                 </div>
             </section>
 
