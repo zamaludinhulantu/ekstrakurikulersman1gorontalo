@@ -128,17 +128,29 @@ class Article extends Model
             return $this->image_path;
         }
 
-        if (Storage::disk('public')->exists($this->image_path)) {
-            return Storage::disk('public')->url($this->image_path);
+        $relativePath = ltrim(preg_replace('/^storage\//i', '', $this->image_path), '/');
+
+        if (Storage::disk('public')->exists($relativePath)) {
+            return Storage::disk('public')->url($relativePath);
         }
 
-        $publicPath = public_path($this->image_path);
-
-        if (File::exists($publicPath)) {
-            return asset($this->image_path).'?v='.File::lastModified($publicPath);
+        $storagePublicFile = public_path('storage/'.$relativePath);
+        if (File::exists($storagePublicFile)) {
+            return asset('storage/'.$relativePath).'?v='.File::lastModified($storagePublicFile);
         }
 
-        return null;
+        $directPublicFile = public_path($this->image_path);
+        if (File::exists($directPublicFile)) {
+            return asset($this->image_path).'?v='.File::lastModified($directPublicFile);
+        }
+
+        $appPublicFile = storage_path('app/public/'.$relativePath);
+        if (File::exists($appPublicFile)) {
+            return asset('storage/'.$relativePath).'?v='.File::lastModified($appPublicFile);
+        }
+
+        // Return standard storage URL as fallback if path is set
+        return asset('storage/'.$relativePath);
     }
 
     public function getImageAltTextLabelAttribute(): string

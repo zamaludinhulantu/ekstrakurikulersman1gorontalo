@@ -191,7 +191,7 @@ class ArticleManager
             $imageFile = $request->file('image');
             $imagePath = app(UploadedImageOptimizer::class)->store(
                 $imageFile,
-                storage_path('app/public/articles'),
+                Storage::disk('public')->path('articles'),
                 'articles',
                 Str::slug(pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME))
             );
