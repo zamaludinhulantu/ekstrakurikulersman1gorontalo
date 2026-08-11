@@ -95,15 +95,24 @@
             margin-bottom: 1.1rem;
         }
 
-        .article-detail-cover {
+        .article-detail-cover-wrap {
             width: 100%;
-            max-height: 600px;
-            object-fit: contain;
-            object-position: center top;
-            display: block;
-            border-radius: 26px;
             margin-bottom: 1.25rem;
-            background: #f0f5ff;
+            border-radius: 26px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #edf4ff 0%, #dbeaff 100%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .article-detail-cover {
+            display: block;
+            max-width: 100%;
+            max-height: 640px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
         }
 
         .article-detail-content {
@@ -178,9 +187,12 @@
                 border-radius: 24px;
             }
 
-            .article-detail-cover {
-                max-height: 420px;
+            .article-detail-cover-wrap {
                 border-radius: 18px;
+            }
+
+            .article-detail-cover {
+                max-height: 480px;
             }
 
             .article-detail-content {
@@ -227,16 +239,16 @@
                 </div>
 
                 @if($article->cover_image_url)
-                    <img
-                        src="{{ $article->cover_image_url }}"
-                        alt="{{ $article->image_alt_text_label }}"
-                        class="article-detail-cover"
-                        loading="eager"
-                        decoding="async"
-                        fetchpriority="high"
-                        width="1200"
-                        height="675"
-                    >
+                    <div class="article-detail-cover-wrap">
+                        <img
+                            src="{{ $article->cover_image_url }}"
+                            alt="{{ $article->image_alt_text_label }}"
+                            class="article-detail-cover"
+                            loading="eager"
+                            decoding="async"
+                            fetchpriority="high"
+                        >
+                    </div>
                 @endif
 
                 <div class="article-detail-content">
